@@ -63,7 +63,7 @@ architecture Behavioral of Firmware_tb is
   constant bw_addr : integer := 7;
   constant bw_fifo : integer := 18;
   constant bw_count : integer := 16;
-  constant nclocksrun : integer := 512;
+  constant nclocksrun : integer := 1024;
   -- Counters
   signal waitCounter  : unsigned(bw_count-1 downto 0) := (others=> '0');
   signal inputCounter : unsigned(bw_count-1 downto 0) := (others=> '0');
@@ -127,40 +127,53 @@ begin
 
   i_ila : ila
   port map(
-    clk => sysclk,
+    clk => sysclkQuad,   -- to use the fastest clock here
     probe0 => trig0,
     probe1 => data
   );
-  trig0(0) <= intime_s;
-  trig0(13 downto 2) <= lut_input1_dout_c;
-  trig0(25 downto 14) <= lut_input2_dout_c;
-  data(15 downto 0) <= input1_s;
-  data(31 downto 16) <= input2_s;
-  data(51 downto 32) <= output_s;
-  data(52) <= sysclkQuad;
 
+  -- Monitor the signals
+  trig0(0) <= intime_s;
+  trig0(1) <= input_dav;
+  trig0(2) <= fifo_dav;
+  trig0(14 downto 3) <= lut_input1_dout_c;
+  trig0(26 downto 15) <= lut_input2_dout_c;
+
+  -- Signals to be monitored
+  data(0) <= sysclkDouble;
+  data(1) <= sysclkQuad;
+  data(2) <= rst_fifo;
+  data(3) <= input_dav;
+  data(4) <= fifo_rd;
+  data(5) <= fifo_dav;
+  data(21 downto 6)  <= input1_s;
+  data(37 downto 22) <= input2_s;
+  data(55 downto 38) <= fifo_out;
+  data(59 downto 56) <= fifo_err;
+
+  data(60) <= checker;
+  data(67 downto 61) <= std_logic_vector(lut_input_addr1_s);
+  data(74 downto 68) <= std_logic_vector(lut_input_addr2_s);
+  data(86 downto 75) <= lut_input1_dout_c;
+  data(98 downto 87) <= lut_input2_dout_c;
 
   waitGenerator_i: process (sysclk) is
     variable init_input1: unsigned(bw_input1-1 downto 0):= (others => '1');
   begin
 
-    -- Simulate data coming out every fourth clock
     if sysclk'event and sysclk='1' then
-
       waitCounter <= waitCounter + 1;
       -- Set the intime to 1 only after 7 clk cycles
-      if waitCounter = 1 then
+      if waitCounter = 0 then
+        rst_fifo <= '1';
         intime_s <= '0';
-        -- inputCounter <= to_unsigned(0,bw_count);
-        -- readCounter <= to_unsigned(0,bw_count);
+      elsif waitCounter = 1 then
+        rst_fifo <= '0';
       elsif waitCounter = 7 then
         intime_s <= '1';
       elsif waitCounter >= (nclocksrun+7) then
         intime_s <= '0';
-        -- input_dav <= '0';
         waitCounter <= (others => '0');
-        -- inputCounter <= (others => '0');
-        -- readCounter <= (others => '0');
       end if;
     end if;
   end process;
@@ -172,9 +185,7 @@ begin
     variable init_input1: unsigned(bw_fifo-3 downto 0):= (others => '1');
   begin
 
-    -- Simulate data coming out every fourth clock
     if sysclkQuad'event and sysclkQuad='1' then
-      rst_fifo <= '0';
       if intime_s = '1' and fifo_err(0) /= '1' then
         inputCounter <= inputCounter + 1;
         -- Initalize lut_input_addr_s
@@ -185,7 +196,7 @@ begin
         else
           lut_input_addr1_s <= lut_input_addr1_s + 1;
           -- The output is PRNS { rnd |= 1; rnd ^= (rnd << (i % 11 + 1)); }
-          input1_s <= std_logic_vector(lut_input_addr1_s(3 downto 0)) & std_logic_vector(lut_input1_dout_c);
+          input1_s <= std_logic_vector(lut_input_addr1_s(3 downto 0)) & lut_input1_dout_c;
           input_dav <= '1';
         end if;
       else
@@ -204,9 +215,8 @@ begin
   begin
 
     if sysclkDouble'event and sysclkDouble='1' then
-      rst_fifo <= '0';
       if intime_s = '1' then
-        input2_s <= std_logic_vector(lut_input_addr2_s(3 downto 0)) & std_logic_vector(lut_input2_dout_c);
+        input2_s <= std_logic_vector(lut_input_addr2_s(3 downto 0)) & lut_input2_dout_c;
 
         if fifo_dav = '1' then
           readCounter <= readCounter + 1;
