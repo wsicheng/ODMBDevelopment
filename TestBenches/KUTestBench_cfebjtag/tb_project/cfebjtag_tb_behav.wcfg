@@ -14,15 +14,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="910208fs"></ZoomEndTime>
-      <Cursor1Time time="644941fs"></Cursor1Time>
+      <ZoomStartTime time="5057008fs"></ZoomStartTime>
+      <ZoomEndTime time="5460009fs"></ZoomEndTime>
+      <Cursor1Time time="5400008fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="139"></NameColumnWidth>
+      <NameColumnWidth column_width="107"></NameColumnWidth>
       <ValueColumnWidth column_width="66"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="49" />
+   <WVObjectSize size="56" />
    <wave_markers>
       <marker label="" time="594762" />
    </wave_markers>
@@ -34,13 +34,29 @@
       <obj_property name="ElementShortName">sysclkQuarter</obj_property>
       <obj_property name="ObjectShortName">sysclkQuarter</obj_property>
    </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/intime_s">
+      <obj_property name="ElementShortName">intime_s</obj_property>
+      <obj_property name="ObjectShortName">intime_s</obj_property>
+   </wvobject>
    <wvobject type="array" fp_name="/Firmware_tb/waitCounter">
-      <obj_property name="ElementShortName">waitCounter[15:0]</obj_property>
-      <obj_property name="ObjectShortName">waitCounter[15:0]</obj_property>
+      <obj_property name="ElementShortName">waitCounter[6:0]</obj_property>
+      <obj_property name="ObjectShortName">waitCounter[6:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/Firmware_tb/inputCounter">
+      <obj_property name="ElementShortName">inputCounter[15:0]</obj_property>
+      <obj_property name="ObjectShortName">inputCounter[15:0]</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/Firmware_tb/rst_global">
       <obj_property name="ElementShortName">rst_global</obj_property>
       <obj_property name="ObjectShortName">rst_global</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/nextcmd">
+      <obj_property name="ElementShortName">nextcmd</obj_property>
+      <obj_property name="ObjectShortName">nextcmd</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/cack">
+      <obj_property name="ElementShortName">cack</obj_property>
+      <obj_property name="ObjectShortName">cack</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/Firmware_tb/vme_data_in">
       <obj_property name="ElementShortName">vme_data_in[15:0]</obj_property>
@@ -89,22 +105,6 @@
    <wvobject type="array" fp_name="/Firmware_tb/firmware_i/VME_DATA_IN">
       <obj_property name="ElementShortName">VME_DATA_IN[15:0]</obj_property>
       <obj_property name="ObjectShortName">VME_DATA_IN[15:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TCK">
-      <obj_property name="ElementShortName">DL_JTAG_TCK[6:0]</obj_property>
-      <obj_property name="ObjectShortName">DL_JTAG_TCK[6:0]</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TMS">
-      <obj_property name="ElementShortName">DL_JTAG_TMS</obj_property>
-      <obj_property name="ObjectShortName">DL_JTAG_TMS</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TDI">
-      <obj_property name="ElementShortName">DL_JTAG_TDI</obj_property>
-      <obj_property name="ObjectShortName">DL_JTAG_TDI</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TDO">
-      <obj_property name="ElementShortName">DL_JTAG_TDO[6:0]</obj_property>
-      <obj_property name="ObjectShortName">DL_JTAG_TDO[6:0]</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DCFEB_INITJTAG">
       <obj_property name="ElementShortName">DCFEB_INITJTAG</obj_property>
@@ -166,6 +166,18 @@
       <obj_property name="ElementShortName">SELFEB[7:1]</obj_property>
       <obj_property name="ObjectShortName">SELFEB[7:1]</obj_property>
    </wvobject>
+   <wvobject type="array" fp_name="/Firmware_tb/firmware_i/DEV1_CFEBJTAG/QV_RESETDONE">
+      <obj_property name="ElementShortName">QV_RESETDONE[3:0]</obj_property>
+      <obj_property name="ObjectShortName">QV_RESETDONE[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DEV1_CFEBJTAG/RESETDONE">
+      <obj_property name="ElementShortName">RESETDONE</obj_property>
+      <obj_property name="ObjectShortName">RESETDONE</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DEV1_CFEBJTAG/DTACK_INNER">
+      <obj_property name="ElementShortName">DTACK_INNER</obj_property>
+      <obj_property name="ObjectShortName">DTACK_INNER</obj_property>
+   </wvobject>
    <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/strobe">
       <obj_property name="ElementShortName">strobe</obj_property>
       <obj_property name="ObjectShortName">strobe</obj_property>
@@ -221,5 +233,21 @@
    <wvobject type="array" fp_name="/Firmware_tb/firmware_i/devout">
       <obj_property name="ElementShortName">devout[15:0]</obj_property>
       <obj_property name="ObjectShortName">devout[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TCK">
+      <obj_property name="ElementShortName">DL_JTAG_TCK[6:0]</obj_property>
+      <obj_property name="ObjectShortName">DL_JTAG_TCK[6:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TMS">
+      <obj_property name="ElementShortName">DL_JTAG_TMS</obj_property>
+      <obj_property name="ObjectShortName">DL_JTAG_TMS</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TDI">
+      <obj_property name="ElementShortName">DL_JTAG_TDI</obj_property>
+      <obj_property name="ObjectShortName">DL_JTAG_TDI</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/Firmware_tb/firmware_i/DL_JTAG_TDO">
+      <obj_property name="ElementShortName">DL_JTAG_TDO[6:0]</obj_property>
+      <obj_property name="ObjectShortName">DL_JTAG_TDO[6:0]</obj_property>
    </wvobject>
 </wave_config>

@@ -31,7 +31,8 @@ entity Firmware is
     -- User input
     CMDDEV      : in std_logic_vector (15 downto 0);
     -- Reset
-    RST         : in std_logic
+    RST         : in std_logic;
+    CACK        : out std_logic
     );
 end Firmware;
 
@@ -153,47 +154,82 @@ architecture Behavioral of Firmware is
   signal asynstrb     : std_logic := '0';
   signal asynstrb_not : std_logic := '0';
 
-  signal cmd_adrs_inner : std_logic_vector(17 downto 2);
+  signal cmd_adrs_inner : std_logic_vector(17 downto 2) := (others => '0');
 
   -- signals between test_controller and vme_master_fsm and command_module
-  signal vme_cmd     : std_logic;
-  signal vme_cmd_rd  : std_logic;
-  signal vme_addr    : std_logic_vector(23 downto 1);
-  signal vme_wr      : std_logic;
-  signal vme_wr_data : std_logic_vector(15 downto 0);
-  signal vme_rd      : std_logic;
-  signal vme_rd_data : std_logic_vector(15 downto 0);
-  signal vme_data    : std_logic_vector(15 downto 0);
+  signal vc_cmd     : std_logic := '0';
+  signal vc_cmd_rd  : std_logic := '0';
+  signal vc_addr    : std_logic_vector(23 downto 1) := (others => '0');
+  signal vc_wr      : std_logic := '0';
+  signal vc_wr_data : std_logic_vector(15 downto 0) := (others => '0');
+  signal vc_rd      : std_logic := '0';
+  signal vc_rd_data : std_logic_vector(15 downto 0) := (others => '0');
+
   -- signals between vme_master_fsm and command_module
-  signal vme_berr    : std_logic;
-  signal vme_as      : std_logic;
-  signal vme_ds      : std_logic_vector(1 downto 0);
-  signal vme_lword   : std_logic;
-  signal vme_write_b : std_logic;
-  signal vme_iack    : std_logic;
-  signal vme_sysfail : std_logic;
-  signal vme_am      : std_logic_vector(5 downto 0);
-  signal vme_ga      : std_logic_vector(5 downto 0);
-  signal vme_adr     : std_logic_vector(23 downto 1);
-  signal vme_oe_b    : std_logic;
+  signal vme_berr    : std_logic := '0';
+  signal vme_addr    : std_logic_vector(23 downto 1) := (others => '0');
+  signal vme_as      : std_logic := '0';
+  signal vme_ds      : std_logic_vector(1 downto 0) := (others => '0');
+  signal vme_lword   : std_logic := '0';
+  signal vme_write_b : std_logic := '0';
+  signal vme_iack    : std_logic := '0';
+  signal vme_sysfail : std_logic := '0';
+  signal vme_am      : std_logic_vector(5 downto 0) := (others => '0');
+  signal vme_ga      : std_logic_vector(5 downto 0) := (others => '0');
+  signal vme_adr     : std_logic_vector(23 downto 1) := (others => '0');
+  signal vme_oe_b    : std_logic := '0';
   -- signals between vme_master_fsm and cfebjtag and lvdbmon modules
-  signal vme_dtack   : std_logic;
-  signal vme_indata  : std_logic_vector(15 downto 0);
-  signal vme_outdata : std_logic_vector(15 downto 0);
+  signal vme_dtack   : std_logic := 'H';
+  signal vme_indata  : std_logic_vector(15 downto 0) := (others => '0');
+  signal vme_outdata : std_logic_vector(15 downto 0) := (others => '0');
 
   -- signals for vme_master
   signal rstn : std_logic := '1';
 
+  signal addr_i  : std_logic_vector(23 downto 0) := (others => '0');
+  signal cack_i  : std_logic := '1';
+
 begin
 
+  -- For CFEBJTAG input
   -- device(1) <= '1' when CMDDEV(15 downto 12) = x"1" else '0';
   -- cmd <= CMDDEV(11 downto 2);
-
   dcfeb_initjtag_i <= DCFEB_INITJTAG;
+
+  -- To mimic the command module.. to 
+  -- asynstrb <= '1' when device(1) = '1' else '0';  -- hack for test
+  -- asynstrb_not <= not asynstrb;
+  -- FDC_STROBE   : FDC port map(Q=>strobe_temp1, C=>clk40, CLR=>asynstrb_not, D=>asynstrb);
+  -- FDC_1_STROBE : FDC_1 port map(Q=>strobe_temp2, C=>clk40, CLR=>asynstrb_not, D=>asynstrb);
+  -- strobe <= '1' when (strobe_temp1 = '1' and strobe_temp2 = '1') else '0';
+
+  -- For vme_master
+  vc_addr <= x"A8" & CMDDEV(15 downto 1);
+  vc_cmd <= '1' when CMDDEV(15 downto 12) = x"1" else '0';
+  vc_wr_data <= VME_DATA_IN;
+  vc_rd <=  '1' when VME_DATA_IN = x"2EAD" else '0';
 
   DL_JTAG_TCK <= dl_jtag_tck_inner;
   DL_JTAG_TDI <= dl_jtag_tdi_inner;
   DL_JTAG_TMS <= dl_jtag_tms_inner;
+
+  -- Generate readable addr
+  addr_i <= vme_addr & '0';
+
+  vme_dtack <= 'H'; -- resolution 'H'+'1'='1', 'H'+'0'='0'
+  vme_dtack <= not or_reduce(dtack_dev);
+
+  i_cmd_ack : process (vc_cmd, vc_cmd_rd) is
+  begin
+    if vc_cmd'event and vc_cmd = '1' then
+      cack_i <= '0';
+    end if;
+    if vc_cmd_rd'event and vc_cmd_rd = '1' then
+      cack_i <= '1';
+    end if;
+  end process;
+
+  cack <= cack_i;
 
   DEV1_CFEBJTAG : CFEBJTAG
     port map (
@@ -206,9 +242,9 @@ begin
       STROBE  => strobe,
       COMMAND => cmd,
 
-      WRITER  => VME_WRITE_B,
-      INDATA  => VME_DATA_IN,
-      OUTDATA => devout,                -- dev_outdata(1),
+      WRITER  => vme_write_b,
+      INDATA  => vme_indata,   -- VME_DATA_IN,
+      OUTDATA => vme_outdata,  -- devout, -- dev_outdata(1),
 
       DTACK   => dtack_dev(1),
 
@@ -222,19 +258,12 @@ begin
       LED     => led_cfebjtag
       );
 
-  asynstrb <= '1' when device(1) = '1' else '0';  -- hack for test
-  asynstrb_not <= not asynstrb;
-
-  FDC_STROBE   : FDC port map(Q=>strobe_temp1, C=>clk40, CLR=>asynstrb_not, D=>asynstrb);
-  FDC_1_STROBE : FDC_1 port map(Q=>strobe_temp2, C=>clk40, CLR=>asynstrb_not, D=>asynstrb);
-  -- strobe <= '1' when (strobe_temp1 = '1' and strobe_temp2 = '1') else '0';
-
   COMMAND_PM : COMMAND_MODULE
     port map (
       FASTCLK => clk40,
       SLOWCLK => clk10,
-      GA      => vme_ga,                -- gap = ga(5)
-      ADR     => vme_addr,
+      GA      => vme_ga,               -- gap = ga(5)
+      ADR     => vme_addr,             -- input cmd = ADR(11 downto 2)
       AM      => vme_am,
       AS      => vme_as,
       DS0     => vme_ds(0),
@@ -260,28 +289,28 @@ begin
       clk         => clk80,
       rstn        => rstn,
       sw_reset    => rst,
-      vme_cmd     => vme_cmd,
-      vme_cmd_rd  => vme_cmd_rd,
-      vme_wr      => vme_cmd,
-      vme_addr    => vme_addr,
-      vme_wr_data => vme_wr_data,
-      vme_rd      => vme_rd,
-      vme_rd_data => vme_rd_data,
-      ga          => vme_ga,
-      addr        => vme_addr,
-      am          => vme_am,
-      as          => vme_as,
-      ds0         => vme_ds(0),
-      ds1         => vme_ds(1),
-      lword       => vme_lword,
-      write_b     => vme_write_b,
-      iack        => vme_iack,
-      berr        => vme_berr,
-      sysfail     => vme_sysfail,
-      dtack       => vme_dtack,
-      oe_b        => vme_oe_b,
-      data_in     => vme_outdata,
-      data_out    => vme_indata
+      vme_cmd     => vc_cmd,            -- VME controller
+      vme_cmd_rd  => vc_cmd_rd,         -- VME controller
+      vme_wr      => vc_cmd,            -- VME controller
+      vme_addr    => vc_addr,           -- VME controller
+      vme_wr_data => vc_wr_data,        -- VME controller
+      vme_rd      => vc_rd,             -- VME controller
+      vme_rd_data => vc_rd_data,        -- VME controller
+      ga          => vme_ga,            -- between VME and ODMB
+      addr        => vme_addr,          -- between VME and ODMB
+      am          => vme_am,            -- between VME and ODMB
+      as          => vme_as,            -- between VME and ODMB
+      ds0         => vme_ds(0),         -- between VME and ODMB
+      ds1         => vme_ds(1),         -- between VME and ODMB
+      lword       => vme_lword,         -- between VME and ODMB
+      write_b     => vme_write_b,       -- between VME and ODMB
+      iack        => vme_iack,          -- between VME and ODMB
+      berr        => vme_berr,          -- between VME and ODMB
+      sysfail     => vme_sysfail,       -- between VME and ODMB
+      dtack       => vme_dtack,         -- between VME and ODMB
+      oe_b        => vme_oe_b,          -- between VME and ODMB
+      data_in     => vme_outdata,       -- between VME and ODMB
+      data_out    => vme_indata         -- between VME and ODMB
       );
 
 

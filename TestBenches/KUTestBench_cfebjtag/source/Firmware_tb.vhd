@@ -65,11 +65,12 @@ architecture Behavioral of Firmware_tb is
   constant bw_output : integer := 20;
   constant bw_fifo   : integer := 18;
   constant bw_count  : integer := 16;
-  constant nclksrun  : integer := 36;
+  constant bw_wait   : integer := 7;
+  constant nclksrun  : integer := 2048;
   -- Counters
-  signal waitCounter  : unsigned(bw_count-1 downto 0) := (others=> '0');
+  signal waitCounter  : unsigned(bw_wait-1 downto 0) := (others=> '0');
   signal inputCounter : unsigned(bw_count-1 downto 0) := (others=> '0');
-  signal readCounter  : unsigned(bw_count-1 downto 0) := (others=> '0');
+  signal startCounter  : unsigned(bw_count-1 downto 0) := (others=> '0');
 
   -- Reset
   signal rst_global : std_logic := '0';
@@ -94,6 +95,8 @@ architecture Behavioral of Firmware_tb is
   signal input_dav : std_logic := '0';
   signal cmddev    : std_logic_vector(15 downto 0) := (others=> '0');
   signal nextcmd   : std_logic := '1';
+  signal cack      : std_logic := 'H';
+  signal cack_reg  : std_logic := 'H';
 
   -- Checker bit
   signal checker  : std_logic := '0';
@@ -160,24 +163,36 @@ begin
   -- communication now, so let's test the the code is giving proper behavior
 
   -- 0. First the block to generate counter
-  waitGenerator_i: process (sysclk) is
+  startGenerator_i: process (sysclk) is
   begin
 
     if sysclk'event and sysclk='1' then
-      waitCounter <= waitCounter + 1;
+      startCounter <= startCounter + 1;
       -- Set the intime to 1 only after 7 clk cycles
-      if waitCounter = 0 then
+      if startCounter = 0 then
         rst_global <= '1';
-      elsif waitCounter = 1 then
+      elsif startCounter = 1 then
         rst_global <= '0';
         intime_s <= '0';
-      elsif waitCounter = 6 then
+      elsif startCounter = 6 then
         dcfeb_initjtag <= '1';
-      elsif waitCounter = 7 then
+      elsif startCounter = 7 then
         dcfeb_initjtag <= '0';
         intime_s <= '1';
-      elsif waitCounter >= (nclksrun+7) then
-        intime_s <= '0';
+      -- elsif startCounter >= (nclksrun+7) then
+      --   intime_s <= '0';
+      --   startCounter <= (others => '0');
+      end if;
+    end if;
+  end process;
+
+  waitGenerator_i: process (sysclk) is
+  begin
+    if intime_s = '0' then
+      waitCounter <= (others => '0');
+    else
+      waitCounter <= waitCounter + 1;
+      if waitCounter >= 80 then
         waitCounter <= (others => '0');
       end if;
     end if;
@@ -185,11 +200,16 @@ begin
 
   -- Read input from input1 and pass it to the fifo
   inputGenerator_i: process (sysclk) is
-    variable init_input1: unsigned(bw_fifo-3 downto 0):= (others => '1');
+    variable init_input1: unsigned(bw_fifo-3 downto 0):= (others => '0');
     variable init_input2: unsigned(bw_fifo-3 downto 0):= (others => '1');
   begin
 
     if sysclk'event and sysclk='1' then
+      if waitCounter = 0 and cack = '1' then
+        nextcmd <= '1';
+      else
+        nextcmd <= '0';
+      end if;
       if intime_s = '1' and nextcmd = '1' then
         inputCounter <= inputCounter + 1;
         -- Initalize lut_input_addr_s
@@ -206,8 +226,11 @@ begin
           vme_data_in <= lut_input2_dout_c;
           input_dav <= '1';
         end if;
-      else
+      elsif intime_s = '0' then
         inputCounter <= to_unsigned(0,bw_count);
+        input_dav <= '0';
+      elsif nextcmd = '0' then
+        cmddev <= std_logic_vector(init_input1);
         input_dav <= '0';
       end if;
     end if;
@@ -236,7 +259,8 @@ begin
     DL_JTAG_TDI    => dl_jtag_tdi,
     DL_JTAG_TDO    => dl_jtag_tdo,
     DCFEB_INITJTAG => dcfeb_initjtag,
-    CMDDEV         => cmddev
+    CMDDEV         => cmddev,
+    CACK           => cack
     );
 
 end Behavioral;
