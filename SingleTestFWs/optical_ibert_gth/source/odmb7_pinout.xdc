@@ -12,6 +12,16 @@
 set_property package_pin AK17 [get_ports CMS_CLK_FPGA_P]
 set_property package_pin AK16 [get_ports CMS_CLK_FPGA_N]
 
+set_property package_pin AK22 [get_ports GP_CLK_6_P]
+set_property package_pin AK23 [get_ports GP_CLK_6_N]
+set_property IOSTANDARD LVDS  [get_ports GP_CLK_6_P]
+set_property IOSTANDARD LVDS  [get_ports GP_CLK_6_N]
+
+set_property package_pin E18  [get_ports GP_CLK_7_P]
+set_property package_pin E17  [get_ports GP_CLK_7_N]
+set_property IOSTANDARD LVDS  [get_ports GP_CLK_7_P]
+set_property IOSTANDARD LVDS  [get_ports GP_CLK_7_N]
+
 set_property package_pin AF6 [get_ports REF_CLK_1_P]
 set_property package_pin AF5 [get_ports REF_CLK_1_N]
 set_property package_pin P6  [get_ports REF_CLK_2_P]

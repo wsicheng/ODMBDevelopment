@@ -26,8 +26,12 @@ entity odmb7_ucsb_dev is
     -- CLK40       : in std_logic;  -- NEW (fastclk -> 40MHz)
     -- CLK10       : in std_logic;  -- NEW (midclk -> fastclk/4 -> 10MHz)
 
-    CMS_CLK_FPGA_P : in std_logic;      -- system clock: 40.0
-    CMS_CLK_FPGA_N : in std_logic;      -- system clock: 40.0
+    CMS_CLK_FPGA_P : in std_logic;      -- system clock: 40.07897 MHz
+    CMS_CLK_FPGA_N : in std_logic;      -- system clock: 40.07897 MHz
+    GP_CLK_6_P : in std_logic;          -- system clock: ? MHz
+    GP_CLK_6_N : in std_logic;          -- system clock: ? MHz
+    GP_CLK_7_P : in std_logic;          -- system clock: ? MHz, pretend 80
+    GP_CLK_7_N : in std_logic;          -- system clock: ? MHz, pretend 80
     REF_CLK_1_P : in std_logic;         -- optical TX/RX refclk
     REF_CLK_1_N : in std_logic;         -- optical TX/RX refclk
     REF_CLK_2_P : in std_logic;         -- optical TX/RX refclk
@@ -271,26 +275,26 @@ begin
       IB    => CLK_125_REF_N
       );
 
-  -- -- Using input clock pin as IBERT sysclk <- option 1
-  -- u_ibufgds : IBUFGDS 
-  --   generic map (DIFF_TERM => FALSE)
-  --   port map (
-  --     I => gth_sysclkp_i,
-  --     IB => gth_sysclkn_i,
-  --     O => gth_sysclk_i
-  --   );
+  -- Using input clock pin as IBERT sysclk <- option 1
+  u_ibufgds : IBUFGDS 
+    generic map (DIFF_TERM => FALSE)
+    port map (
+      I => GP_CLK_7_P,
+      IB => GP_CLK_7_N,
+      O => gth_sysclk_i
+    );
 
-  -- Using optical refclk as IBERT sysclk <- option 2
-  u_gth_sysclk_internal : BUFG_GT 
-    port map(
-      I       => mgtrefclk0_odiv2_226_i,
-      O       => gth_sysclk_i,
-      CE      => '1',
-      CEMASK  => '0',
-      CLR     => '0',
-      CLRMASK => '0',
-      DIV     => "000"
-      );
+  -- -- Using optical refclk as IBERT sysclk <- option 2
+  -- u_gth_sysclk_internal : BUFG_GT 
+  --   port map(
+  --     I       => mgtrefclk0_odiv2_226_i,
+  --     O       => gth_sysclk_i,
+  --     CE      => '1',
+  --     CEMASK  => '0',
+  --     CLR     => '0',
+  --     CLRMASK => '0',
+  --     DIV     => "000"
+  --     );
 
   DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
 

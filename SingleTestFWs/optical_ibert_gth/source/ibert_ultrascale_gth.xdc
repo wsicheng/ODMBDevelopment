@@ -19,7 +19,12 @@
 ##
 ## Icon Constraints
 ##
-set_property C_CLK_INPUT_FREQ_HZ 160000000 [get_debug_cores dbg_hub]
+create_clock -name gp_clk_6 -period 25  [get_ports GP_CLK_6_P]
+create_clock -name gp_clk_7 -period 12.5  [get_ports GP_CLK_7_P]
+set_clock_groups -group [get_clocks gp_clk_6 -include_generated_clocks] -asynchronous
+set_clock_groups -group [get_clocks gp_clk_7 -include_generated_clocks] -asynchronous
+
+set_property C_CLK_INPUT_FREQ_HZ 80000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER true [get_debug_cores dbg_hub]
 
 ##gth_refclk lock constraints
@@ -31,15 +36,12 @@ set_property C_ENABLE_CLK_DIVIDER true [get_debug_cores dbg_hub]
 ##
 ## Refclk constraints
 ##
-# create_clock -name gth_refclk0_2 -period 6.25 [get_ports gth_refclk0p_i[0]]
-# create_clock -name gth_refclk1_2 -period 6.25 [get_ports gth_refclk1p_i[0]]
-# set_clock_groups -group [get_clocks gth_refclk0_2 -include_generated_clocks] -asynchronous
-# set_clock_groups -group [get_clocks gth_refclk1_2 -include_generated_clocks] -asynchronous
 
 create_clock -name gth_refclk0_2 -period 6.25 [get_ports REF_CLK_3_P]
 create_clock -name gth_refclk1_2 -period 8    [get_ports CLK_125_REF_P]
 set_clock_groups -group [get_clocks gth_refclk0_2 -include_generated_clocks] -asynchronous
 set_clock_groups -group [get_clocks gth_refclk1_2 -include_generated_clocks] -asynchronous
+
 
 # ## for LED
 # set_property PACKAGE_PIN AP8 [get_ports {gpio_led[0]}]
