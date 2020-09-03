@@ -11,6 +11,8 @@
 
 set_property package_pin AK17 [get_ports CMS_CLK_FPGA_P]
 set_property package_pin AK16 [get_ports CMS_CLK_FPGA_N]
+set_property IOSTANDARD LVDS  [get_ports CMS_CLK_FPGA_P]
+set_property IOSTANDARD LVDS  [get_ports CMS_CLK_FPGA_N]
 
 set_property package_pin AK22 [get_ports GP_CLK_6_P]
 set_property package_pin AK23 [get_ports GP_CLK_6_N]

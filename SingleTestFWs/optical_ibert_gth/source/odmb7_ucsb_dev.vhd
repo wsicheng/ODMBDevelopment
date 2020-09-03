@@ -176,7 +176,7 @@ architecture odmb_inst of odmb7_ucsb_dev is
   --------------------------------------
   component clockManager is
     port (
-      clk_in300  : in std_logic := '0';
+      clk_in40  : in std_logic := '0';
       clk_out40  : out std_logic := '0';
       clk_out10  : out std_logic := '0';
       clk_out80  : out std_logic := '0';
@@ -246,6 +246,8 @@ architecture odmb_inst of odmb7_ucsb_dev is
   signal gth_sysclk_i : std_logic;
   signal clk_sysclk40 : std_logic;
   signal clk_sysclk80 : std_logic;
+  signal clk_cmsclk : std_logic;
+  signal clk_gp7 : std_logic;
 
 begin
 
@@ -275,13 +277,21 @@ begin
       IB    => CLK_125_REF_N
       );
 
-  -- Using input clock pin as IBERT sysclk <- option 1
-  u_ibufgds : IBUFGDS 
+  -- -- Using input clock pin as IBERT sysclk <- option 1
+  u_ibufgds_gp7 : IBUFGDS 
     generic map (DIFF_TERM => FALSE)
     port map (
       I => GP_CLK_7_P,
       IB => GP_CLK_7_N,
-      O => gth_sysclk_i
+      O => clk_gp7
+    );
+
+  u_ibufgds_cms : IBUFGDS 
+    generic map (DIFF_TERM => FALSE)
+    port map (
+      I => CMS_CLK_FPGA_P,
+      IB => CMS_CLK_FPGA_N,
+      O => clk_cmsclk
     );
 
   -- -- Using optical refclk as IBERT sysclk <- option 2
@@ -295,6 +305,16 @@ begin
   --     CLRMASK => '0',
   --     DIV     => "000"
   --     );
+
+  -- Extras for LED
+  clockManager_i : clockManager
+    port map (
+      clk_out40 => clk_sysclk40,   -- output 40 MHz
+      clk_out80 => clk_sysclk80,   -- output 80 MHz
+      clk_in40 => clk_cmsclk     -- input 40 MHz
+      );
+
+  gth_sysclk_i <= clk_sysclk80;
 
   DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
 
@@ -394,15 +414,6 @@ begin
   gth_qsouthrefclk01_i(3) <= '0';
   gth_qsouthrefclk11_i(3) <= '0';
  
-
-  -- Extras for LED
-  clockManager_i : clockManager
-    port map (
-      clk_out40 => clk_sysclk40,   -- output 40 MHz
-      clk_out80 => clk_sysclk80,   -- output 80 MHz
-      clk_in300 => gth_sysclk_i    -- input 160 MHz
-      );
-
   u_ibert_gth_core : ibert_odmb7_gth
     port map (
       txn_o => gth_txn_o,
