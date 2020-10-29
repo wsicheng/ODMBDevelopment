@@ -93,7 +93,8 @@ module gtwiz_kcu_sfp_example_stimulus_8b10b (
   // character, and a txdata register that is used to synchronously capture and drive one of the two. Perform other
   // continuous assignments required for this use mode.
   wire   [31:0] txdata_prbs;
-  wire   [31:0] txdata_char = {4{8'h3C}};
+  // wire   [31:0] txdata_char = {4{8'h3C}};
+  wire   [31:0] txdata_char = {32'hABCD_503C};
   reg    [31:0] txdata_reg  = 32'b0;
   reg    [7:0]  txctrl2_reg = 8'b0;
   assign        txctrl0_out = 16'b0;
@@ -107,23 +108,24 @@ module gtwiz_kcu_sfp_example_stimulus_8b10b (
   // has saturated. This is sufficient for loopback demonstration of this example design, as this example stimulus
   // module is also held in reset until the receiver completes its reset sequence; but chip-to-chip or more complex
   // adaptations of this example design may require modifications for robustness.
-  reg [9:0] prbs_slt_ctr = 10'd0;
+  reg [15:0] prbs_slt_ctr = 16'd0;
 
   always @(posedge gtwiz_userclk_tx_usrclk2_in) begin
     if (example_stimulus_reset_sync) begin
       txdata_reg   <= 32'b0;
       txctrl2_reg  <= 8'b0;
-      prbs_slt_ctr <= 10'd0;
+      prbs_slt_ctr <= 16'd0;
     end
     else begin
-      if (&prbs_slt_ctr) begin
+      if (prbs_slt_ctr > 16'd100) begin
         txdata_reg  <= txdata_prbs;
         txctrl2_reg <= 8'b0;
       end
       else begin
         txdata_reg   <= txdata_char;
-        txctrl2_reg  <= 8'b0000_1111;
-        prbs_slt_ctr <= prbs_slt_ctr + 10'd1;
+        // txctrl2_reg  <= 8'b0000_1111;
+        txctrl2_reg  <= 8'b0000_0001;
+        prbs_slt_ctr <= prbs_slt_ctr + 16'd1;
       end
     end
   end

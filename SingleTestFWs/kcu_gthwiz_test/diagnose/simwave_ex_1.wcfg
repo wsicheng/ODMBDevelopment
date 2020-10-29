@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="23101960fs"></ZoomStartTime>
-      <ZoomEndTime time="23137711fs"></ZoomEndTime>
-      <Cursor1Time time="23131752fs"></Cursor1Time>
+      <ZoomStartTime time="53419089fs"></ZoomStartTime>
+      <ZoomEndTime time="53489190fs"></ZoomEndTime>
+      <Cursor1Time time="53460089fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="198"></NameColumnWidth>
-      <ValueColumnWidth column_width="66"></ValueColumnWidth>
+      <NameColumnWidth column_width="190"></NameColumnWidth>
+      <ValueColumnWidth column_width="88"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="38" />
+   <WVObjectSize size="40" />
    <wvobject type="logic" fp_name="/gtwiz_kcu_sfp_example_top_sim/ch0_gthxn">
       <obj_property name="ElementShortName">ch0_gthxn</obj_property>
       <obj_property name="ObjectShortName">ch0_gthxn</obj_property>
@@ -164,16 +164,24 @@
       <obj_property name="ElementShortName">rxcommadet_int[1:0]</obj_property>
       <obj_property name="ObjectShortName">rxcommadet_int[1:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/rxchanbondseq_int">
-      <obj_property name="ElementShortName">rxchanbondseq_int[1:0]</obj_property>
-      <obj_property name="ObjectShortName">rxchanbondseq_int[1:0]</obj_property>
+   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/ch0_rxdata_err_ctr">
+      <obj_property name="ElementShortName">ch0_rxdata_err_ctr[15:0]</obj_property>
+      <obj_property name="ObjectShortName">ch0_rxdata_err_ctr[15:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/rxchanisaligned_int">
-      <obj_property name="ElementShortName">rxchanisaligned_int[1:0]</obj_property>
-      <obj_property name="ObjectShortName">rxchanisaligned_int[1:0]</obj_property>
+   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/ch1_rxdata_err_ctr">
+      <obj_property name="ElementShortName">ch1_rxdata_err_ctr[15:0]</obj_property>
+      <obj_property name="ObjectShortName">ch1_rxdata_err_ctr[15:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/rxchanrealign_int">
-      <obj_property name="ElementShortName">rxchanrealign_int[1:0]</obj_property>
-      <obj_property name="ObjectShortName">rxchanrealign_int[1:0]</obj_property>
+   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/ext_rxdata_nml_ctr">
+      <obj_property name="ElementShortName">ext_rxdata_nml_ctr[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ext_rxdata_nml_ctr[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr">
+      <obj_property name="ElementShortName">hb0_rxdata_nml_ctr[39:0]</obj_property>
+      <obj_property name="ObjectShortName">hb0_rxdata_nml_ctr[39:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_sfp_example_top_sim/example_top_inst/rxdata_errctr_reset">
+      <obj_property name="ElementShortName">rxdata_errctr_reset</obj_property>
+      <obj_property name="ObjectShortName">rxdata_errctr_reset</obj_property>
    </wvobject>
 </wave_config>
