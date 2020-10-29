@@ -17,10 +17,10 @@ if {[string equal $BOARD ODMB7]} {
 set argv $FPGA_TYPE
 set argc 1
 # create ip project when needed
-# source source/ip_generator.tcl
+# source ip_generator.tcl
 
 # Create project
-create_project ibert_ultrascale_gth $PROJECT_NAME -part $FPGA_TYPE -force
+create_project ibert_ultrascale_gth ../$PROJECT_NAME -part $FPGA_TYPE -force
 
 set_property target_language VHDL [current_project]
 set_property target_simulator XSim [current_project]
@@ -39,23 +39,20 @@ set obj [get_filesets sources_1]
 # find ip -type f -name "*.xci"
 
 # Add IP core configurations
-set files [list \
-"source/odmb7_ucsb_dev.vhd"\
-"ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci"\
-"ip/$FPGA_TYPE/clockManager/clockManager.xci"
-# "ip/$FPGA_TYPE/ila_0/ila_0.xci"\
-# "ip/$FPGA_TYPE/vio_0/vio_0.xci"
-]
-add_files -norecurse $files
+add_files -norecurse "../source/odmb7_ucsb_dev.vhd"
+add_files -norecurse "../ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/clockManager/clockManager.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/vio_ibert/vio_ibert.xci"
+# add_files -norecurse "../ip/$FPGA_TYPE/ila/ila.xci"
 
 # Add constraint files
-add_files -fileset constrs_1 -norecurse "source/ibert_ultrascale_gth.xdc"
-add_files -fileset constrs_1 -norecurse "source/ibert_ultrascale_gth_ip.xdc"
-add_files -fileset constrs_1 -norecurse "source/odmb7_pinout.xdc"
+add_files -fileset constrs_1 -norecurse "../constraints/ibert_ultrascale_gth.xdc"
+add_files -fileset constrs_1 -norecurse "../constraints/ibert_ultrascale_gth_ip.xdc"
+add_files -fileset constrs_1 -norecurse "../constraints/odmb7_pinout.xdc"
 
 # Set compile order for constraint files
-set_property USED_IN_SYNTHESIS false [get_files source/ibert_ultrascale_gth_ip.xdc]
-set_property PROCESSING_ORDER LATE [get_files source/ibert_ultrascale_gth_ip.xdc]
+set_property USED_IN_SYNTHESIS false [get_files ../constraints/ibert_ultrascale_gth_ip.xdc]
+set_property PROCESSING_ORDER  LATE  [get_files ../constraints/ibert_ultrascale_gth_ip.xdc]
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
@@ -67,10 +64,10 @@ set_property -name "top_auto_set" -value "0" -objects $obj
 #set_property -name {xsim.simulate.custom_tcl} -value {../../../../source/Firmware_tb.tcl} -objects [get_filesets sim_1]
 
 # Set ip as global
-set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci]
-set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/clockManager/clockManager.xci]
-# set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/ila_0/ila_0.xci]
-# set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/vio_0/vio_0.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/clockManager/clockManager.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/vio_ibert/vio_ibert.xci]
+# set_property generate_synth_checkpoint false [get_files ../ip/$FPGA_TYPE/ila/ila.xci]
 
 puts "\[Success\] Created project"
 close_project

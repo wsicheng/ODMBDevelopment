@@ -116,61 +116,6 @@ end odmb7_ucsb_dev;
 
 architecture odmb_inst of odmb7_ucsb_dev is
 
-  -- Constants
-  constant bw_data  : integer := 16; -- data bit width
-
-  --------------------------------------
-  -- VME signals
-  --------------------------------------
-  -- signal cmd_adrs     : std_logic_vector (15 downto 0);
-  signal vme_dir_b    : std_logic;
-  signal vme_dir      : std_logic;
-  signal vme_data_out_buf, vme_data_in_buf : std_logic_vector(15 downto 0) := (others => '0');
-
-  --------------------------------------
-  -- Clock synthesizer and clock signals
-  --------------------------------------
-  signal clk5_unbuf      : std_logic := '0';
-  signal clk5_inv        : std_logic := '1';
-  signal clk2p5_unbuf    : std_logic := '0';
-  signal clk2p5_inv      : std_logic := '1';
-  signal clk2p5          : std_logic := '0';
-
-  --------------------------------------
-  -- PPIB/DCFEB signals
-  --------------------------------------
-  signal dcfeb_tck    : std_logic_vector (NCFEB downto 1) := (others => '0');
-  signal dcfeb_tms    : std_logic := '0';
-  signal dcfeb_tdi    : std_logic := '0';
-  signal dcfeb_tdo    : std_logic_vector (NCFEB downto 1) := (others => '0');
-  -- signal dcfeb_tms_t  : std_logic := '0';
-
-  -- signals to generate dcfeb_initjtag when DCFEBs are done programming
-  signal pon_rst_reg : std_logic_vector(31 downto 0) := x"00FFFFFF";
-  signal pon_reset : std_logic := '0';
-  signal done_cnt_en, done_cnt_rst                           : std_logic_vector(NCFEB downto 1);
-  type done_cnt_type is array (NCFEB downto 1) of integer range 0 to 3;
-  signal done_cnt                                            : done_cnt_type;
-  type done_state_type is (DONE_IDLE, DONE_LOW, DONE_COUNTING);
-  type done_state_array_type is array (NCFEB downto 1) of done_state_type;
-  signal done_next_state, done_current_state                 : done_state_array_type;
-  signal dcfeb_done_pulse : std_logic_vector(NCFEB downto 1) := (others => '0');
-  signal dcfeb_initjtag : std_logic := '0';
-  signal dcfeb_initjtag_d : std_logic := '0';
-  signal dcfeb_initjtag_dd : std_logic := '0';
-  
-  --------------------------------------
-  -- Internal configuration signals
-  --------------------------------------
-
-  --------------------------------------
-  -- Reset signals
-  --------------------------------------
-  signal fw_reset, fw_reset_q : std_logic := '0';
-  signal ccb_softrst_b_q : std_logic := '1'; --no CCB currently
-  signal fw_rst_reg : std_logic_vector(31 downto 0) := (others => '0');
-  signal reset : std_logic := '0';
-
   --------------------------------------
   -- Component and signals for the IBERT test
   --------------------------------------
@@ -214,6 +159,14 @@ architecture odmb_inst of odmb7_ucsb_dev is
       gtsouthrefclk11_i : in std_logic_vector(3 downto 0);
       clk : in std_logic
     );
+  end component;
+
+  component vio_ibert is
+    port (
+      clk        : in  std_logic := '0';
+      probe_in0  : in  std_logic := '0';
+      probe_out0 : out std_logic
+      );
   end component;
 
   signal gth_txn_o : std_logic_vector(15 downto 0);
@@ -316,7 +269,14 @@ begin
 
   gth_sysclk_i <= clk_sysclk80;
 
-  DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
+  vio_i : vio_ibert
+    port map (
+      clk        => clk_sysclk40,
+      probe_in0  => '0',
+      probe_out0 => DAQ_SPY_SEL
+      );
+
+  -- DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
 
   gth_rxp_i(10 downto 0)  <= DAQ_RX_P;
   gth_rxn_i(10 downto 0)  <= DAQ_RX_N;
