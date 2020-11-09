@@ -1,27 +1,50 @@
+##################################################################################
+# Script to automize the checks on the optical links with IBERT for ODMB7
+##################################################################################
 
-# Connect to the Digilent Cable on localhost:3121
+# ----------------------------------------------------------------------------------
+# Constants
+# ----------------------------------------------------------------------------------
+set DEVICE_NAME {xcku040_0}
+set PRBS_PATTERN {PRBS 31-bit}
+
+# ----------------------------------------------------------------------------------
+# Optional parameters
+# ----------------------------------------------------------------------------------
+# set programfpga [lindex $argv 0]
+# set bitfilename [lindex $argv 1]
+# set tag [lindex $argv 3]
+set programfpga 0
+set bitfilename {}
+set disable_spy_tx 0
+set tag "test2"
+
+# # Connect to the Digilent Cable on localhost:3121
 # open_hw_manager
 # connect_hw_server -url localhost:3121 -allow_non_jtag
 # current_hw_target [get_hw_targets */xilinx_tcf/Digilent/210308AB0E6E]
 # set_property PARAM.FREQUENCY 15000000 [get_hw_targets */xilinx_tcf/Digilent/210308AB0E6E]
 # open_hw_target
-
 # current_hw_device [get_hw_devices xcku040_0]
 # refresh_hw_device [lindex [get_hw_devices xcku040_0] 0]
 
-set programfpga [lindex $argv 0]
-set bitfilename [lindex $argv 2]
-# set nlinks [lindex $argv 1]
-set tag [lindex $argv 3]
+# Load frimeware
+if {$programfpga == 1} {
+    set_property PROGRAM.FILE $bitfilename.bit [get_hw_devices $DEVICE_NAME]
+    set_property PROBES.FILE $bitfilename.ltx [get_hw_devices $DEVICE_NAME]
+    set_property FULL_PROBES.FILE $bitfilename.ltx [get_hw_devices $DEVICE_NAME]
+    program_hw_devices [lindex [get_hw_devices] 0]
+    refresh_hw_device [lindex [get_hw_devices] 0]
+}
 
-# if {$programfpga == 1} {
-#  set_property PROGRAM.FILE $bitfilename.bit [get_hw_devices xcku040_0]
-#  set_property PROBES.FILE $bitfilename.ltx [get_hw_devices xcku040_0]
-#  set_property FULL_PROBES.FILE $bitfilename.ltx [get_hw_devices xcku040_0]
-#  program_hw_devices [lindex [get_hw_devices] 0]
-#  refresh_hw_device [lindex [get_hw_devices] 0]
-# }
+if ($disable_spy_tx) {
+    set_property PORT.TXPD 3 [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y11]
+    commit_hw_sio [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y121 
+}
 
+# ----------------------------------------------------------------------------------
+# Helper function definitions
+# ----------------------------------------------------------------------------------
 
 proc parse_report {objname propertyname index} {
     # =================================================================
@@ -40,31 +63,22 @@ proc parse_report {objname propertyname index} {
     return $result 
 }
 
-proc init_links_all {links} {
-    set nlinks [llength $links]
+proc reset_links_all {links} {
+    # Reset error count
+    set_property LOGIC.MGT_ERRCNT_RESET_CTRL 1 [get_hw_sio_links $links]
+    commit_hw_sio [get_hw_sio_links $links]
+    set_property LOGIC.MGT_ERRCNT_RESET_CTRL 0 [get_hw_sio_links $links]
+    commit_hw_sio [get_hw_sio_links $links]
 
-    for {set ilink 0} {$ilink < $nlinks} {incr ilink} {
-        set link [lindex $links $ilink]
-        puts $link
-
-        # Reset error count
-        set_property LOGIC.MGT_ERRCNT_RESET_CTRL 1 [get_hw_sio_links $link]
-        commit_hw_sio [get_hw_sio_links $link]
-        set_property LOGIC.MGT_ERRCNT_RESET_CTRL 0 [get_hw_sio_links $link]
-        commit_hw_sio [get_hw_sio_links $link]
-
-        # Inject 1 error
-        set_property LOGIC.ERR_INJECT_CTRL 1 [get_hw_sio_links $link]
-        commit_hw_sio [get_hw_sio_links $link]
-        set_property LOGIC.ERR_INJECT_CTRL 0 [get_hw_sio_links $link]
-        commit_hw_sio [get_hw_sio_links $link]
-
-        puts "Finishing resetting link: $ilink of $nlinks"
-    }
+    # Inject 1 error
+    set_property LOGIC.ERR_INJECT_CTRL 1 [get_hw_sio_links $links]
+    commit_hw_sio [get_hw_sio_links $links]
+    set_property LOGIC.ERR_INJECT_CTRL 0 [get_hw_sio_links $links]
+    commit_hw_sio [get_hw_sio_links $links]
 
     refresh_hw_sio $links
+    puts "Finishing resetting link: $ilink of $nlinks"
 }
-
 
 proc write_to_file {fname outstr} {
     # get current time with microseconds precision:
@@ -128,21 +142,33 @@ proc run_eyescans_all {links tag} {
     set fname [format "reports/report_%s_scans.out" $tag]
 
     for {set i 0} {$i < $nlinks} {incr i} {
-        # lappend scans [create_hw_sio_scan [lindex $links_txs $i]]
+        # Check the link is up first
+        set link_status [parse_report [lindex [get_hw_sio_links [lindex $links $i]] 0 ] "STATUS" 3]
+        if {[expr {$link_status eq "NO"}]} {
+            puts "Skiping link $i as there's no link."
+            continue;
+        }
+        # Create the Scan, set the DWELL
         set iscan [create_hw_sio_scan -description "Scan $i" 2d_full_eye [lindex [get_hw_sio_links [lindex $links $i]] 0 ]]
         set_property DWELL_BER 1e-8 [get_hw_sio_scans $iscan]
         run_hw_sio_scan [get_hw_sio_scans $iscan]
-        sleep 15; # wait for 15 seconds
-        
+
+        # Wait at least for 15 seconds for it to run, check status to see if more time needed
+        sleep 15;
         set status [parse_report [get_hw_sio_scans $iscan] "STATUS" 3]
-        while {[expr {$status ne "Done"}]} { sleep 5; }; # sleep 5 more seconds if not finished
+        while {[expr {$status ne "Done"}]} {
+            sleep 5;
+            set status [parse_report [get_hw_sio_scans $iscan] "STATUS" 3]
+        };
+
+        # Create report
         set open_area [parse_report [get_hw_sio_scans $iscan] "OPEN_AREA" 3]
         set open_prct [parse_report [get_hw_sio_scans $iscan] "OPEN_PERCENTAGE" 3]
         set vert_prct [parse_report [get_hw_sio_scans $iscan] "VERTICAL_PERCENTAGE" 3]
         set hori_prct [parse_report [get_hw_sio_scans $iscan] "HORIZONTAL_PERCENTAGE" 3]
         set outstr [format "link_%s: open area: %s, open precent: %s, horizon precent: %s%%, vertical percent: %s%%" $i $open_area $open_prct $vert_prct $hori_prct]
 
-        puts "Found for scan $i of $nlinks:  $outstr"
+        puts "Scan of link $i of $nlinks:  $outstr"
 
         write_to_file $fname $outstr
     }
@@ -150,9 +176,9 @@ proc run_eyescans_all {links tag} {
 
 proc sleepm {N} { after [expr {int($N * 60000)}]; }; # sleep N minutes
 
-# ====================================================
-# Now start, with firmware loaded already
-# ----------------------------------------------------
+# ----------------------------------------------------------------------------------
+# Test start, with firmware loaded already
+# ----------------------------------------------------------------------------------
 
 # Delete all the existing links, if any
 remove_hw_sio_link [get_hw_sio_links]
@@ -165,25 +191,36 @@ set nrxs [llength $all_rxs]
 set links [list]
 
 for {set i 0} {$i < $nrxs} {incr i} {
-    lappend links [create_hw_sio_link [lindex $all_txs $i] [lindex $all_rxs $i]]
+    set link [create_hw_sio_link [lindex $all_txs $i] [lindex $all_rxs $i]]
+    set link_status [parse_report [lindex [get_hw_sio_links $link] 0 ] "STATUS" 3]
+    if {[expr {$link_status ne "NO"}]} {
+        lappend links [lindex [get_hw_sio_links $link] 0 ]
+    } else {
+        puts "Skiping link $i as there's no link."
+    }
 }
 
 set nlinks [llength $links]
 puts "Established $nlinks links"
 
-# First do an init
-init_links_all $links
+# Set the PRBS pattern to $PRBS_PATTERN defined at the top (default 31-bit)
+set_property RX_PATTERN $PRBS_PATTERN [get_hw_sio_links $links]
+set_property TX_PATTERN $PRBS_PATTERN [get_hw_sio_links $links]
+commit_hw_sio [get_hw_sio_links $links]
 
-run_eyescans_all $links "test1"
+# First do an init
+reset_links_all $links
+
+run_eyescans_all $links $tag
 
 # Do init again to prepare for BER values
-init_links_all $links
+reset_links_all $links
 
 # Loop over to record error after some sleep time
 for {set i 0} {$i < 10} {incr i} {
     # sleep [expr {int($i * $i)}];    # sleep for i^2 seconds
     sleepm $i;    # sleep for i minutes
-    record_BER_all $links "test1"
+    record_BER_all $links $tag
     puts "Finish the $i-th recording"
 }
 
