@@ -39,7 +39,17 @@ if {$programfpga == 1} {
 
 if ($disable_spy_tx) {
     set_property PORT.TXPD 3 [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y11]
-    commit_hw_sio [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y121 
+    commit_hw_sio [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y121]
+
+    startgroup
+    set_property OUTPUT_VALUE 0 [get_hw_probes DAQ_SPY_SEL -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
+    commit_hw_vio [get_hw_probes {DAQ_SPY_SEL} -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
+    endgroup
+} else {
+    startgroup
+    set_property OUTPUT_VALUE 1 [get_hw_probes DAQ_SPY_SEL -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
+    commit_hw_vio [get_hw_probes {DAQ_SPY_SEL} -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
+    endgroup
 }
 
 # ----------------------------------------------------------------------------------
