@@ -68,6 +68,7 @@ add_files -fileset constrs_1 -norecurse "../constraints/gtwiz_kcu_sfp_example_to
 # set obj [get_filesets sources_1]
 # set_property -name "top" -value "odmb7_ucsb_dev" -objects $obj
 # set_property -name "top_auto_set" -value "0" -objects $obj
+set_property file_type {Verilog Header} [get_files  ../source/gtwiz_kcu_fmc_example_wrapper_functions.v]
 
 # # Add tcl for simulation
 # ## not set currently, add when needed

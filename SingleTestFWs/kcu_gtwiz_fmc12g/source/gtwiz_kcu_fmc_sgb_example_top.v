@@ -91,8 +91,8 @@ module gtwiz_kcu_fmc_sgb_example_top (
 
   // PRBS-based link status ports
   input wire  link_down_latched_reset_in,
-  output wire link_status_out,
-  output reg  link_down_latched_out = 1'b1,
+  output wire link_status_out_sim,
+  output wire link_down_latched_out_sim,
   // synthesis translate_on
 
   input wire  clk_in_p,
@@ -470,27 +470,27 @@ module gtwiz_kcu_fmc_sgb_example_top (
   // PRBS stimulus
   // -------------------------------------------------------------------------------------------------------------------
 
-  // PRBS-based data stimulus module for transceiver channel 0
-  (* DONT_TOUCH = "TRUE" *)
-  gtwiz_kcu_fmc_sgb_example_stimulus_64b66b example_stimulus_inst0 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int),
-    .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
-    .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
-    .txheader_out                (ch0_txheader_int),
-    .txsequence_out              (ch0_txsequence_int),
-    .txdata_out                  (hb0_gtwiz_userdata_tx_int)
-  );
+  // // PRBS-based data stimulus module for transceiver channel 0
+  // (* DONT_TOUCH = "TRUE" *)
+  // gtwiz_kcu_fmc_sgb_example_stimulus_64b66b example_stimulus_inst0 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int),
+  //   .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
+  //   .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
+  //   .txheader_out                (ch0_txheader_int),
+  //   .txsequence_out              (ch0_txsequence_int),
+  //   .txdata_out                  (hb0_gtwiz_userdata_tx_int)
+  // );
 
-  // PRBS-based data stimulus module for transceiver channel 1
-  (* DONT_TOUCH = "TRUE" *)
-  gtwiz_kcu_fmc_sgb_example_stimulus_64b66b example_stimulus_inst1 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int),
-    .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
-    .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
-    .txheader_out                (ch1_txheader_int),
-    .txsequence_out              (ch1_txsequence_int),
-    .txdata_out                  (hb1_gtwiz_userdata_tx_int)
-  );
+  // // PRBS-based data stimulus module for transceiver channel 1
+  // (* DONT_TOUCH = "TRUE" *)
+  // gtwiz_kcu_fmc_sgb_example_stimulus_64b66b example_stimulus_inst1 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int),
+  //   .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
+  //   .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
+  //   .txheader_out                (ch1_txheader_int),
+  //   .txsequence_out              (ch1_txsequence_int),
+  //   .txdata_out                  (hb1_gtwiz_userdata_tx_int)
+  // );
 
   // PRBS-based data stimulus module for transceiver channel 2
   (* DONT_TOUCH = "TRUE" *)
@@ -514,33 +514,200 @@ module gtwiz_kcu_fmc_sgb_example_top (
     .txdata_out                  (hb3_gtwiz_userdata_tx_int)
   );
 
+
+  // Customized data generation
+  // -------------------------------------------------------------------------------------------------------------------
+  // Not sure what TX header is useful for, tie them to 1 as in example design
+  assign ch0_txheader_int = 6'h01;
+  assign ch1_txheader_int = 6'h01;
+
+  // Assign the txdata_gen_en_int enable to the TX data generation as appropriate, and control txsequence
+  // as required for 64B/66B gearbox data transmission at the selected user data width
+  wire gtwiz_tx_stimulus_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_userclk_tx_active_int;
+  wire gtwiz_tx_stimulus_reset_sync;
+  reg  txdata_gen_en_int = 1'b0;
+  reg  [6:0] txsequence_gen = 7'd0;
+
+  assign ch0_txsequence_int = txsequence_gen;
+  assign ch1_txsequence_int = txsequence_gen;
+
+  (* DONT_TOUCH = "TRUE" *)
+  gtwiz_kcu_fmc_sgb_example_reset_synchronizer gtwiz_tx_stimulus_reset_synchronizer_inst (
+    .clk_in  (hb0_gtwiz_userclk_tx_usrclk2_int),
+    .rst_in  (gtwiz_tx_stimulus_reset_int),
+    .rst_out (gtwiz_tx_stimulus_reset_sync)
+  );
+
+  always @(posedge hb0_gtwiz_userclk_tx_usrclk2_int) begin
+    if (gtwiz_tx_stimulus_reset_sync) begin
+      txsequence_gen <= 7'd0;
+      txdata_gen_en_int <= 1'b1;
+    end
+    else begin
+      if (txsequence_gen == 7'd31)
+        txdata_gen_en_int <= 1'b0;
+      else
+        txdata_gen_en_int <= 1'b1;
+      if (txsequence_gen == 7'd32)
+        txsequence_gen <= 7'd0;
+      else
+        txsequence_gen <= txsequence_gen + 7'd1;
+    end
+  end
+
+  reg [15:0] txdata_gen_ctr1 = 16'd0;
+  reg [15:0] txdata_gen_ctr2 = 16'd0;
+  reg [63:0] ch0_txdata_reg = 63'h0;
+  reg [63:0] ch1_txdata_reg = 63'h0;
+  assign hb0_gtwiz_userdata_tx_int = ch0_txdata_reg;
+  assign hb1_gtwiz_userdata_tx_int = ch1_txdata_reg;
+
+  always @(posedge hb0_gtwiz_userclk_tx_usrclk2_int) begin
+    if (gtwiz_tx_stimulus_reset_sync) begin
+      ch0_txdata_reg <= 32'b0;
+      ch1_txdata_reg <= 32'b0;
+      txdata_gen_ctr1 <= 16'd0;
+      txdata_gen_ctr2 <= 16'd1;
+    end
+    else if (txdata_gen_en_int) begin
+      ch0_txdata_reg <= {~txdata_gen_ctr1, txdata_gen_ctr1, ~txdata_gen_ctr2, txdata_gen_ctr2};
+      ch1_txdata_reg <= {txdata_gen_ctr1, ~txdata_gen_ctr1, txdata_gen_ctr2, ~txdata_gen_ctr2};
+      txdata_gen_ctr1 <= txdata_gen_ctr1 + 16'd2;
+      txdata_gen_ctr2 <= txdata_gen_ctr2 + 16'd2;
+    end
+  end
+
+  // Customized data checking
+  // -------------------------------------------------------------------------------------------------------------------
+  // Declare a signal vector of PRBS match indicators, with one indicator bit per transceiver channel
+  wire [3:0] prbs_match_int;
+  reg  [3:0] rxdata_match_exp = 4'b0;
+
+  wire gtwiz_rx_check_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_userclk_rx_active_int;
+  wire gtwiz_rx_check_reset_sync;
+
+  (* DONT_TOUCH = "TRUE" *)
+  gtwiz_kcu_fmc_sgb_example_reset_synchronizer gtwiz_rx_checking_reset_synchronizer_inst (
+    .clk_in  (hb0_gtwiz_userclk_rx_usrclk2_int),
+    .rst_in  (gtwiz_rx_check_reset_int),
+    .rst_out (gtwiz_rx_check_reset_sync)
+  );
+
+  // Use the PRBS checker lock indicator as feedback, periodically pulsing the rxgearboxslip until lock is achieved
+  reg [7:0] ch0_rxgearboxslip_ctr = 8'd0;
+  reg [7:0] ch1_rxgearboxslip_ctr = 8'd0;
+  reg ch0_rxgearboxslip = 1'b0;
+  reg ch1_rxgearboxslip = 1'b0;
+  assign ch0_rxgearboxslip_int = ch0_rxgearboxslip;
+  assign ch1_rxgearboxslip_int = ch1_rxgearboxslip;
+
+  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
+    if (gtwiz_rx_check_reset_sync) begin
+      ch0_rxgearboxslip_ctr <= 8'd0;
+      ch1_rxgearboxslip_ctr <= 8'd0;
+      ch0_rxgearboxslip <= 1'b0;
+      ch1_rxgearboxslip <= 1'b0;
+    end
+    else begin
+      if (!prbs_match_int[0]) begin
+        ch0_rxgearboxslip_ctr <= ch0_rxgearboxslip_ctr + 8'd1;
+        ch0_rxgearboxslip <= &ch0_rxgearboxslip_ctr;
+      end
+      else begin
+        ch0_rxgearboxslip <= 1'b0;
+      end
+      if (!prbs_match_int[1]) begin
+        ch1_rxgearboxslip_ctr <= ch1_rxgearboxslip_ctr + 8'd1;
+        ch1_rxgearboxslip <= &ch1_rxgearboxslip_ctr;
+      end
+      else begin
+        ch1_rxgearboxslip <= 1'b0;
+      end
+    end
+  end
+
+  reg [15:0] ch0_rxdata_gen_ctr = 16'd0;
+  reg [15:0] ch1_rxdata_gen_ctr = 16'd0;
+  // ch0_txdata_reg <= {~txdata_gen_ctr1, txdata_gen_ctr1, ~txdata_gen_ctr2, txdata_gen_ctr2};
+  // ch1_txdata_reg <= {txdata_gen_ctr1, ~txdata_gen_ctr1, txdata_gen_ctr2, ~txdata_gen_ctr2};
+
+  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
+    if (gtwiz_rx_check_reset_sync) begin
+      ch0_rxdata_gen_ctr <= 16'd0;
+      rxdata_match_exp[0] <= 1'b0;
+    end
+    // For 64B/66B gearbox mode data reception, enable the PRBS checker when rxdatavalid is asserted
+    else if (ch0_rxdatavalid_int) begin
+      if (ch0_rxdata_gen_ctr == 16'd0 && ~rxdata_match_exp[0]) begin
+        if (hb0_gtwiz_userdata_rx_int[31:16] == ~hb0_gtwiz_userdata_rx_int[15:0]) begin
+          ch0_rxdata_gen_ctr <= hb0_gtwiz_userdata_rx_int[15:0] + 16'd1;
+        end
+      end
+      else begin
+        if ({~ch0_rxdata_gen_ctr, ch0_rxdata_gen_ctr} == hb0_gtwiz_userdata_rx_int) begin
+          rxdata_match_exp[0] <= 1'b1;
+          ch0_rxdata_gen_ctr  <= ch0_rxdata_gen_ctr + 16'd1;
+        end
+        else begin
+          rxdata_match_exp[0] <= 1'b0;
+          ch0_rxdata_gen_ctr  <= 16'd0;
+        end
+      end
+    end
+  end
+
+  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
+    if (gtwiz_rx_check_reset_sync) begin
+      ch1_rxdata_gen_ctr <= 16'd0;
+      rxdata_match_exp[1] <= 1'b0;
+    end
+    // For 64B/66B gearbox mode data reception, enable the PRBS checker when rxdatavalid is asserted
+    else if (ch1_rxdatavalid_int) begin
+      if (ch1_rxdata_gen_ctr == 16'd0 && ~rxdata_match_exp[1]) begin
+        if (hb1_gtwiz_userdata_rx_int[31:16] == ~hb1_gtwiz_userdata_rx_int[15:0]) begin
+          ch1_rxdata_gen_ctr <= hb1_gtwiz_userdata_rx_int[15:0] - 16'd1;
+        end
+      end
+      else begin
+        if ({~ch1_rxdata_gen_ctr, ch1_rxdata_gen_ctr} == hb1_gtwiz_userdata_rx_int) begin
+          rxdata_match_exp[1] <= 1'b1;
+          ch1_rxdata_gen_ctr  <= ch1_rxdata_gen_ctr - 16'd1;
+        end
+        else begin
+          rxdata_match_exp[1] <= 1'b0;
+          ch1_rxdata_gen_ctr  <= 16'd0;
+        end
+      end
+    end
+  end
+
+  assign prbs_match_int[0] = rxdata_match_exp[0];
+  assign prbs_match_int[1] = rxdata_match_exp[1];
+
   // PRBS checking
   // -------------------------------------------------------------------------------------------------------------------
 
-  // Declare a signal vector of PRBS match indicators, with one indicator bit per transceiver channel
-  wire [3:0] prbs_match_int;
+  // // PRBS-based data checking module for transceiver channel 0
+  // gtwiz_kcu_fmc_sgb_example_checking_64b66b example_checking_inst0 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
+  //   .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
+  //   .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
+  //   .rxdatavalid_in              (ch0_rxdatavalid_int),
+  //   .rxgearboxslip_out           (ch0_rxgearboxslip_int),
+  //   .rxdata_in                   (hb0_gtwiz_userdata_rx_int),
+  //   .prbs_match_out              (prbs_match_int[0])
+  // );
 
-  // PRBS-based data checking module for transceiver channel 0
-  gtwiz_kcu_fmc_sgb_example_checking_64b66b example_checking_inst0 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
-    .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
-    .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
-    .rxdatavalid_in              (ch0_rxdatavalid_int),
-    .rxgearboxslip_out           (ch0_rxgearboxslip_int),
-    .rxdata_in                   (hb0_gtwiz_userdata_rx_int),
-    .prbs_match_out              (prbs_match_int[0])
-  );
-
-  // PRBS-based data checking module for transceiver channel 1
-  gtwiz_kcu_fmc_sgb_example_checking_64b66b example_checking_inst1 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
-    .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
-    .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
-    .rxdatavalid_in              (ch1_rxdatavalid_int),
-    .rxgearboxslip_out           (ch1_rxgearboxslip_int),
-    .rxdata_in                   (hb1_gtwiz_userdata_rx_int),
-    .prbs_match_out              (prbs_match_int[1])
-  );
+  // // PRBS-based data checking module for transceiver channel 1
+  // gtwiz_kcu_fmc_sgb_example_checking_64b66b example_checking_inst1 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
+  //   .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
+  //   .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
+  //   .rxdatavalid_in              (ch1_rxdatavalid_int),
+  //   .rxgearboxslip_out           (ch1_rxgearboxslip_int),
+  //   .rxdata_in                   (hb1_gtwiz_userdata_rx_int),
+  //   .prbs_match_out              (prbs_match_int[1])
+  // );
 
   // PRBS-based data checking module for transceiver channel 2
   gtwiz_kcu_fmc_sgb_example_checking_64b66b example_checking_inst2 (
@@ -564,6 +731,7 @@ module gtwiz_kcu_fmc_sgb_example_top (
     .prbs_match_out              (prbs_match_int[3])
   );
 
+
   // RX PRBS match error rate checks
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -576,8 +744,8 @@ module gtwiz_kcu_fmc_sgb_example_top (
   reg [16:0] ch2_rxdata_err_ctr = 17'd0;
   reg [16:0] ch3_rxdata_err_ctr = 17'd0;
 
-  wire [15:0] ch0_rxdata_gen_ctr = ch0_rxdata_err_ctr[16:1];
-  wire [15:0] ch1_rxdata_gen_ctr = ch1_rxdata_err_ctr[16:1];
+  // wire [15:0] ch0_rxdata_gen_ctr = ch0_rxdata_err_ctr[16:1];
+  // wire [15:0] ch1_rxdata_gen_ctr = ch1_rxdata_err_ctr[16:1];
 
   wire rxdata_errctr_reset_vio_int;
 
@@ -609,31 +777,24 @@ module gtwiz_kcu_fmc_sgb_example_top (
   wire [299:0] ila_data_rx;
   assign ila_data_rx[31:0]    = hb0_gtwiz_userdata_rx_int;
   assign ila_data_rx[63:32]   = hb1_gtwiz_userdata_rx_int;
-  assign ila_data_rx[79:64]   = ch0_rxdata_gen_ctr;
-  assign ila_data_rx[95:80]   = ch1_rxdata_gen_ctr;
-  // assign ila_data_rx[103:96]  = rxdatavalid_int;
-  // assign ila_data_rx[107:104] = rxgearboxslip_int;
-  // assign ila_data_rx[99:96]   = ch0_rxctrl2_int[3:0];
-  // assign ila_data_rx[103:100] = ch1_rxctrl2_int[3:0];
-  // assign ila_data_rx[107:104] = ch2_rxctrl2_int[3:0];
-  // assign ila_data_rx[111:108] = ch3_rxctrl2_int[3:0];
+  assign ila_data_rx[79:64]   = ch0_rxdata_err_ctr[16:1];
+  assign ila_data_rx[95:80]   = ch1_rxdata_err_ctr[16:1];
+  assign ila_data_rx[103:96]  = rxdatavalid_int;
+  assign ila_data_rx[107:104] = rxgearboxslip_int;
   assign ila_data_rx[119:116] = prbs_match_int;
   assign ila_data_rx[135:120] = hb0_rxdata_err_ctr[16:1];
   assign ila_data_rx[175:136] = hb0_rxdata_nml_ctr[39:0];
   assign ila_data_rx[176]     = hb_gtwiz_reset_all_int;
-  // assign ila_data_rx[177]     = &rxbyteisaligned_int;
-  // assign ila_data_rx[178]     = |rxbyterealign_int;
-  // assign ila_data_rx[179]     = |rxcommadet_int;
   assign ila_data_rx[211:180] = hb2_gtwiz_userdata_rx_int;
   assign ila_data_rx[243:212] = hb3_gtwiz_userdata_rx_int;
   assign ila_data_rx[259:244] = ch2_rxdata_err_ctr[16:1];
   assign ila_data_rx[275:260] = ch3_rxdata_err_ctr[16:1];
   assign ila_data_rx[299:276] = hb0_rxdata_nml_ctr[63:40];
 
-  // ila_0 ila_rx_inst (
-  //   .clk    (hb0_gtwiz_userclk_rx_usrclk2_int),
-  //   .probe0 (ila_data_rx)
-  // );
+  ila_0 ila_rx_inst (
+    .clk    (hb0_gtwiz_userclk_rx_usrclk2_int),
+    .probe0 (ila_data_rx)
+  );
 
   // PRBS match and related link management
   // -------------------------------------------------------------------------------------------------------------------
@@ -723,7 +884,8 @@ module gtwiz_kcu_fmc_sgb_example_top (
   end
 
   // Assign the link status indicator to the top-level two-state output for user reference
-  // assign link_status_out = sm_link;
+  wire link_status_out;
+  assign link_status_out = sm_link;
 
 
   // ===================================================================================================================
@@ -883,16 +1045,16 @@ module gtwiz_kcu_fmc_sgb_example_top (
   );
 
 
-  reg [15:0] rxdata_nml_ctr_s30_sync;
-  reg [15:0] rxdata_nml_ctr_s30_meta;
-  reg [15:0] rxdata_err_ctr_sync;
-  reg [15:0] rxdata_err_ctr_meta;
-  always @(posedge hb_gtwiz_reset_clk_freerun_buf_int) begin
-    rxdata_err_ctr_meta     <= hb0_rxdata_err_ctr[16:1];
-    rxdata_nml_ctr_s30_meta <= hb0_rxdata_nml_ctr[45:30];
-    rxdata_err_ctr_sync     <= rxdata_err_ctr_meta;
-    rxdata_nml_ctr_s30_sync <= rxdata_nml_ctr_s30_meta;
-  end
+  reg [15:0] rxdata_nml_ctr_s30_sync = 16'd0;
+  // reg [15:0] rxdata_nml_ctr_s30_meta;
+  reg [15:0] rxdata_err_ctr_sync = 16'd0;
+  // reg [15:0] rxdata_err_ctr_meta;
+  // always @(posedge hb_gtwiz_reset_clk_freerun_buf_int) begin
+  //   rxdata_err_ctr_meta     <= hb0_rxdata_err_ctr[16:1];
+  //   rxdata_nml_ctr_s30_meta <= hb0_rxdata_nml_ctr[45:30];
+  //   rxdata_err_ctr_sync     <= rxdata_err_ctr_meta;
+  //   rxdata_nml_ctr_s30_sync <= rxdata_nml_ctr_s30_meta;
+  // end
 
 
   // Instantiate the VIO IP core for hardware bring-up and debug purposes, connecting relevant debug and analysis
@@ -924,6 +1086,10 @@ module gtwiz_kcu_fmc_sgb_example_top (
     ,.probe_out6 (rxdata_errctr_reset_vio_int)
   );
 
+  // synthesis translate_off
+  assign link_status_out_sim = link_status_out;
+  assign link_down_latched_out_sim = link_down_latched_out;
+  // synthesis translate_on
 
   // ===================================================================================================================
   // EXAMPLE WRAPPER INSTANCE

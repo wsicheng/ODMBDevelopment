@@ -1,11 +1,12 @@
 library ieee;
 library work;
-library unisim;
-use unisim.vcomponents.all;
-use work.Latches_Flipflops.all;
 use ieee.std_logic_1164.all;
 use work.ucsb_types.all;
-
+use work.Latches_Flipflops.all;
+-- library unisim;
+-- use unisim.vcomponents.all;
+-- library hdlmacro;
+-- use hdlmacro.hdlmacro.all;
 
 entity CFEBJTAG is
   port (
@@ -138,9 +139,9 @@ begin
 
 -- COMMAND DECODER
   CMDDEV <= "000" & DEVICE & COMMAND & "00";
-  DATASHFT <= '1' when (DEVICE = '1' and CMDDEV(7 downto 4) = x"0")  else '0';
+  DATASHFT     <= '1' when (DEVICE = '1' and CMDDEV(7 downto 4) = x"0") else '0';
   INSTSHFT_ARB <= '1' when (DEVICE = '1' and CMDDEV(7 downto 4) = x"3") else '0';
-  INSTSHFT_SP <= '1' when (DEVICE = '1' and CMDDEV(7 downto 4) = x"4") else '0';
+  INSTSHFT_SP  <= '1' when (DEVICE = '1' and CMDDEV(7 downto 4) = x"4") else '0';
   INSTSHFT <= '1' when (DEVICE = '1' and (CMDDEV(7 downto 0) = x"1C" or INSTSHFT_ARB = '1' or INSTSHFT_SP = '1') ) else '0';
   READTDO  <= '1' when CMDDEV = x"1014" else '0';
   SELCFEB  <= '1' when CMDDEV = x"1020" else '0';
@@ -299,7 +300,7 @@ begin
 -- This is old code.
   C_DONETAIL   <= SLOWCLK;              -- Bug in FG Version (old code was ok)
 -- This is new code;
---  C_DONETAIL <= not SLOWCLK;    
+--  C_DONETAIL <= not SLOWCLK;
   FD_1(DONETAIL, C_DONETAIL, Q_DONETAIL);
 
 
@@ -320,7 +321,7 @@ begin
   FDCE(D_TCK_GLOBAL, SLOWCLK, CE_TCK_GLOBAL, RST, TCK_GLOBAL);
 
 
--- Generate RESETJTAG and OKRST 
+-- Generate RESETJTAG and OKRST
   -- INITJTAGS comes from odmb_ucsb_v2 when the DCFEBs DONE bits go high
   FDC(INITJTAGS, SLOWCLK, RST, INITJTAGS_Q);
   FDC(INITJTAGS_Q, SLOWCLK, RST, INITJTAGS_QQ);
@@ -334,7 +335,7 @@ begin
   FDC(Q3_RESETJTAG, SLOWCLK, CLR_RESETJTAG, RESETJTAG);
 
 
--- Generate RESETDONE 
+-- Generate RESETDONE
   -- PULSE2SLOW only works if the signal is 1 CC long in the original clock domain
   RESETJTAG_PULSE  : PULSE2FAST port map(CLR_RESETJTAG_PULSE, FASTCLK, '0', CLR_RESETJTAG);
   RESETDONE_PULSE  : PULSE2SLOW port map(CLR_RESETDONE, SLOWCLK, FASTCLK, '0', CLR_RESETJTAG_PULSE);
@@ -382,8 +383,8 @@ begin
          FEBTDO(7) when SELFEB = "1000000" else
 -- This is old code.
          '0';  -- BGB This is a mux now not multiple drivers
--- This is new code.           
---           'Z'; 
+-- This is new code.
+--           'Z';
 
 -- Generate RDTDODK
   RDTDODK <= '1' when (STROBE = '1' and READTDO = '1' and BUSYP1 = '0' and BUSY = '0') else '0';
@@ -400,7 +401,7 @@ begin
 
 --BGB commented out
 -- Generate DTACK when DATASHFT=1 or INSTSHFT=1
---    D_DTACK <= (DATASHFT or INSTSHFT);   
+--    D_DTACK <= (DATASHFT or INSTSHFT);
 --    CE_DTACK <= not BUSY;
 --    CLR_DTACK <= not STROBE;
 --    FDCE(D_DTACK, SLOWCLK, CE_DTACK, CLR_DTACK, Q1_DTACK);
@@ -431,7 +432,7 @@ begin
 
 
 -- Generate LED.
-  LED <= CE_SHIHEAD_TMS;  
+  LED <= CE_SHIHEAD_TMS;
 
 
 -- generate DIAGOUT
@@ -455,33 +456,33 @@ begin
   DIAGOUT(17) <= DEVICE;
 
   i_ila_cfebjtag : ila_cfebjtag
-     port map (
-       clk => FASTCLK,   -- to use the fastest clock here
-       probe0 => ila_trig,
-       probe1 => ila_data
-       );
+    port map (
+      clk => FASTCLK,   -- to use the fastest clock here
+      probe0 => ila_trig,
+      probe1 => ila_data
+      );
 
   ila_trig <= "0000000" & DEVICE;
-  ila_data <= FEBTDO	                                                          -- [7]    (99:93)
-            & LOAD & TCK_GLOBAL & tdi_inner & tms_inner                           -- [1]    (92:89)
-            & RST & RST_ITAIL & READTDO  & RDTDODK         	                  -- [1]    (88:85)
-            & SHDHEAD & DONEDHEAD & SHIHEAD & DONEIHEAD & DHEADEN  & IHEADEN      -- [1]    (84:79)
-            & SHTAIL  & DONETAIL  & TAILSP  & TAILEN    & CE_TAILEN & CLR_TAILEN  -- [1]    (78:73)
-            & Q1_DTACK & Q2_DTACK & Q3_DTACK & Q4_DTACK                           -- [1]    (72:69)
-            & Q1_SHIHEAD_TMS & Q2_SHIHEAD_TMS & Q3_SHIHEAD_TMS                    -- [1]    (68:64)
-            & Q4_SHIHEAD_TMS & Q5_SHIHEAD_TMS
-            & Q1_SHDHEAD_TMS & Q2_SHDHEAD_TMS & Q3_SHDHEAD_TMS                    -- [1]    (63:59)
-            & Q4_SHDHEAD_TMS & Q5_SHDHEAD_TMS
-            & Q1_RESETJTAG_TMS & Q2_RESETJTAG_TMS & Q3_RESETJTAG_TMS              -- [1]    (58:53)
-            & Q4_RESETJTAG_TMS & Q5_RESETJTAG_TMS & Q6_RESETJTAG_TMS
-            & Q1_RESETJTAG & Q2_RESETJTAG & Q3_RESETJTAG                          -- [1]    (52:50)
-            & Q1_SHTAIL_TMS & Q2_SHTAIL_TMS                                       -- [1]    (49:48)
-            & QV_DONEDATA & QV_DONETAIL                                           -- [4/4]  (47:40)
-            & QV_DONEIHEAD & QV_DONEDHEAD                                         -- [4/4]  (39:32)
-            & READTDO & SELCFEB & READCFEB & RSTJTAG                              -- [1]    (31:28)
-            & DATASHFT & INSTSHFT_ARB & INSTSHFT_SP & INSTSHFT                    -- [1]    (27:24)
-            & BUSY & SELFEB                                                       -- [1/7]  (23:16)
-            & CMDDEV;                                                             -- [16]   (15:0)
+  ila_data <= FEBTDO                                                              -- [7]    (99:93)
+              & LOAD & TCK_GLOBAL & tdi_inner & tms_inner                           -- [1]    (92:89)
+              & RST & RST_ITAIL & READTDO  & RDTDODK                                -- [1]    (88:85)
+              & SHDHEAD & DONEDHEAD & SHIHEAD & DONEIHEAD & DHEADEN  & IHEADEN      -- [1]    (84:79)
+              & SHTAIL  & DONETAIL  & TAILSP  & TAILEN    & CE_TAILEN & CLR_TAILEN  -- [1]    (78:73)
+              & Q1_DTACK & Q2_DTACK & Q3_DTACK & Q4_DTACK                           -- [1]    (72:69)
+              & Q1_SHIHEAD_TMS & Q2_SHIHEAD_TMS & Q3_SHIHEAD_TMS                    -- [1]    (68:64)
+              & Q4_SHIHEAD_TMS & Q5_SHIHEAD_TMS
+              & Q1_SHDHEAD_TMS & Q2_SHDHEAD_TMS & Q3_SHDHEAD_TMS                    -- [1]    (63:59)
+              & Q4_SHDHEAD_TMS & Q5_SHDHEAD_TMS
+              & Q1_RESETJTAG_TMS & Q2_RESETJTAG_TMS & Q3_RESETJTAG_TMS              -- [1]    (58:53)
+              & Q4_RESETJTAG_TMS & Q5_RESETJTAG_TMS & Q6_RESETJTAG_TMS
+              & Q1_RESETJTAG & Q2_RESETJTAG & Q3_RESETJTAG                          -- [1]    (52:50)
+              & Q1_SHTAIL_TMS & Q2_SHTAIL_TMS                                       -- [1]    (49:48)
+              & QV_DONEDATA & QV_DONETAIL                                           -- [4/4]  (47:40)
+              & QV_DONEIHEAD & QV_DONEDHEAD                                         -- [4/4]  (39:32)
+              & READTDO & SELCFEB & READCFEB & RSTJTAG                              -- [1]    (31:28)
+              & DATASHFT & INSTSHFT_ARB & INSTSHFT_SP & INSTSHFT                    -- [1]    (27:24)
+              & BUSY & SELFEB                                                       -- [1/7]  (23:16)
+              & CMDDEV;                                                             -- [16]   (15:0)
 
 
 end CFEBJTAG_Arch;

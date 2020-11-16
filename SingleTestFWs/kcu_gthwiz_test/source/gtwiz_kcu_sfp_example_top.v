@@ -474,7 +474,7 @@ module gtwiz_kcu_sfp_example_top (
   // Globally buffer the free-running input clock
   wire hb_gtwiz_reset_clk_freerun_buf_int;
   // BUFG bufg_clk_freerun_inst (.I (hb_gtwiz_reset_clk_freerun_in), .O (hb_gtwiz_reset_clk_freerun_buf_int) );
-  assign hb_gtwiz_reset_clk_freerun_buf_int = clk40; // replacing the input clock
+  assign hb_gtwiz_reset_clk_freerun_buf_int = clk80; // replacing the input clock
 
   // Instantiate a differential reference clock buffer for each reference clock differential pair in this configuration,
   // and assign the single-ended output of each differential reference clock buffer to the appropriate PLL input signal
@@ -511,171 +511,134 @@ module gtwiz_kcu_sfp_example_top (
   assign hb0_gtwiz_userclk_rx_reset_int = ~(&rxpmaresetdone_int);
 
 
-  // ===================================================================================================================
-  // PRBS STIMULUS, CHECKING, AND LINK MANAGEMENT
-  // ===================================================================================================================
-
-  // PRBS stimulus
-  // -------------------------------------------------------------------------------------------------------------------
-
-  // PRBS-based data stimulus module for transceiver channel 0
-  (* DONT_TOUCH = "TRUE" *)
-  gtwiz_kcu_sfp_example_stimulus_8b10b example_stimulus_inst0 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
-    .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
-    .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
-    .txctrl0_out                 (ch0_txctrl0_int),
-    .txctrl1_out                 (ch0_txctrl1_int),
-    .txctrl2_out                 (ch0_txctrl2_int),
-    .txdata_out                  (hb0_gtwiz_userdata_tx_int)
-  );
-
-  // PRBS-based data stimulus module for transceiver channel 1
-  (* DONT_TOUCH = "TRUE" *)
-  gtwiz_kcu_sfp_example_stimulus_8b10b example_stimulus_inst1 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
-    .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
-    .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
-    .txctrl0_out                 (ch1_txctrl0_int),
-    .txctrl1_out                 (ch1_txctrl1_int),
-    .txctrl2_out                 (ch1_txctrl2_int),
-    .txdata_out                  (hb1_gtwiz_userdata_tx_int)
-  );
-
-  // PRBS checking
-  // -------------------------------------------------------------------------------------------------------------------
-
-  // Declare a signal vector of PRBS match indicators, with one indicator bit per transceiver channel
-  wire [1:0] prbs_match_int;
-
-  // PRBS-based data checking module for transceiver channel 0
-  gtwiz_kcu_sfp_example_checking_8b10b example_checking_inst0 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
-    .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
-    .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
-    .rxctrl0_in                  (ch0_rxctrl0_int),
-    .rxctrl1_in                  (ch0_rxctrl1_int),
-    .rxctrl2_in                  (ch0_rxctrl2_int),
-    .rxctrl3_in                  (ch0_rxctrl3_int),
-    .rxdata_in                   (hb0_gtwiz_userdata_rx_int),
-    .prbs_match_out              (prbs_match_int[0])
-  );
-
-  // PRBS-based data checking module for transceiver channel 1
-  gtwiz_kcu_sfp_example_checking_8b10b example_checking_inst1 (
-    .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
-    .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
-    .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
-    .rxctrl0_in                  (ch1_rxctrl0_int),
-    .rxctrl1_in                  (ch1_rxctrl1_int),
-    .rxctrl2_in                  (ch1_rxctrl2_int),
-    .rxctrl3_in                  (ch1_rxctrl3_int),
-    .rxdata_in                   (hb1_gtwiz_userdata_rx_int),
-    .prbs_match_out              (prbs_match_int[1])
-  );
-
-
-  // Error rate counting, reusing the gen_ctr as total rate first
-  reg  [16:0] ch0_rxdata_err_ctr = 17'd0;
-  reg  [16:0] ch1_rxdata_err_ctr = 17'd0;
-  reg  [63:0] hb0_rxdata_nml_ctr = 64'd0;
-  wire [15:0] ch0_rxdata_gen_ctr = hb0_rxdata_nml_ctr[15:0];
-  wire [15:0] ch1_rxdata_gen_ctr = hb0_rxdata_nml_ctr[31:16];
-  // wire [7:0]  ext_rxdata_nml_ctr = hb0_rxdata_nml_ctr[39:32];
-  // reg [15:0] ch0_rxdata_gen_ctr = 16'd0;
-  // reg [15:0] ch1_rxdata_gen_ctr = 16'd0;
-  // reg [7:0]  ext_rxdata_nml_ctr = 8'd0;
-
-  wire rxdata_errctr_reset_vio_int;
-
-  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
-    // Reuse the latched_out signal that is manual set to
-    if (rxdata_errctr_reset_vio_int) begin
-      hb0_rxdata_nml_ctr <= 64'd0;
-      // ext_rxdata_nml_ctr <= 8'd0;
-      // ch0_rxdata_gen_ctr <= 16'd0;
-      // ch1_rxdata_gen_ctr <= 16'd0;
-      ch0_rxdata_err_ctr <= 17'd0;
-      ch1_rxdata_err_ctr <= 17'd0;
-    end
-    // else if (hb0_gtwiz_userclk_rx_active_int) begin
-    else begin
-      hb0_rxdata_nml_ctr <= hb0_rxdata_nml_ctr + 64'd1;
-      // ch0_rxdata_gen_ctr <= ch0_rxdata_gen_ctr + 16'd1;
-      // if (ch0_rxdata_gen_ctr == 16'hFFFF)
-      //   ch1_rxdata_gen_ctr <= ch1_rxdata_gen_ctr + 16'd1;
-      // if (ch0_rxdata_gen_ctr == 16'hFFFF && ch1_rxdata_gen_ctr == 16'hFFFF)
-      //   ext_rxdata_nml_ctr <= ext_rxdata_nml_ctr + 16'd1;
-      if (~prbs_match_int[0])
-        ch0_rxdata_err_ctr <= ch0_rxdata_err_ctr + 17'd1;
-      if (~prbs_match_int[1])
-        ch1_rxdata_err_ctr <= ch1_rxdata_err_ctr + 17'd1;
-    end
-  end
-
   // // ===================================================================================================================
-  // // User-data generate, checking
+  // // PRBS STIMULUS, CHECKING, AND LINK MANAGEMENT
   // // ===================================================================================================================
-  // assign ch0_txctrl0_int = 16'b0;
-  // assign ch0_txctrl1_int = 16'b0;
-  // assign ch1_txctrl0_int = 16'b0;
-  // assign ch1_txctrl1_int = 16'b0;
 
-  // reg [7:0] ch0_txctrl2_reg = 8'b0;
-  // reg [7:0] ch1_txctrl2_reg = 8'b0;
-  // reg [31:0] ch0_txdata_reg = 32'b0;
-  // reg [31:0] ch1_txdata_reg = 32'b0;
+  // // PRBS stimulus
+  // // -------------------------------------------------------------------------------------------------------------------
 
-  // assign ch0_txctrl2_int = ch0_txctrl2_reg;
-  // assign ch1_txctrl2_int = ch1_txctrl2_reg;
-  // assign hb0_gtwiz_userdata_tx_int = ch0_txdata_reg;
-  // assign hb1_gtwiz_userdata_tx_int = ch1_txdata_reg;
-
-  // // Synchronize the example stimulus reset condition into the txusrclk2 domain
-  // wire gtwiz_tx_stimulus_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_tx_done_int || ~hb0_gtwiz_userclk_tx_active_int;
-  // wire gtwiz_tx_stimulus_reset_sync;
-
+  // // PRBS-based data stimulus module for transceiver channel 0
   // (* DONT_TOUCH = "TRUE" *)
-  // gtwiz_kcu_sfp_example_reset_synchronizer gtwiz_tx_stimulus_reset_synchronizer_inst (
-  //   .clk_in  (hb0_gtwiz_userclk_tx_usrclk2_int),
-  //   .rst_in  (gtwiz_tx_stimulus_reset_int),
-  //   .rst_out (gtwiz_tx_stimulus_reset_sync)
+  // gtwiz_kcu_sfp_example_stimulus_8b10b example_stimulus_inst0 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
+  //   .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
+  //   .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
+  //   .txctrl0_out                 (ch0_txctrl0_int),
+  //   .txctrl1_out                 (ch0_txctrl1_int),
+  //   .txctrl2_out                 (ch0_txctrl2_int),
+  //   .txdata_out                  (hb0_gtwiz_userdata_tx_int)
   // );
 
-  // reg [15:0] txdata_init_ctr = 16'd0;
-  // reg [15:0] txdata_gen_ctr = 16'd0;
-  // always @(posedge hb0_gtwiz_userclk_tx_usrclk2_int) begin
-  //   if (gtwiz_tx_stimulus_reset_sync) begin
-  //     ch0_txdata_reg <= 32'b0;
-  //     ch1_txdata_reg <= 32'b0;
-  //     ch0_txctrl2_reg <= 8'b0;
-  //     ch1_txctrl2_reg <= 8'b0;
-  //     txdata_gen_ctr  <= 16'd0;
-  //     txdata_init_ctr <= 16'd0;
-  //   end
-  //   else begin
-  //     if (txdata_init_ctr < 16'd100) begin
-  //       ch0_txdata_reg <= {16'hABCD, 16'h503C};
-  //       ch1_txdata_reg <= {16'hABCD, 16'h503C};
-  //       ch0_txctrl2_reg <= 8'h01;
-  //       ch1_txctrl2_reg <= 8'h01;
-  //       txdata_init_ctr <= txdata_init_ctr + 16'd1;
-  //     end
-  //     else if (~(&rxbyteisaligned_int) || txdata_gen_ctr[11:0] == 12'h00) begin
-  //       ch0_txdata_reg <= {txdata_gen_ctr, 16'h503C};
-  //       ch1_txdata_reg <= {~txdata_gen_ctr, 16'h503C};
-  //       ch0_txctrl2_reg <= 8'h01;
-  //       ch1_txctrl2_reg <= 8'h01;
-  //     end
-  //     else begin
-  //       ch0_txdata_reg <= {~txdata_gen_ctr, txdata_gen_ctr};
-  //       ch1_txdata_reg <= {txdata_gen_ctr, ~txdata_gen_ctr};
-  //       ch0_txctrl2_reg <= 8'h0;
-  //       ch1_txctrl2_reg <= 8'h0;
-  //     end
-  //     txdata_gen_ctr <= txdata_gen_ctr + 16'd1;
-  //   end
-  // end
+  // // PRBS-based data stimulus module for transceiver channel 1
+  // (* DONT_TOUCH = "TRUE" *)
+  // gtwiz_kcu_sfp_example_stimulus_8b10b example_stimulus_inst1 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
+  //   .gtwiz_userclk_tx_usrclk2_in (hb0_gtwiz_userclk_tx_usrclk2_int),
+  //   .gtwiz_userclk_tx_active_in  (hb0_gtwiz_userclk_tx_active_int),
+  //   .txctrl0_out                 (ch1_txctrl0_int),
+  //   .txctrl1_out                 (ch1_txctrl1_int),
+  //   .txctrl2_out                 (ch1_txctrl2_int),
+  //   .txdata_out                  (hb1_gtwiz_userdata_tx_int)
+  // );
+
+  // // PRBS checking
+  // // -------------------------------------------------------------------------------------------------------------------
+
+  // // Declare a signal vector of PRBS match indicators, with one indicator bit per transceiver channel
+  // wire [1:0] prbs_match_int;
+
+  // // PRBS-based data checking module for transceiver channel 0
+  // gtwiz_kcu_sfp_example_checking_8b10b example_checking_inst0 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
+  //   .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
+  //   .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
+  //   .rxctrl0_in                  (ch0_rxctrl0_int),
+  //   .rxctrl1_in                  (ch0_rxctrl1_int),
+  //   .rxctrl2_in                  (ch0_rxctrl2_int),
+  //   .rxctrl3_in                  (ch0_rxctrl3_int),
+  //   .rxdata_in                   (hb0_gtwiz_userdata_rx_int),
+  //   .prbs_match_out              (prbs_match_int[0])
+  // );
+
+  // // PRBS-based data checking module for transceiver channel 1
+  // gtwiz_kcu_sfp_example_checking_8b10b example_checking_inst1 (
+  //   .gtwiz_reset_all_in          (hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int ),
+  //   .gtwiz_userclk_rx_usrclk2_in (hb0_gtwiz_userclk_rx_usrclk2_int),
+  //   .gtwiz_userclk_rx_active_in  (hb0_gtwiz_userclk_rx_active_int),
+  //   .rxctrl0_in                  (ch1_rxctrl0_int),
+  //   .rxctrl1_in                  (ch1_rxctrl1_int),
+  //   .rxctrl2_in                  (ch1_rxctrl2_int),
+  //   .rxctrl3_in                  (ch1_rxctrl3_int),
+  //   .rxdata_in                   (hb1_gtwiz_userdata_rx_int),
+  //   .prbs_match_out              (prbs_match_int[1])
+  // );
+
+
+  // ===================================================================================================================
+  // User-data generate, checking
+  // ===================================================================================================================
+  assign ch0_txctrl0_int = 16'b0;
+  assign ch0_txctrl1_int = 16'b0;
+  assign ch1_txctrl0_int = 16'b0;
+  assign ch1_txctrl1_int = 16'b0;
+
+  reg [7:0] ch0_txctrl2_reg = 8'b0;
+  reg [7:0] ch1_txctrl2_reg = 8'b0;
+  reg [31:0] ch0_txdata_reg = 32'b0;
+  reg [31:0] ch1_txdata_reg = 32'b0;
+
+  assign ch0_txctrl2_int = ch0_txctrl2_reg;
+  assign ch1_txctrl2_int = ch1_txctrl2_reg;
+  assign hb0_gtwiz_userdata_tx_int = ch0_txdata_reg;
+  assign hb1_gtwiz_userdata_tx_int = ch1_txdata_reg;
+
+  // Synchronize the example stimulus reset condition into the txusrclk2 domain
+  wire gtwiz_tx_stimulus_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_tx_done_int || ~hb0_gtwiz_userclk_tx_active_int;
+  wire gtwiz_tx_stimulus_reset_sync;
+
+  (* DONT_TOUCH = "TRUE" *)
+  gtwiz_kcu_sfp_example_reset_synchronizer gtwiz_tx_stimulus_reset_synchronizer_inst (
+    .clk_in  (hb0_gtwiz_userclk_tx_usrclk2_int),
+    .rst_in  (gtwiz_tx_stimulus_reset_int),
+    .rst_out (gtwiz_tx_stimulus_reset_sync)
+  );
+
+  reg [15:0] txdata_init_ctr = 16'd0;
+  reg [15:0] txdata_gen_ctr = 16'd0;
+  always @(posedge hb0_gtwiz_userclk_tx_usrclk2_int) begin
+    if (gtwiz_tx_stimulus_reset_sync) begin
+      ch0_txdata_reg <= 32'b0;
+      ch1_txdata_reg <= 32'b0;
+      ch0_txctrl2_reg <= 8'b0;
+      ch1_txctrl2_reg <= 8'b0;
+      txdata_gen_ctr  <= 16'd0;
+      txdata_init_ctr <= 16'd0;
+    end
+    else begin
+      if (txdata_init_ctr < 16'd100) begin
+        ch0_txdata_reg <= {16'hABCD, 16'h503C};
+        ch1_txdata_reg <= {16'hABCD, 16'h503C};
+        ch0_txctrl2_reg <= 8'h01;
+        ch1_txctrl2_reg <= 8'h01;
+        txdata_init_ctr <= txdata_init_ctr + 16'd1;
+      end
+      // else if (~(&rxbyteisaligned_int) || txdata_gen_ctr[3:0] == 4'h00) begin
+      else if (~(&rxbyteisaligned_int) || txdata_gen_ctr[0] == 1'b0) begin
+        ch0_txdata_reg <= {txdata_gen_ctr, 16'h503C};
+        ch1_txdata_reg <= {~txdata_gen_ctr, 16'h503C};
+        ch0_txctrl2_reg <= 8'h01;
+        ch1_txctrl2_reg <= 8'h01;
+      end
+      else begin
+        ch0_txdata_reg <= {~txdata_gen_ctr, txdata_gen_ctr};
+        ch1_txdata_reg <= {txdata_gen_ctr, ~txdata_gen_ctr};
+        ch0_txctrl2_reg <= 8'h0;
+        ch1_txctrl2_reg <= 8'h0;
+      end
+      txdata_gen_ctr <= txdata_gen_ctr + 16'd1;
+    end
+  end
 
   wire [191:0] ila_data_tx;
   assign ila_data_tx[31:0]    = hb0_gtwiz_userdata_tx_int;
@@ -689,61 +652,93 @@ module gtwiz_kcu_sfp_example_top (
   );
 
 
-  // // The RX checking part
-  // reg [1:0] prbs_match_int = 2'b11; // pretend that they always match for now, and see what we got
+  // The RX checking part
+  reg [1:0] prbs_match_int;
 
-  // // Synchronize the example stimulus reset condition into the txusrclk2 domain
-  // wire       gtwiz_rx_stimulus_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int || ~hb0_gtwiz_userclk_rx_active_int;
-  // wire       gtwiz_rx_stimulus_reset_sync;
+  // Synchronize the example stimulus reset condition into the txusrclk2 domain
+  wire gtwiz_rx_stimulus_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_reset_rx_done_int || ~hb0_gtwiz_userclk_rx_active_int;
+  wire gtwiz_rx_stimulus_reset_sync;
 
-  // (* DONT_TOUCH = "TRUE" *)
-  // gtwiz_kcu_sfp_example_reset_synchronizer gtwiz_rx_stimulus_reset_synchronizer_inst (
-  //   .clk_in  (hb0_gtwiz_userclk_rx_usrclk2_int),
-  //   .rst_in  (gtwiz_rx_stimulus_reset_int),
-  //   .rst_out (gtwiz_rx_stimulus_reset_sync)
-  // );
+  (* DONT_TOUCH = "TRUE" *)
+  gtwiz_kcu_sfp_example_reset_synchronizer gtwiz_rx_stimulus_reset_synchronizer_inst (
+    .clk_in  (hb0_gtwiz_userclk_rx_usrclk2_int),
+    .rst_in  (gtwiz_rx_stimulus_reset_int),
+    .rst_out (gtwiz_rx_stimulus_reset_sync)
+  );
 
-  // reg [15:0] ch0_rxdata_gen_ctr = 16'd0;
-  // reg [15:0] ch1_rxdata_gen_ctr = 16'd0;
+  reg [15:0] ch0_rxdata_gen_ctr = 16'd0;
+  reg [15:0] ch1_rxdata_gen_ctr = 16'd0;
 
-  // always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
-  //   if (ch0_rxdata_gen_ctr == 16'd0) begin
-  //     if (hb0_gtwiz_userdata_rx_int[31:16] == ~hb0_gtwiz_userdata_rx_int[15:0])
-  //       ch0_rxdata_gen_ctr <= hb0_gtwiz_userdata_rx_int[15:0] - 16'd1;
-  //   end
-  //   else begin
-  //     if (ch0_rxctrl2_int == 8'h1 && hb0_gtwiz_userdata_rx_int[15:0] == 16'h503C)
-  //       ch0_rxdata_gen_ctr <= hb0_gtwiz_userdata_rx_int[31:16] - 16'd1;
-  //     else if ({~ch0_rxdata_gen_ctr, ch0_rxdata_gen_ctr} == hb0_gtwiz_userdata_rx_int) begin
-  //       prbs_match_int[0] <= 1'b1;
-  //       ch0_rxdata_gen_ctr <= ch0_rxdata_gen_ctr - 16'd1;
-  //     end
-  //     else begin
-  //       prbs_match_int[0] <= 1'b0;
-  //       ch0_rxdata_gen_ctr <= 16'd0;
-  //     end
-  //   end
-  // end
+  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
+    if (ch0_rxdata_gen_ctr == 16'd0) begin
+      if (hb0_gtwiz_userdata_rx_int[31:16] == ~hb0_gtwiz_userdata_rx_int[15:0])
+        ch0_rxdata_gen_ctr <= hb0_gtwiz_userdata_rx_int[15:0] - 16'd1;
+    end
+    else begin
+      if (ch0_rxctrl2_int == 8'h1 && hb0_gtwiz_userdata_rx_int[15:0] == 16'h503C) begin
+        if (ch0_rxdata_gen_ctr != hb0_gtwiz_userdata_rx_int[31:16])
+          prbs_match_int[0] <= 1'b0;
+        ch0_rxdata_gen_ctr <= hb0_gtwiz_userdata_rx_int[31:16] - 16'd1;
+      end
+      else if ({~ch0_rxdata_gen_ctr, ch0_rxdata_gen_ctr} == hb0_gtwiz_userdata_rx_int) begin
+        prbs_match_int[0] <= 1'b1;
+        ch0_rxdata_gen_ctr <= ch0_rxdata_gen_ctr - 16'd1;
+      end
+      else begin
+        prbs_match_int[0] <= 1'b0;
+        ch0_rxdata_gen_ctr <= 16'd0;
+      end
+    end
+  end
 
-  // always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
-  //   if (ch1_rxdata_gen_ctr == 16'd0) begin
-  //     if (hb1_gtwiz_userdata_rx_int[31:16] == ~hb1_gtwiz_userdata_rx_int[15:0])
-  //       ch1_rxdata_gen_ctr <= hb1_gtwiz_userdata_rx_int[15:0] + 16'd1;
-  //   end
-  //   else begin
-  //     if (ch1_rxctrl2_int == 8'h1 && hb1_gtwiz_userdata_rx_int[15:0] == 16'h503C) begin
-  //       ch1_rxdata_gen_ctr <= hb1_gtwiz_userdata_rx_int[31:16] + 16'd1;
-  //     end
-  //     else if ({~ch1_rxdata_gen_ctr, ch1_rxdata_gen_ctr} == hb1_gtwiz_userdata_rx_int) begin
-  //       prbs_match_int[1] <= 1'b1;
-  //       ch1_rxdata_gen_ctr <= ch1_rxdata_gen_ctr + 16'd1;
-  //     end
-  //     else begin
-  //       prbs_match_int[1] <= 1'b0;
-  //       ch1_rxdata_gen_ctr <= 16'd0;
-  //     end
-  //   end
-  // end
+  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
+    if (ch1_rxdata_gen_ctr == 16'd0) begin
+      if (hb1_gtwiz_userdata_rx_int[31:16] == ~hb1_gtwiz_userdata_rx_int[15:0])
+        ch1_rxdata_gen_ctr <= hb1_gtwiz_userdata_rx_int[15:0] + 16'd1;
+    end
+    else begin
+      if (ch1_rxctrl2_int == 8'h1 && hb1_gtwiz_userdata_rx_int[15:0] == 16'h503C) begin
+        if (ch1_rxdata_gen_ctr != hb1_gtwiz_userdata_rx_int[31:16])
+          prbs_match_int[1] <= 1'b0;
+        ch1_rxdata_gen_ctr <= hb1_gtwiz_userdata_rx_int[31:16] + 16'd1;
+      end
+      else if ({~ch1_rxdata_gen_ctr, ch1_rxdata_gen_ctr} == hb1_gtwiz_userdata_rx_int) begin
+        prbs_match_int[1] <= 1'b1;
+        ch1_rxdata_gen_ctr <= ch1_rxdata_gen_ctr + 16'd1;
+      end
+      else begin
+        prbs_match_int[1] <= 1'b0;
+        ch1_rxdata_gen_ctr <= 16'd0;
+      end
+    end
+  end
+
+
+  // Error rate counting, reusing the gen_ctr as total rate first
+  reg [16:0] ch0_rxdata_err_ctr = 17'd0;
+  reg [16:0] ch1_rxdata_err_ctr = 17'd0;
+  reg [63:0] hb0_rxdata_nml_ctr = 64'd0;
+  // wire [15:0] ch0_rxdata_gen_ctr = hb0_rxdata_nml_ctr[15:0];
+  // wire [15:0] ch1_rxdata_gen_ctr = hb0_rxdata_nml_ctr[31:16];
+  // wire [7:0]  ext_rxdata_nml_ctr = hb0_rxdata_nml_ctr[39:32];
+
+  wire rxdata_errctr_reset_vio_int;
+
+  always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
+    // Reuse the latched_out signal that is manual set to
+    if (rxdata_errctr_reset_vio_int) begin
+      hb0_rxdata_nml_ctr <= 64'd0;
+      ch0_rxdata_err_ctr <= 17'd0;
+      ch1_rxdata_err_ctr <= 17'd0;
+    end
+    else if (hb0_gtwiz_userclk_rx_active_int) begin
+      hb0_rxdata_nml_ctr <= hb0_rxdata_nml_ctr + 64'd1;
+      if (~prbs_match_int[0])
+        ch0_rxdata_err_ctr <= ch0_rxdata_err_ctr + 17'd1;
+      if (~prbs_match_int[1])
+        ch1_rxdata_err_ctr <= ch1_rxdata_err_ctr + 17'd1;
+    end
+  end
 
   wire [191:0] ila_data_rx;
   assign ila_data_rx[31:0]  = hb0_gtwiz_userdata_rx_int;
@@ -760,7 +755,7 @@ module gtwiz_kcu_sfp_example_top (
   assign ila_data_rx[151:136] = ch1_rxdata_err_ctr[16:1];
   // assign ila_data_rx[159:152] = ext_rxdata_nml_ctr;
   // assign ila_data_rx[191:160] = hb0_rxdata_nml_ctr[39:8];
-  assign ila_data_rx[183:152] = hb0_rxdata_nml_ctr[63:32];
+  assign ila_data_rx[191:152] = hb0_rxdata_nml_ctr[39:0];
 
   ila ila_rx_inst (
     .clk    (hb0_gtwiz_userclk_rx_usrclk2_int),

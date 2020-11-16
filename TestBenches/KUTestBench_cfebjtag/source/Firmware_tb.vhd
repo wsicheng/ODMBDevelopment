@@ -65,7 +65,7 @@ architecture Behavioral of Firmware_tb is
   constant bw_output : integer := 20;
   constant bw_fifo   : integer := 18;
   constant bw_count  : integer := 16;
-  constant bw_wait   : integer := 7;
+  constant bw_wait   : integer := 9;
   constant nclksrun  : integer := 2048;
   -- Counters
   signal waitCounter  : unsigned(bw_wait-1 downto 0) := (others=> '0');
@@ -192,7 +192,7 @@ begin
       waitCounter <= (others => '0');
     else
       waitCounter <= waitCounter + 1;
-      if waitCounter >= 80 then
+      if waitCounter >= 320 then
         waitCounter <= (others => '0');
       end if;
     end if;

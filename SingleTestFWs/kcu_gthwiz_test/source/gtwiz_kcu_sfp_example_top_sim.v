@@ -94,7 +94,7 @@ module gtwiz_kcu_sfp_example_top_sim ();
   initial begin
     hb_gtwiz_reset_clk_freerun = 1'b0;
     forever
-      hb_gtwiz_reset_clk_freerun = #12500 ~hb_gtwiz_reset_clk_freerun;
+      hb_gtwiz_reset_clk_freerun = #25000 ~hb_gtwiz_reset_clk_freerun;
   end
 
   // Declare registers to drive reset helper block(s)

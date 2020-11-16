@@ -14,12 +14,12 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="3828472fs"></ZoomStartTime>
-      <ZoomEndTime time="4446340fs"></ZoomEndTime>
-      <Cursor1Time time="4343362fs"></Cursor1Time>
+      <ZoomStartTime time="7304000fs"></ZoomStartTime>
+      <ZoomEndTime time="10048001fs"></ZoomEndTime>
+      <Cursor1Time time="8482000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="115"></NameColumnWidth>
+      <NameColumnWidth column_width="111"></NameColumnWidth>
       <ValueColumnWidth column_width="66"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="41" />
@@ -33,6 +33,10 @@
    <wvobject type="array" fp_name="/Firmware_tb/inputCounter">
       <obj_property name="ElementShortName">inputCounter[15:0]</obj_property>
       <obj_property name="ObjectShortName">inputCounter[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/CACK">
+      <obj_property name="ElementShortName">CACK</obj_property>
+      <obj_property name="ObjectShortName">CACK</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/Firmware_tb/firmware_i/CMDDEV">
       <obj_property name="ElementShortName">CMDDEV[15:0]</obj_property>
@@ -53,10 +57,6 @@
    <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/PMAP_VME_Master/vme_cmd">
       <obj_property name="ElementShortName">vme_cmd</obj_property>
       <obj_property name="ObjectShortName">vme_cmd</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/CACK">
-      <obj_property name="ElementShortName">CACK</obj_property>
-      <obj_property name="ObjectShortName">CACK</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/Firmware_tb/firmware_i/PMAP_VME_Master/ad_load">
       <obj_property name="ElementShortName">ad_load</obj_property>
