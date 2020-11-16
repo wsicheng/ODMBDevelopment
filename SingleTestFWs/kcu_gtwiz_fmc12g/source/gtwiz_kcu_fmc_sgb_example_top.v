@@ -521,7 +521,7 @@ module gtwiz_kcu_fmc_sgb_example_top (
   assign ch0_txheader_int = 6'h01;
   assign ch1_txheader_int = 6'h01;
 
-  // Assign the txdata_gen_en_int enable to the TX data generation as appropriate, and control txsequence
+  // Assign the the enable signal to the TX data generation as appropriate, and control txsequence
   // as required for 64B/66B gearbox data transmission at the selected user data width
   wire gtwiz_tx_stimulus_reset_int = hb_gtwiz_reset_all_int || ~hb0_gtwiz_userclk_tx_active_int;
   wire gtwiz_tx_stimulus_reset_sync;
@@ -628,8 +628,6 @@ module gtwiz_kcu_fmc_sgb_example_top (
 
   reg [15:0] ch0_rxdata_gen_ctr = 16'd0;
   reg [15:0] ch1_rxdata_gen_ctr = 16'd0;
-  // ch0_txdata_reg <= {~txdata_gen_ctr1, txdata_gen_ctr1, ~txdata_gen_ctr2, txdata_gen_ctr2};
-  // ch1_txdata_reg <= {txdata_gen_ctr1, ~txdata_gen_ctr1, txdata_gen_ctr2, ~txdata_gen_ctr2};
 
   always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
     if (gtwiz_rx_check_reset_sync) begin
@@ -748,10 +746,17 @@ module gtwiz_kcu_fmc_sgb_example_top (
   // wire [15:0] ch1_rxdata_gen_ctr = ch1_rxdata_err_ctr[16:1];
 
   wire rxdata_errctr_reset_vio_int;
+  wire rxdata_errctr_reset_vio_sync;
+
+  (* DONT_TOUCH = "TRUE" *)
+  gtwiz_kcu_fmc_sgb_example_reset_synchronizer gtwiz_errctr_reset_synchronizer_inst (
+    .clk_in  (hb0_gtwiz_userclk_tx_usrclk2_int),
+    .rst_in  (rxdata_errctr_reset_vio_int),
+    .rst_out (rxdata_errctr_reset_vio_sync)
+  );
 
   always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
-    // Reuse the latched_out signal that is manual set to
-    if (rxdata_errctr_reset_vio_int) begin
+    if (rxdata_errctr_reset_vio_sync) begin
       hb0_rxdata_nml_ctr <= 64'd0;
       hb0_rxdata_err_ctr <= 17'd0;
       ch0_rxdata_err_ctr <= 17'd0;
@@ -791,10 +796,10 @@ module gtwiz_kcu_fmc_sgb_example_top (
   assign ila_data_rx[275:260] = ch3_rxdata_err_ctr[16:1];
   assign ila_data_rx[299:276] = hb0_rxdata_nml_ctr[63:40];
 
-  ila_0 ila_rx_inst (
-    .clk    (hb0_gtwiz_userclk_rx_usrclk2_int),
-    .probe0 (ila_data_rx)
-  );
+  // ila_0 ila_rx_inst (
+  //   .clk    (hb0_gtwiz_userclk_rx_usrclk2_int),
+  //   .probe0 (ila_data_rx)
+  // );
 
   // PRBS match and related link management
   // -------------------------------------------------------------------------------------------------------------------
@@ -1046,15 +1051,15 @@ module gtwiz_kcu_fmc_sgb_example_top (
 
 
   reg [15:0] rxdata_nml_ctr_s30_sync = 16'd0;
-  // reg [15:0] rxdata_nml_ctr_s30_meta;
+  reg [15:0] rxdata_nml_ctr_s30_meta;
   reg [15:0] rxdata_err_ctr_sync = 16'd0;
-  // reg [15:0] rxdata_err_ctr_meta;
-  // always @(posedge hb_gtwiz_reset_clk_freerun_buf_int) begin
-  //   rxdata_err_ctr_meta     <= hb0_rxdata_err_ctr[16:1];
-  //   rxdata_nml_ctr_s30_meta <= hb0_rxdata_nml_ctr[45:30];
-  //   rxdata_err_ctr_sync     <= rxdata_err_ctr_meta;
-  //   rxdata_nml_ctr_s30_sync <= rxdata_nml_ctr_s30_meta;
-  // end
+  reg [15:0] rxdata_err_ctr_meta;
+  always @(posedge hb_gtwiz_reset_clk_freerun_buf_int) begin
+    rxdata_err_ctr_meta     <= hb0_rxdata_err_ctr[16:1];
+    rxdata_nml_ctr_s30_meta <= hb0_rxdata_nml_ctr[45:30];
+    rxdata_err_ctr_sync     <= rxdata_err_ctr_meta;
+    rxdata_nml_ctr_s30_sync <= rxdata_nml_ctr_s30_meta;
+  end
 
 
   // Instantiate the VIO IP core for hardware bring-up and debug purposes, connecting relevant debug and analysis
