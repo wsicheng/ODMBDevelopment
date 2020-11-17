@@ -7,19 +7,20 @@
          <top_modules>
             <top_module name="glbl" />
             <top_module name="gtwiz_kcu_fmc_sgb_example_top_sim" />
+            <top_module name="vcomponents" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="95290573fs"></ZoomStartTime>
-      <ZoomEndTime time="95303574fs"></ZoomEndTime>
-      <Cursor1Time time="95301407fs"></Cursor1Time>
+      <ZoomStartTime time="41703545fs"></ZoomStartTime>
+      <ZoomEndTime time="41727299fs"></ZoomEndTime>
+      <Cursor1Time time="41708340fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="242"></NameColumnWidth>
-      <ValueColumnWidth column_width="87"></ValueColumnWidth>
+      <ValueColumnWidth column_width="67"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="38" />
+   <WVObjectSize size="52" />
    <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/ch0_gthxn">
       <obj_property name="ElementShortName">ch0_gthxn</obj_property>
       <obj_property name="ObjectShortName">ch0_gthxn</obj_property>
@@ -100,6 +101,16 @@
       <obj_property name="label">top</obj_property>
       <obj_property name="DisplayName">label</obj_property>
    </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_gtwiz_userclk_tx_usrclk2_int[0]">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">[0]</obj_property>
+      <obj_property name="ObjectShortName">[0]</obj_property>
+      <obj_property name="label">hb0_gtwiz_userclk_tx_usrclk2_int</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_gtwiz_userclk_tx_active_int">
+      <obj_property name="ElementShortName">hb0_gtwiz_userclk_tx_active_int[0:0]</obj_property>
+      <obj_property name="ObjectShortName">hb0_gtwiz_userclk_tx_active_int[0:0]</obj_property>
+   </wvobject>
    <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_gtwiz_userdata_tx_int">
       <obj_property name="ElementShortName">hb0_gtwiz_userdata_tx_int[63:0]</obj_property>
       <obj_property name="ObjectShortName">hb0_gtwiz_userdata_tx_int[63:0]</obj_property>
@@ -111,16 +122,6 @@
    <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb2_gtwiz_userdata_tx_int">
       <obj_property name="ElementShortName">hb2_gtwiz_userdata_tx_int[63:0]</obj_property>
       <obj_property name="ObjectShortName">hb2_gtwiz_userdata_tx_int[63:0]</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_gtwiz_userclk_tx_usrclk2_int[0]">
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="ElementShortName">[0]</obj_property>
-      <obj_property name="ObjectShortName">[0]</obj_property>
-      <obj_property name="label">hb0_gtwiz_userclk_tx_usrclk2_int</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_gtwiz_userclk_tx_active_int">
-      <obj_property name="ElementShortName">hb0_gtwiz_userclk_tx_active_int[0:0]</obj_property>
-      <obj_property name="ObjectShortName">hb0_gtwiz_userclk_tx_active_int[0:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/ch0_txsequence_int">
       <obj_property name="ElementShortName">ch0_txsequence_int[6:0]</obj_property>
@@ -180,5 +181,125 @@
    <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/gtwiz_rx_check_reset_sync">
       <obj_property name="ElementShortName">gtwiz_rx_check_reset_sync</obj_property>
       <obj_property name="ObjectShortName">gtwiz_rx_check_reset_sync</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider803" type="divider">
+      <obj_property name="label">FIFO</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_err_ctr">
+      <obj_property name="ElementShortName">hb0_rxdata_err_ctr[16:0]</obj_property>
+      <obj_property name="ObjectShortName">hb0_rxdata_err_ctr[16:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/rxdata_err_ctr_sync">
+      <obj_property name="ElementShortName">rxdata_err_ctr_sync[15:0]</obj_property>
+      <obj_property name="ObjectShortName">rxdata_err_ctr_sync[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb_gtwiz_reset_clk_freerun_buf_int">
+      <obj_property name="ElementShortName">hb_gtwiz_reset_clk_freerun_buf_int</obj_property>
+      <obj_property name="ObjectShortName">hb_gtwiz_reset_clk_freerun_buf_int</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr">
+      <obj_property name="ElementShortName">hb0_rxdata_nml_ctr[63:0]</obj_property>
+      <obj_property name="ObjectShortName">hb0_rxdata_nml_ctr[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="vbus" fp_name="vbus986">
+      <obj_property name="label">hb0_rxdata_nml_ctr_s30</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[45]">
+         <obj_property name="ElementShortName">[45]</obj_property>
+         <obj_property name="ObjectShortName">[45]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[44]">
+         <obj_property name="ElementShortName">[44]</obj_property>
+         <obj_property name="ObjectShortName">[44]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[43]">
+         <obj_property name="ElementShortName">[43]</obj_property>
+         <obj_property name="ObjectShortName">[43]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[42]">
+         <obj_property name="ElementShortName">[42]</obj_property>
+         <obj_property name="ObjectShortName">[42]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[41]">
+         <obj_property name="ElementShortName">[41]</obj_property>
+         <obj_property name="ObjectShortName">[41]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[40]">
+         <obj_property name="ElementShortName">[40]</obj_property>
+         <obj_property name="ObjectShortName">[40]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[39]">
+         <obj_property name="ElementShortName">[39]</obj_property>
+         <obj_property name="ObjectShortName">[39]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[38]">
+         <obj_property name="ElementShortName">[38]</obj_property>
+         <obj_property name="ObjectShortName">[38]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[37]">
+         <obj_property name="ElementShortName">[37]</obj_property>
+         <obj_property name="ObjectShortName">[37]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[36]">
+         <obj_property name="ElementShortName">[36]</obj_property>
+         <obj_property name="ObjectShortName">[36]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[35]">
+         <obj_property name="ElementShortName">[35]</obj_property>
+         <obj_property name="ObjectShortName">[35]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[34]">
+         <obj_property name="ElementShortName">[34]</obj_property>
+         <obj_property name="ObjectShortName">[34]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[33]">
+         <obj_property name="ElementShortName">[33]</obj_property>
+         <obj_property name="ObjectShortName">[33]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[32]">
+         <obj_property name="ElementShortName">[32]</obj_property>
+         <obj_property name="ObjectShortName">[32]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[31]">
+         <obj_property name="ElementShortName">[31]</obj_property>
+         <obj_property name="ObjectShortName">[31]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/hb0_rxdata_nml_ctr[30]">
+         <obj_property name="ElementShortName">[30]</obj_property>
+         <obj_property name="ObjectShortName">[30]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/rxdata_nml_ctr_s30_sync">
+      <obj_property name="ElementShortName">rxdata_nml_ctr_s30_sync[15:0]</obj_property>
+      <obj_property name="ObjectShortName">rxdata_nml_ctr_s30_sync[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/rxdata_errctr_reset_int">
+      <obj_property name="ElementShortName">rxdata_errctr_reset_int</obj_property>
+      <obj_property name="ObjectShortName">rxdata_errctr_reset_int</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/fifo_nmlctr_empty">
+      <obj_property name="ElementShortName">fifo_nmlctr_empty</obj_property>
+      <obj_property name="ObjectShortName">fifo_nmlctr_empty</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/fifo_nmlctr_full">
+      <obj_property name="ElementShortName">fifo_nmlctr_full</obj_property>
+      <obj_property name="ObjectShortName">fifo_nmlctr_full</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/fifo_nmlctr_wr_rst_busy">
+      <obj_property name="ElementShortName">fifo_nmlctr_wr_rst_busy</obj_property>
+      <obj_property name="ObjectShortName">fifo_nmlctr_wr_rst_busy</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/fifo_nmlctr_rd_rst_busy">
+      <obj_property name="ElementShortName">fifo_nmlctr_rd_rst_busy</obj_property>
+      <obj_property name="ObjectShortName">fifo_nmlctr_rd_rst_busy</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/fifo_nmlctr_wr_en">
+      <obj_property name="ElementShortName">fifo_nmlctr_wr_en</obj_property>
+      <obj_property name="ObjectShortName">fifo_nmlctr_wr_en</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/gtwiz_kcu_fmc_sgb_example_top_sim/example_top_inst/fifo_nmlctr_rd_en">
+      <obj_property name="ElementShortName">fifo_nmlctr_rd_en</obj_property>
+      <obj_property name="ObjectShortName">fifo_nmlctr_rd_en</obj_property>
    </wvobject>
 </wave_config>

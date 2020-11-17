@@ -135,18 +135,21 @@ module gtwiz_kcu_fmc_sgb_example_top_sim ();
 
   // Create a basic stable link monitor which is set after 2048 consecutive cycles of link up and is reset after any
   // link loss
-  reg [10:0] link_up_ctr = 11'd0;
+  // reg [10:0] link_up_ctr = 11'd0;
+  reg [7:0] link_up_ctr = 8'd0;
   reg        link_stable = 1'b0;
   always @(posedge hb_gtwiz_reset_clk_freerun) begin
     if (link_status !== 1'b1) begin
-      link_up_ctr <= 11'd0;
+      // link_up_ctr <= 11'd0;
+      link_up_ctr <= 8'd0;
       link_stable <= 1'b0;
     end
     else begin
       if (&link_up_ctr)
         link_stable <= 1'b1;
       else
-        link_up_ctr <= link_up_ctr + 11'd1;
+        // link_up_ctr <= link_up_ctr + 11'd1;
+        link_up_ctr <= link_up_ctr + 8'd1;
     end
   end
 

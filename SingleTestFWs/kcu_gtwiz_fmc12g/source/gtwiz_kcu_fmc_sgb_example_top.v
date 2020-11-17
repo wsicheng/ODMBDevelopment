@@ -192,11 +192,6 @@ module gtwiz_kcu_fmc_sgb_example_top (
   assign hb0_gtwiz_userclk_rx_active_int = gtwiz_userclk_rx_active_int[0:0];
 
   //--------------------------------------------------------------------------------------------------------------------
-  wire [0:0] gtwiz_reset_clk_freerun_int;
-  wire [0:0] hb0_gtwiz_reset_clk_freerun_int = 1'b0;
-  assign gtwiz_reset_clk_freerun_int[0:0] = hb0_gtwiz_reset_clk_freerun_int;
-
-  //--------------------------------------------------------------------------------------------------------------------
   wire [0:0] gtwiz_reset_all_int;
   wire [0:0] hb0_gtwiz_reset_all_int = 1'b0;
   assign gtwiz_reset_all_int[0:0] = hb0_gtwiz_reset_all_int;
@@ -742,21 +737,10 @@ module gtwiz_kcu_fmc_sgb_example_top (
   reg [16:0] ch2_rxdata_err_ctr = 17'd0;
   reg [16:0] ch3_rxdata_err_ctr = 17'd0;
 
-  // wire [15:0] ch0_rxdata_gen_ctr = ch0_rxdata_err_ctr[16:1];
-  // wire [15:0] ch1_rxdata_gen_ctr = ch1_rxdata_err_ctr[16:1];
-
   wire rxdata_errctr_reset_vio_int;
-  wire rxdata_errctr_reset_vio_sync;
-
-  (* DONT_TOUCH = "TRUE" *)
-  gtwiz_kcu_fmc_sgb_example_reset_synchronizer gtwiz_errctr_reset_synchronizer_inst (
-    .clk_in  (hb0_gtwiz_userclk_tx_usrclk2_int),
-    .rst_in  (rxdata_errctr_reset_vio_int),
-    .rst_out (rxdata_errctr_reset_vio_sync)
-  );
 
   always @(posedge hb0_gtwiz_userclk_rx_usrclk2_int) begin
-    if (rxdata_errctr_reset_vio_sync) begin
+    if (rxdata_errctr_reset_vio_int) begin
       hb0_rxdata_nml_ctr <= 64'd0;
       hb0_rxdata_err_ctr <= 17'd0;
       ch0_rxdata_err_ctr <= 17'd0;
@@ -1050,18 +1034,6 @@ module gtwiz_kcu_fmc_sgb_example_top (
   );
 
 
-  reg [15:0] rxdata_nml_ctr_s30_sync = 16'd0;
-  reg [15:0] rxdata_nml_ctr_s30_meta;
-  reg [15:0] rxdata_err_ctr_sync = 16'd0;
-  reg [15:0] rxdata_err_ctr_meta;
-  always @(posedge hb_gtwiz_reset_clk_freerun_buf_int) begin
-    rxdata_err_ctr_meta     <= hb0_rxdata_err_ctr[16:1];
-    rxdata_nml_ctr_s30_meta <= hb0_rxdata_nml_ctr[45:30];
-    rxdata_err_ctr_sync     <= rxdata_err_ctr_meta;
-    rxdata_nml_ctr_s30_sync <= rxdata_nml_ctr_s30_meta;
-  end
-
-
   // Instantiate the VIO IP core for hardware bring-up and debug purposes, connecting relevant debug and analysis
   // signals which have been enabled during Wizard IP customization. This initial set of connected signals is
   // provided as a convenience and example, but more or fewer ports can be used as needed; simply re-customize and
@@ -1080,16 +1052,27 @@ module gtwiz_kcu_fmc_sgb_example_top (
     ,.probe_in7 (gtwiz_reset_tx_done_vio_sync)
     ,.probe_in8 (gtwiz_reset_rx_done_vio_sync)
     ,.probe_in9 (prbs_error_any_sync)
-    ,.probe_in10 (rxdata_err_ctr_sync)
-    ,.probe_in11 (rxdata_nml_ctr_s30_sync)
     ,.probe_out0 (hb_gtwiz_reset_all_vio_int)
     ,.probe_out1 (hb0_gtwiz_reset_tx_pll_and_datapath_int)
     ,.probe_out2 (hb0_gtwiz_reset_tx_datapath_int)
     ,.probe_out3 (hb_gtwiz_reset_rx_pll_and_datapath_vio_int)
     ,.probe_out4 (hb_gtwiz_reset_rx_datapath_vio_int)
     ,.probe_out5 (link_down_latched_reset_vio_int)
-    ,.probe_out6 (rxdata_errctr_reset_vio_int)
   );
+
+
+  wire [15:0] rxdata_err_ctr_sync = hb0_rxdata_err_ctr[16:1];
+  wire [15:0] rxdata_nml_ctr_s30_sync = hb0_rxdata_nml_ctr[45:30];
+
+  // Solution: use a separate VIO that run under the rxusrclk2 
+  vio_errctr vio_rxerrctr_rxusrclk_inst (
+    .clk (hb0_gtwiz_userclk_rx_usrclk2_int)
+    ,.probe_in0  (prbs_match_int)
+    ,.probe_in1  (rxdata_err_ctr_sync)
+    ,.probe_in2  (rxdata_nml_ctr_s30_sync)
+    ,.probe_out0 (rxdata_errctr_reset_vio_int)
+  );
+
 
   // synthesis translate_off
   assign link_status_out_sim = link_status_out;
