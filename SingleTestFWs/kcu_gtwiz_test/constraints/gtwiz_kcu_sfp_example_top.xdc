@@ -49,15 +49,15 @@
 # UltraScale FPGAs Transceivers Wizard IP example design-level XDC file
 # ----------------------------------------------------------------------------------------------------------------------
 
-set_property package_pin    AK17         [get_ports CLK_IN_P]
-set_property package_pin    AK16         [get_ports CLK_IN_N]
-set_property IOSTANDARD     DIFF_SSTL12  [get_ports CLK_IN_P]
-set_property IOSTANDARD     DIFF_SSTL12  [get_ports CLK_IN_N]
-set_property ODT            RTT_48       [get_ports CLK_IN_P]
-set_property ODT            RTT_48       [get_ports CLK_IN_N]
+set_property package_pin    AK17         [get_ports clk_in_p]
+set_property package_pin    AK16         [get_ports clk_in_n]
+set_property IOSTANDARD     DIFF_SSTL12  [get_ports clk_in_p]
+set_property IOSTANDARD     DIFF_SSTL12  [get_ports clk_in_n]
+set_property ODT            RTT_48       [get_ports clk_in_p]
+set_property ODT            RTT_48       [get_ports clk_in_n]
 
-set_property PACKAGE_PIN    F12          [get_ports SEL_SI570_CLK]
-set_property IOSTANDARD     LVCMOS18     [get_ports SEL_SI570_CLK]
+set_property PACKAGE_PIN    F12          [get_ports sel_si570_clk]
+set_property IOSTANDARD     LVCMOS18     [get_ports sel_si570_clk]
 
 # Location constraints for differential reference clock buffers
 # Note: the IP core-level XDC constrains the transceiver channel data pin locations

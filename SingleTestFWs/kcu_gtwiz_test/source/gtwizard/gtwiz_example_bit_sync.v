@@ -55,7 +55,7 @@
 // existing behavior and the effects of any modifications you may choose to make.
 // *********************************************************************************************************************
 
-module gtwiz_kcu_sfp_example_bit_synchronizer # (
+module gtwiz_example_bit_synchronizer # (
 
   parameter INITIALIZE = 5'b00000,
   parameter FREQUENCY  = 512

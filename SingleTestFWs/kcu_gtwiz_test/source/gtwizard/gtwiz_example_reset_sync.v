@@ -55,7 +55,7 @@
 // existing behavior and the effects of any modifications you may choose to make.
 // *********************************************************************************************************************
 
-module gtwiz_kcu_sfp_example_reset_synchronizer # (
+module gtwiz_example_reset_synchronizer # (
 
   parameter FREQUENCY = 512
 

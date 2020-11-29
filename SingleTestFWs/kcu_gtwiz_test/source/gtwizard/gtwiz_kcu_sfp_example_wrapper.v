@@ -123,7 +123,7 @@ module gtwiz_kcu_sfp_example_wrapper (
 
   // Declare and initialize local parameters and functions used for HDL generation
   localparam [191:0] P_CHANNEL_ENABLE = 192'b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011000000000;
-  `include "gtwiz_kcu_sfp_example_wrapper_functions.v"
+  `include "gtwiz_example_wrapper_functions.v"
   localparam integer P_TX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(10);
   localparam integer P_RX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(10);
 
@@ -150,7 +150,7 @@ module gtwiz_kcu_sfp_example_wrapper (
   assign gtwiz_userclk_tx_srcclk_out = txoutclk_int[P_TX_MASTER_CH_PACKED_IDX];
 
   // Instantiate a single instance of the transmitter user clocking network helper block
-  gtwiz_kcu_sfp_example_gtwiz_userclk_tx gtwiz_userclk_tx_inst (
+  gtwiz_example_gtwiz_userclk_tx gtwiz_kcu_sfp_userclk_tx_inst (
     .gtwiz_userclk_tx_srcclk_in   (gtwiz_userclk_tx_srcclk_out),
     .gtwiz_userclk_tx_reset_in    (gtwiz_userclk_tx_reset_in),
     .gtwiz_userclk_tx_usrclk_out  (gtwiz_userclk_tx_usrclk_out),
@@ -177,7 +177,7 @@ module gtwiz_kcu_sfp_example_wrapper (
   assign gtwiz_userclk_rx_srcclk_out = rxoutclk_int[P_RX_MASTER_CH_PACKED_IDX];
 
   // Instantiate a single instance of the receiver user clocking network helper block
-  gtwiz_kcu_sfp_example_gtwiz_userclk_rx gtwiz_userclk_rx_inst (
+  gtwiz_example_gtwiz_userclk_rx gtwiz_kcu_sfp_userclk_rx_inst (
     .gtwiz_userclk_rx_srcclk_in   (gtwiz_userclk_rx_srcclk_out),
     .gtwiz_userclk_rx_reset_in    (gtwiz_userclk_rx_reset_in),
     .gtwiz_userclk_rx_usrclk_out  (gtwiz_userclk_rx_usrclk_out),

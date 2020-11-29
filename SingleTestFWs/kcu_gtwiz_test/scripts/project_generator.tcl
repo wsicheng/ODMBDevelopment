@@ -22,8 +22,8 @@ set argc 1
 # Create project
 create_project kcu_gtwiz_test ../$PROJECT_NAME -part $FPGA_TYPE -force
 
-# set_property target_language VHDL [current_project]
-set_property target_language Verilog [current_project]
+set_property target_language VHDL [current_project]
+# set_property target_language Verilog [current_project]
 set_property target_simulator XSim [current_project]
 
 # Create 'sources_1' fileset (if not found)
@@ -40,45 +40,31 @@ set obj [get_filesets sources_1]
 # find ip -type f -name "*.xci"
 
 add_files "../source"
+add_files -fileset sim_1 "../diagnose"
 
 # Add IP core configurations
-set ipfiles [list \
-  "../ip/$FPGA_TYPE/gtwiz_kcu_sfp/gtwiz_kcu_sfp.xci"\
-  "../ip/$FPGA_TYPE/gtwiz_kcu_sfp_vio_0/gtwiz_kcu_sfp_vio_0.xci"\
-  "../ip/$FPGA_TYPE/gtwiz_kcu_sfp_in_system_ibert/gtwiz_kcu_sfp_in_system_ibert.xci"\
-  "../ip/$FPGA_TYPE/clockManager/clockManager.xci"\
-  "../ip/$FPGA_TYPE/ila/ila.xci"
-]
-add_files -norecurse $ipfiles
+add_files -norecurse "../ip/$FPGA_TYPE/gtwiz_kcu_sfp/gtwiz_kcu_sfp.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/gtwiz_kcu_fmc/gtwiz_kcu_fmc.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/gtwiz_kcu_sfp_vio_0/gtwiz_kcu_sfp_vio_0.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/gtwiz_kcu_sfp_in_system_ibert/gtwiz_kcu_sfp_in_system_ibert.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/clkwiz/clkwiz.xci"
+add_files -norecurse "../ip/$FPGA_TYPE/ila/ila.xci"
 
 # Add constraint files
 add_files -fileset constrs_1 -norecurse "../constraints/gtwiz_kcu_sfp_example_top.xdc"
 
-# if {[string equal $BOARD KCU105]} {
-#     add_files -fileset constrs_1 -norecurse "constraints/ibert_ultrascale_gth_kcu.xdc"
-#     add_files -fileset constrs_1 -norecurse "constraints/ibert_ultrascale_gth_ip_kcu.xdc"
-#     add_files -fileset constrs_1 -norecurse "constraints/kcu105_pinout.xdc"
-#     # Set compile order for constraint files
-#     set_property USED_IN_SYNTHESIS false [get_files constraints/ibert_ultrascale_gth_ip_kcu.xdc]
-#     set_property PROCESSING_ORDER LATE [get_files constraints/ibert_ultrascale_gth_ip_kcu.xdc]
-# }
-
-
 # # Set 'sources_1' fileset properties
 # set obj [get_filesets sources_1]
-# set_property -name "top" -value "odmb7_ucsb_dev" -objects $obj
-# set_property -name "top_auto_set" -value "0" -objects $obj
-set_property file_type {Verilog Header} [get_files  ../source/gtwiz_kcu_fmc_example_wrapper_functions.v]
-
-# # Add tcl for simulation
-# ## not set currently, add when needed
-# #set_property -name {xsim.simulate.custom_tcl} -value {../../../../source/Firmware_tb.tcl} -objects [get_filesets sim_1]
+set_property -name "top" -value "gtwiz_kcu_test_top" -objects $obj
+set_property -name "top_auto_set" -value "0" -objects $obj
+set_property file_type {Verilog Header} [get_files  ../source/gtwizard/gtwiz_example_wrapper_functions.v]
 
 # # Set ip as global
-# set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci]
-# set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/clockManager/clockManager.xci]
-# # set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/ila_0/ila_0.xci]
-# # set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/vio_0/vio_0.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/gtwiz_kcu_sfp/gtwiz_kcu_sfp.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/gtwiz_kcu_fmc/gtwiz_kcu_fmc.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/clkwiz/clkwiz.xci]
+# set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/ila_0/ila_0.xci]
+# set_property generate_synth_checkpoint false [get_files  ip/$FPGA_TYPE/vio_0/vio_0.xci]
 
 puts "\[Success\] Created project"
 close_project

@@ -55,7 +55,7 @@
 // module instance checks data from a single transceiver channel for data reception demonstration purposes.
 // =====================================================================================================================
 
-module gtwiz_kcu_sfp_example_checking_8b10b (
+module gtwiz_example_checking_8b10b (
   input  wire         gtwiz_reset_all_in,
   input  wire         gtwiz_userclk_rx_usrclk2_in,
   input  wire         gtwiz_userclk_rx_active_in,
@@ -77,7 +77,7 @@ module gtwiz_kcu_sfp_example_checking_8b10b (
   wire example_checking_reset_sync;
 
   (* DONT_TOUCH = "TRUE" *)
-  gtwiz_kcu_sfp_example_reset_synchronizer example_checking_reset_synchronizer_inst (
+  gtwiz_example_reset_synchronizer example_checking_reset_synchronizer_inst (
     .clk_in  (gtwiz_userclk_rx_usrclk2_in),
     .rst_in  (example_checking_reset_int),
     .rst_out (example_checking_reset_sync)

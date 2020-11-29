@@ -57,7 +57,7 @@
 // modifications you may choose to make.
 // *********************************************************************************************************************
 
-module gtwiz_kcu_sfp_example_gtwiz_userclk_tx #(
+module gtwiz_example_gtwiz_userclk_tx #(
 
   parameter integer P_CONTENTS                     = 0,
   parameter integer P_FREQ_RATIO_SOURCE_TO_USRCLK  = 1,
