@@ -17,6 +17,7 @@ set PRBS_PATTERN {PRBS 31-bit}
 set programfpga 0
 set bitfilename {}
 set disable_spy_tx 0
+set spy_tx_loc {localhost:.../Quad_226/MGT_X0Y11}
 set tag "test2"
 
 # # Connect to the Digilent Cable on localhost:3121
@@ -37,9 +38,9 @@ if {$programfpga == 1} {
     refresh_hw_device [lindex [get_hw_devices] 0]
 }
 
-if ($disable_spy_tx) {
-    set_property PORT.TXPD 3 [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y11]
-    commit_hw_sio [get_hw_sio_gts localhost:.../Quad_226/MGT_X0Y121]
+if {$disable_spy_tx} {
+    set_property PORT.TXPD 3 [get_hw_sio_gts $spy_tx_loc]
+    commit_hw_sio [get_hw_sio_gts $spy_tx_loc]
 
     startgroup
     set_property OUTPUT_VALUE 0 [get_hw_probes DAQ_SPY_SEL -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
@@ -87,7 +88,7 @@ proc reset_links_all {links} {
     commit_hw_sio [get_hw_sio_links $links]
 
     refresh_hw_sio $links
-    puts "Finishing resetting link: $ilink of $nlinks"
+    puts "Finishing resetting all links"
 }
 
 proc write_to_file {fname outstr} {
@@ -119,7 +120,7 @@ proc record_BER_all {links tag} {
         set outstr "$RX_BER $RX_bits $err_count $RX_pattern"
         puts "Found for link $ilink of $nlinks:  $outstr"
         
-        set fname [format "reports/report_%s_link%s.out" $tag $ilink]
+        set fname [format "report_%s_link%s.txt" $tag $ilink]
         write_to_file $fname $outstr
     }
 }
@@ -149,7 +150,7 @@ proc run_eyescans_all {links tag} {
     remove_hw_sio_scan [get_hw_sio_scans]
 
     set nlinks [llength $links]
-    set fname [format "reports/report_%s_scans.out" $tag]
+    set fname [format "report_%s_scans.txt" $tag]
 
     for {set i 0} {$i < $nlinks} {incr i} {
         # Check the link is up first
