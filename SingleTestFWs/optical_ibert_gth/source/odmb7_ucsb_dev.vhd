@@ -95,7 +95,15 @@ entity odmb7_ucsb_dev is
     SPY_SDA       : inout std_logic;
     SPY_SCL       : inout std_logic;
     SPY_SD        : in std_logic;       -- Signal Detect
-    SPY_TDIS      : out std_logic       -- Transmitter Disable
+    SPY_TDIS      : out std_logic;      -- Transmitter Disable
+
+    --------------------------------
+    -- Pins needed to be controled for output
+    --------------------------------
+    KUS_DL_SEL    : out std_logic;
+    FPGA_SEL_18   : out std_logic;
+    RST_CLKS_18_B : out std_logic;
+    DONE          : in std_logic
 
     --------------------------------
     -- IBERT test signals for 
@@ -205,8 +213,11 @@ architecture odmb_inst of odmb7_ucsb_dev is
 begin
 
   -------------------------------------------------------------------------------------------
-  -- Handle clock synthesizer signals and generate clocks
+  -- Output pins need to be controlled
   -------------------------------------------------------------------------------------------
+  default_jtag_sel  : PULLUP port map (O => KUS_DL_SEL);
+  default_rst_clks  : PULLUP port map (O => RST_CLKS_18_B);
+  default_fpga_prog : PULLDOWN port map (O => FPGA_SEL_18);
 
   -------------------------------------------------------------------------------------------
   -- Handle VME signals
