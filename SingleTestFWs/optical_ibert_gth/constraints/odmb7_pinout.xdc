@@ -145,3 +145,18 @@ set_property IOSTANDARD   LVCMOS18 [get_ports SPY_SD]
 set_property package_pin  E8       [get_ports SPY_TDIS]
 set_property IOSTANDARD   LVCMOS18 [get_ports SPY_TDIS]
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Selector pins
+# ----------------------------------------------------------------------------------------------------------------------
+set_property PACKAGE_PIN U21        [get_ports KUS_DL_SEL]
+set_property IOSTANDARD LVCMOS18    [get_ports KUS_DL_SEL]
+
+set_property PACKAGE_PIN T23        [get_ports FPGA_SEL_18]
+set_property IOSTANDARD LVCMOS18    [get_ports FPGA_SEL_18]
+
+set_property PACKAGE_PIN W29        [get_ports RST_CLKS_18_B]
+set_property IOSTANDARD LVCMOS18    [get_ports RST_CLKS_18_B]
+
+set_property PACKAGE_PIN L9         [get_ports DONE]
+set_property IOSTANDARD LVCMOS18    [get_ports DONE]

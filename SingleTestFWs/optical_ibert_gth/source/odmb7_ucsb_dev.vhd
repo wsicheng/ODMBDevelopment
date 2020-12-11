@@ -215,9 +215,9 @@ begin
   -------------------------------------------------------------------------------------------
   -- Output pins need to be controlled
   -------------------------------------------------------------------------------------------
-  default_jtag_sel  : PULLUP port map (O => KUS_DL_SEL);
-  default_rst_clks  : PULLUP port map (O => RST_CLKS_18_B);
-  default_fpga_prog : PULLDOWN port map (O => FPGA_SEL_18);
+  KUS_DL_SEL <= '1';
+  FPGA_SEL_18 <= '0';
+  RST_CLKS_18_B <= '1';
 
   -------------------------------------------------------------------------------------------
   -- Handle VME signals
