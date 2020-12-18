@@ -37,6 +37,27 @@ set_property package_pin M5  [get_ports REF_CLK_5_N]
 set_property package_pin T6  [get_ports CLK_125_REF_P]
 set_property package_pin T5  [get_ports CLK_125_REF_N]
 
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_1_P]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_1_N]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_2_P]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_2_N]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_3_P]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_3_N]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_4_P]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_4_N]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_5_P]
+# set_property DIFF_TERM TRUE  [get_ports REF_CLK_5_N]
+# set_property DIFF_TERM TRUE  [get_ports CLK_125_REF_P]
+# set_property DIFF_TERM TRUE  [get_ports CLK_125_REF_N]
+
+# set_property PACKAGE_PIN K20        [get_ports EMCCLK]
+# set_property IOSTANDARD LVCMOS18    [get_ports EMCCLK]
+# set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {IBUFG_EMCCLK/O}]
+
+# set_property PACKAGE_PIN AJ16       [get_ports LF_CLK]
+# set_property IOSTANDARD LVCMOS18    [get_ports LF_CLK]
+# set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {IBUFG_LFCLK/O}]
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Optical TX/RX pins
 # ----------------------------------------------------------------------------------------------------------------------
@@ -145,18 +166,51 @@ set_property IOSTANDARD   LVCMOS18 [get_ports SPY_SD]
 set_property package_pin  E8       [get_ports SPY_TDIS]
 set_property IOSTANDARD   LVCMOS18 [get_ports SPY_TDIS]
 
-
 # ----------------------------------------------------------------------------------------------------------------------
-# Selector pins
+# Selector and monitor pins
 # ----------------------------------------------------------------------------------------------------------------------
 set_property PACKAGE_PIN U21        [get_ports KUS_DL_SEL]
-set_property IOSTANDARD LVCMOS18    [get_ports KUS_DL_SEL]
+set_property IOSTANDARD  LVCMOS18   [get_ports KUS_DL_SEL]
 
 set_property PACKAGE_PIN T23        [get_ports FPGA_SEL_18]
-set_property IOSTANDARD LVCMOS18    [get_ports FPGA_SEL_18]
+set_property IOSTANDARD  LVCMOS18   [get_ports FPGA_SEL_18]
 
 set_property PACKAGE_PIN W29        [get_ports RST_CLKS_18_B]
-set_property IOSTANDARD LVCMOS18    [get_ports RST_CLKS_18_B]
+set_property IOSTANDARD  LVCMOS18   [get_ports RST_CLKS_18_B]
 
 set_property PACKAGE_PIN L9         [get_ports DONE]
-set_property IOSTANDARD LVCMOS18    [get_ports DONE]
+set_property IOSTANDARD  LVCMOS18   [get_ports DONE]
+
+set_property PACKAGE_PIN AN14       [get_ports CCB_HARDRST_B]
+set_property IOSTANDARD  LVCMOS18   [get_ports CCB_HARDRST_B]
+set_property PACKAGE_PIN AP14       [get_ports CCB_SOFT_RST]
+set_property IOSTANDARD  LVCMOS18   [get_ports CCB_SOFT_RST]
+
+# ----------------------------------------------------------------------------------------------------------------------
+# LED pins
+# ----------------------------------------------------------------------------------------------------------------------
+set_property PACKAGE_PIN P20        [get_ports LEDS_CFV[0]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[0]]
+set_property PACKAGE_PIN T27        [get_ports LEDS_CFV[1]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[1]]
+set_property PACKAGE_PIN N22        [get_ports LEDS_CFV[2]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[2]]
+set_property PACKAGE_PIN R27        [get_ports LEDS_CFV[3]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[3]]
+set_property PACKAGE_PIN T25        [get_ports LEDS_CFV[4]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[4]]
+set_property PACKAGE_PIN R26        [get_ports LEDS_CFV[5]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[5]]
+set_property PACKAGE_PIN R25        [get_ports LEDS_CFV[6]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[6]]
+set_property PACKAGE_PIN T24        [get_ports LEDS_CFV[7]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[7]]
+set_property PACKAGE_PIN R23        [get_ports LEDS_CFV[8]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[8]]
+set_property PACKAGE_PIN P23        [get_ports LEDS_CFV[9]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[9]]
+set_property PACKAGE_PIN P21        [get_ports LEDS_CFV[10]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[10]]
+set_property PACKAGE_PIN M22        [get_ports LEDS_CFV[11]]
+set_property IOSTANDARD LVCMOS18    [get_ports LEDS_CFV[11]]
+
