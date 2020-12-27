@@ -4,6 +4,8 @@
 # Environment variables
 set BOARD ODMB7
 # set BOARD KCU105
+# set CONFIG TwoQuads
+set CONFIG FourQuads
 
 if {[string equal $BOARD ODMB7]} {
     set FPGA_TYPE xcku035-ffva1156-1-c; # for ODMB7
@@ -13,6 +15,20 @@ if {[string equal $BOARD ODMB7]} {
     set PROJECT_NAME kcu_project
 }
 
+if {[string equal $CONFIG TwoQuads]} {
+    set TOP_MODULE "odmb7_ibert_2quads"
+    set IBERT_MODULE "ibert_2quads_sepclks"
+    set PROJECT_NAME project_2quads_sepclks
+} elseif {[string equal $CONFIG FourQuads]} {
+    set TOP_MODULE "odmb7_ibert_4quads"
+    set IBERT_MODULE "ibert_4quads_sepclks"
+    set PROJECT_NAME project_4quads_sepclks
+} else {
+    set TOP_MODULE "odmb7_ucsb_dev"
+    set IBERT_MODULE "ibert_odmb7_gth"
+    set PROJECT_NAME project_4quads_sameclk
+}
+
 # Generate ip
 set argv $FPGA_TYPE
 set argc 1
@@ -20,7 +36,7 @@ set argc 1
 # source ip_generator.tcl
 
 # Create project
-create_project ibert_ultrascale_gth ../$PROJECT_NAME -part $FPGA_TYPE -force
+create_project $TOP_MODULE ../$PROJECT_NAME -part $FPGA_TYPE -force
 
 set_property target_language VHDL [current_project]
 set_property target_simulator XSim [current_project]
@@ -30,41 +46,31 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
   create_fileset -srcset sources_1
 }
 
-# Set 'sources_1' fileset object
-set obj [get_filesets sources_1]
+# Add the top file and supporting sources
+add_files -norecurse "../source/${TOP_MODULE}.vhd"
+add_files -norecurse "../source/clock_counting.vhd"
 
-# Import local files from the original project
-# Add files
-# for f in source/*; do echo \"$f\"\\; done
-# find ip -type f -name "*.xci"
-
-# Add IP core configurations
-add_files -norecurse "../source/odmb7_ucsb_dev.vhd"
-add_files -norecurse "../ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci"
+# Add common IP core configurations
+add_files -norecurse "../ip/$FPGA_TYPE/$IBERT_MODULE/$IBERT_MODULE.xci"
 add_files -norecurse "../ip/$FPGA_TYPE/clockManager/clockManager.xci"
 add_files -norecurse "../ip/$FPGA_TYPE/vio_ibert/vio_ibert.xci"
-# add_files -norecurse "../ip/$FPGA_TYPE/ila/ila.xci"
 
-# Add constraint files
-add_files -fileset constrs_1 -norecurse "../constraints/ibert_ultrascale_gth.xdc"
-add_files -fileset constrs_1 -norecurse "../constraints/ibert_ultrascale_gth_ip.xdc"
+# Add common constraint files
 add_files -fileset constrs_1 -norecurse "../constraints/odmb7_pinout.xdc"
+add_files -fileset constrs_1 -norecurse "../constraints/odmb7_clocks.xdc"
+add_files -fileset constrs_1 -norecurse "../constraints/${IBERT_MODULE}_ip.xdc"
 
 # Set compile order for constraint files
-set_property USED_IN_SYNTHESIS false [get_files ../constraints/ibert_ultrascale_gth_ip.xdc]
-set_property PROCESSING_ORDER  LATE  [get_files ../constraints/ibert_ultrascale_gth_ip.xdc]
+set_property USED_IN_SYNTHESIS false [get_files ../constraints/${IBERT_MODULE}_ip.xdc]
+set_property PROCESSING_ORDER  LATE  [get_files ../constraints/${IBERT_MODULE}_ip.xdc]
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
-set_property -name "top" -value "odmb7_ucsb_dev" -objects $obj
+set_property -name "top" -value $TOP_MODULE -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 
-# Add tcl for simulation
-## not set currently, add when needed
-#set_property -name {xsim.simulate.custom_tcl} -value {../../../../source/Firmware_tb.tcl} -objects [get_filesets sim_1]
-
 # Set ip as global
-set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/ibert_odmb7_gth/ibert_odmb7_gth.xci]
+set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/$IBERT_MODULE/$IBERT_MODULE.xci]
 set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/clockManager/clockManager.xci]
 set_property generate_synth_checkpoint false [get_files  ../ip/$FPGA_TYPE/vio_ibert/vio_ibert.xci]
 # set_property generate_synth_checkpoint false [get_files ../ip/$FPGA_TYPE/ila/ila.xci]
