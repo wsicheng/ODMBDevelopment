@@ -86,6 +86,12 @@ entity gtwiz_kcu_test_top is
     -- fmc_cfg2_tx_n      : out std_logic_vector(3 downto 0);
     -- fmc_cfg2_tx_p      : out std_logic_vector(3 downto 0);
 
+    -- synthesis translate_off
+    hb_gtwiz_reset_all_in : in std_logic; --simonly
+    link_down_latched_reset_in : in std_logic; --simonly
+    link_status_out_sim : out std_logic; --simonly
+    -- synthesis translate_on
+
     -- 300 MHz clk_in
     clk_in_p          : in std_logic;
     clk_in_n          : in std_logic;
@@ -96,99 +102,47 @@ end gtwiz_kcu_test_top;
 
 architecture Behavioral of gtwiz_kcu_test_top is
 
-  component gtwiz_kcu_sfp_example_wrapper is
+  component mgt_sfp is
   port (
-    gthrxn_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    gthrxp_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    gthtxn_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    gthtxp_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    gtwiz_userclk_tx_reset_in : in std_logic := '0';
-    gtwiz_userclk_tx_srcclk_out : out std_logic := '0';
-    gtwiz_userclk_tx_usrclk_out : out std_logic := '0';
-    gtwiz_userclk_tx_usrclk2_out : out std_logic := '0';
-    gtwiz_userclk_tx_active_out : out std_logic := '0';
-    gtwiz_userclk_rx_reset_in : in std_logic := '0';
-    gtwiz_userclk_rx_srcclk_out : out std_logic := '0';
-    gtwiz_userclk_rx_usrclk_out : out std_logic := '0';
-    gtwiz_userclk_rx_usrclk2_out : out std_logic := '0';
-    gtwiz_userclk_rx_active_out : out std_logic := '0';
-    gtwiz_reset_clk_freerun_in : in std_logic := '0';
-    gtwiz_reset_all_in : in std_logic := '0';
-    gtwiz_reset_tx_pll_and_datapath_in : in std_logic := '0';
-    gtwiz_reset_tx_datapath_in : in std_logic := '0';
-    gtwiz_reset_rx_pll_and_datapath_in : in std_logic := '0';
-    gtwiz_reset_rx_datapath_in : in std_logic := '0';
-    gtwiz_reset_rx_cdr_stable_out : out std_logic := '0';
-    gtwiz_reset_tx_done_out : out std_logic := '0';
-    gtwiz_reset_rx_done_out : out std_logic := '0';
-    gtwiz_userdata_tx_in : in std_logic_vector(63 downto 0) := (others=> '0');
-    gtwiz_userdata_rx_out : out std_logic_vector(63 downto 0) := (others=> '0');
-    gtrefclk00_in : in std_logic := '0';
-    qpll0outclk_out : out std_logic := '0';
-    qpll0outrefclk_out : out std_logic := '0';
-    drpaddr_in : in std_logic_vector(17 downto 0) := (others=> '0');
-    drpclk_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    drpdi_in : in std_logic_vector(31 downto 0) := (others=> '0');
-    drpen_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    drpwe_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    eyescanreset_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    rx8b10ben_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    rxcommadeten_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    rxmcommaalignen_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    rxpcommaalignen_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    rxlpmen_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    rxrate_in : in std_logic_vector(5 downto 0) := (others=> '0');
-    tx8b10ben_in : in std_logic_vector(1 downto 0) := (others=> '0');
-    txctrl0_in : in std_logic_vector(31 downto 0) := (others=> '0');
-    txctrl1_in : in std_logic_vector(31 downto 0) := (others=> '0');
-    txctrl2_in : in std_logic_vector(15 downto 0) := (others=> '0');
-    txdiffctrl_in : in std_logic_vector(7 downto 0) := (others=> '0');
-    txpostcursor_in : in std_logic_vector(9 downto 0) := (others=> '0');
-    txprecursor_in : in std_logic_vector(9 downto 0) := (others=> '0');
-    drpdo_out : out std_logic_vector(31 downto 0) := (others=> '0');
-    drprdy_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    gtpowergood_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    rxbyteisaligned_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    rxbyterealign_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    rxcommadet_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    rxctrl0_out : out std_logic_vector(31 downto 0) := (others=> '0');
-    rxctrl1_out : out std_logic_vector(31 downto 0) := (others=> '0');
-    rxctrl2_out : out std_logic_vector(15 downto 0) := (others=> '0');
-    rxctrl3_out : out std_logic_vector(15 downto 0) := (others=> '0');
-    rxpmaresetdone_out : out std_logic_vector(1 downto 0) := (others=> '0');
-    txpmaresetdone_out : out std_logic_vector(1 downto 0) := (others=> '0')
-  );
-  end component;
-
-  component gtwiz_kcu_sfp_in_system_ibert is
-  port (
-    drpclk_o : out std_logic_vector (1 downto 0);
-    gt0_drpen_o : out std_logic_vector (0 to 0);
-    gt0_drpwe_o : out std_logic_vector (0 to 0);
-    gt0_drpaddr_o : out std_logic_vector (8 downto 0);
-    gt0_drpdi_o : out std_logic_vector (15 downto 0);
-    gt0_drprdy_i : in std_logic_vector (0 to 0);
-    gt0_drpdo_i : in std_logic_vector (15 downto 0);
-    gt1_drpen_o : out std_logic_vector (0 to 0);
-    gt1_drpwe_o : out std_logic_vector (0 to 0);
-    gt1_drpaddr_o : out std_logic_vector (8 downto 0);
-    gt1_drpdi_o : out std_logic_vector (15 downto 0);
-    gt1_drprdy_i : in std_logic_vector (0 to 0);
-    gt1_drpdo_i : in std_logic_vector (15 downto 0);
-    eyescanreset_o : out std_logic_vector (1 downto 0);
-    rxrate_o : out std_logic_vector (5 downto 0);
-    txdiffctrl_o : out std_logic_vector (7 downto 0);
-    txprecursor_o : out std_logic_vector (9 downto 0);
-    txpostcursor_o : out std_logic_vector (9 downto 0);
-    rxlpmen_o : out std_logic_vector (1 downto 0);
-    rxrate_i : in std_logic_vector (5 downto 0);
-    txdiffctrl_i : in std_logic_vector (7 downto 0);
-    txprecursor_i : in std_logic_vector (9 downto 0);
-    txpostcursor_i : in std_logic_vector (9 downto 0);
-    rxlpmen_i : in std_logic_vector (1 downto 0);
-    drpclk_i : in std_logic_vector (1 downto 0);
-    rxoutclk_i : in std_logic_vector (1 downto 0);
-    clk : in std_logic
+    mgtrefclk       : in  std_logic; -- buffer'ed reference clock signal
+    txusrclk        : out std_logic; -- USRCLK for TX data preparation
+    rxusrclk        : out std_logic; -- USRCLK for RX data readout
+    sysclk          : in  std_logic; -- clock for the helper block, 80 MHz
+    
+    -- Serial data ports for transceiver at bank 226
+    sfp_ch0_rx_n    : in  std_logic;
+    sfp_ch0_rx_p    : in  std_logic;
+    sfp_ch0_tx_n    : out std_logic;
+    sfp_ch0_tx_p    : out std_logic;
+    
+    sfp_ch1_rx_n    : in  std_logic;
+    sfp_ch1_rx_p    : in  std_logic;
+    sfp_ch1_tx_n    : out std_logic;
+    sfp_ch1_tx_p    : out std_logic;
+    
+    -- Transmitter signals
+    txdata_ch0      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
+    txdata_ch1      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
+    txdata_valid    : in std_logic_vector(1 downto 0);   -- Flag for valid data;
+    txdiffctrl_ch0  : in std_logic_vector(3 downto 0);  -- Controls the TX voltage swing
+    txdiffctrl_ch1  : in std_logic_vector(3 downto 0);  -- Controls the TX voltage swing
+    loopback        : in std_logic_vector(2 downto 0);  -- For internal loopback tests
+    
+    -- Receiver signals
+    rxdata_ch0      : out std_logic_vector(31 downto 0);  -- Data received
+    rxdata_ch1      : out std_logic_vector(31 downto 0);  -- Data received
+    rxdata_valid    : out std_logic_vector(1  downto 0);  -- Flag for valid data;
+    bad_rx          : out std_logic_vector(1  downto 0);  -- Flag for fiber errors;
+    
+    -- PRBS signals
+    prbs_type       : in  std_logic_vector(3 downto 0);
+    prbs_tx_en      : in  std_logic_vector(1 downto 0);
+    prbs_rx_en      : in  std_logic_vector(1 downto 0);
+    prbs_en_tst_cnt : in  std_logic_vector(15 downto 0);
+    prbs_err_cnt    : out std_logic_vector(15 downto 0);
+    
+    -- Clock for the gtwizard system
+    reset           : in  std_logic
   );
   end component;
 
@@ -282,7 +236,6 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal gtwiz_userclk_rx_usrclk2_int : std_logic := '0';
   signal gtwiz_userclk_rx_active_int : std_logic := '0';
   signal gtwiz_reset_clk_freerun_int : std_logic := '0';
-  signal gtwiz_reset_all_int : std_logic := '0';
   signal gtwiz_reset_tx_pll_and_datapath_int : std_logic := '0';
   signal gtwiz_reset_tx_datapath_int : std_logic := '0';
   signal gtwiz_reset_rx_pll_and_datapath_int : std_logic := '0';
@@ -331,7 +284,7 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal drprdy_int : std_logic_vector(1 downto 0) := (others=> '0');
 
   -- signals local to this wrapper
-  signal hb_gtwiz_reset_all_in : std_logic := '0';
+  -- signal hb_gtwiz_reset_all_in : std_logic := '0';
   signal hb0_gtwiz_userclk_tx_reset_int : std_logic := '0';
   signal hb0_gtwiz_userclk_rx_reset_int : std_logic := '0';
 
@@ -403,6 +356,8 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal gtwiz_tx_stimulus_reset_sync : std_logic := '0';
   signal hb0_gtwiz_reset_rx_done_int : std_logic := '0';
 
+  signal txdata_valid_int : std_logic_vector(1 downto 0) :=(others=> '0');
+
   signal ch0_txdata_reg : std_logic_vector(31 downto 0) :=(others=> '0');
   signal ch1_txdata_reg : std_logic_vector(31 downto 0) :=(others=> '0');
 
@@ -411,6 +366,10 @@ architecture Behavioral of gtwiz_kcu_test_top is
 
   -- rx data checking
   signal prbs_match_int : std_logic_vector(1 downto 0) := (others=> '0');
+  signal loopback_int : std_logic_vector(2 downto 0) := (others=> '0');
+
+  signal rxdata_valid_int : std_logic_vector(1 downto 0) := (others=> '0');
+  signal bad_rx_int : std_logic_vector(1 downto 0) := (others=> '0');
 
   signal ch0_rxctrl2_int: std_logic_vector(7 downto 0) := (others=> '0');
   signal ch1_rxctrl2_int: std_logic_vector(7 downto 0) := (others=> '0');
@@ -422,32 +381,20 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal ch1_rxdata_err_ctr : unsigned(16 downto 0) := (others=> '0');
   signal hb0_rxdata_nml_ctr : unsigned(63 downto 0) := (others=> '0');
 
+  -- prbs signals <-- not used yet
+  signal prbs_type_int : std_logic_vector(3 downto 0) := (others=> '0');
+  signal prbs_tx_en_int : std_logic_vector(1 downto 0) := (others=> '0');
+  signal prbs_rx_en_int : std_logic_vector(1 downto 0) := (others=> '0');
+  signal prbs_en_tst_cnt_int : std_logic_vector(15 downto 0) := (others=> '0');
+  signal prbs_err_cnt_int : std_logic_vector(15 downto 0) := (others=> '0');
+
   attribute dont_touch : string;
-  attribute dont_touch of bit_synchronizer_vio_gtpowergood_0_inst : label is "true";
-  attribute dont_touch of bit_synchronizer_vio_gtpowergood_1_inst : label is "true";
-  attribute dont_touch of bit_synchronizer_vio_txpmaresetdone_0_inst : label is "true";
-  attribute dont_touch of bit_synchronizer_vio_txpmaresetdone_1_inst: label is "true";
-  attribute dont_touch of bit_synchronizer_vio_rxpmaresetdone_0_inst: label is "true";
-  attribute dont_touch of bit_synchronizer_vio_rxpmaresetdone_1_inst: label is "true";
-  attribute dont_touch of bit_synchronizer_vio_gtwiz_reset_rx_done_0_inst: label is "true";
-  attribute dont_touch of bit_synchronizer_vio_gtwiz_reset_tx_done_0_inst: label is "true";
   attribute dont_touch of bit_synchronizer_link_down_latched_reset_inst: label is "true";
   attribute dont_touch of gtwiz_tx_stimulus_reset_synchronizer_inst: label is "true";
 
 begin
   -- for kcu105
   sel_si570_clk <= '0';
-
-  -- serial data
-  gthrxn_int(0) <= sfp_ch0_rx_n;
-  gthrxn_int(1) <= sfp_ch1_rx_n;
-  gthrxp_int(0) <= sfp_ch0_rx_p;
-  gthrxp_int(1) <= sfp_ch1_rx_p;
-
-  sfp_ch0_tx_n <= gthtxn_int(0);
-  sfp_ch1_tx_n <= gthtxn_int(1);
-  sfp_ch0_tx_p <= gthtxp_int(0);
-  sfp_ch1_tx_p <= gthtxp_int(1);
 
   -- The TX user clocking helper block should be held in reset until the clock source of that block is known to be
   -- stable. The following assignment is an example of how that stability can be determined, based on the selected TX
@@ -491,8 +438,15 @@ begin
   -- bufg_clk_freerun_inst: BUFG port map(I => hb_gtwiz_reset_clk_freerun_in, O => hb_gtwiz_reset_clk_freerun_buf_int );
   hb_gtwiz_reset_clk_freerun_buf_int <= clk80;
 
-  hb_gtwiz_reset_all_int <= hb_gtwiz_reset_all_buf_int or hb_gtwiz_reset_all_init_int or hb_gtwiz_reset_all_vio_int;
-  ibuf_hb_gtwiz_reset_all_inst: IBUF port map(I => hb_gtwiz_reset_all_in, O => hb_gtwiz_reset_all_buf_int);
+  hb_gtwiz_reset_all_int <= hb_gtwiz_reset_all_buf_int or hb_gtwiz_reset_all_init_int or hb_gtwiz_reset_all_vio_int
+                            -- synthesis translate_off
+                            or hb_gtwiz_reset_all_in
+                            -- synthesis translate_on
+                            ;
+
+  -- synthesis translate_off
+  link_status_out_sim <= link_status_out;
+  -- synthesis translate_on
 
   -- The example initialization module interacts with the reset controller helper block and other example design logic
   -- to retry failed reset attempts in order to mitigate bring-up issues such as initially-unavilable reference clocks
@@ -535,12 +489,6 @@ begin
 
   hb_gtwiz_reset_rx_datapath_int <= hb_gtwiz_reset_rx_datapath_init_int or hb_gtwiz_reset_rx_datapath_vio_int;
 
-  -- tx and rx data
-  gtwiz_userdata_tx_int(63 downto 32) <= hb1_gtwiz_userdata_tx_int;
-  gtwiz_userdata_tx_int(31 downto 0) <= hb0_gtwiz_userdata_tx_int;
-  hb1_gtwiz_userdata_rx_int <= gtwiz_userdata_rx_int(63 downto 32);
-  hb0_gtwiz_userdata_rx_int <= gtwiz_userdata_rx_int(31 downto 0);
-
   -- reference clk
   IBUFDS_GTE3_inst : IBUFDS_GTE3
     generic map (
@@ -568,67 +516,6 @@ begin
   -- ===================================================================================================================
   -- VIO FOR HARDWARE BRING-UP AND DEBUG
   -- ===================================================================================================================
-
-  -- Synchronize gtpowergood into the free-running clock domain for VIO usage
-  bit_synchronizer_vio_gtpowergood_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => gtpowergood_int(0),
-    o_out  => gtpowergood_vio_sync(0)
-  );
-
-  bit_synchronizer_vio_gtpowergood_1_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => gtpowergood_int(1),
-    o_out  => gtpowergood_vio_sync(1)
-  );
-
-  -- Synchronize txpmaresetdone into the free-running clock domain for VIO usage
-  bit_synchronizer_vio_txpmaresetdone_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => txpmaresetdone_int(0),
-    o_out  => txpmaresetdone_vio_sync(0)
-  );
-
-  bit_synchronizer_vio_txpmaresetdone_1_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => txpmaresetdone_int(1),
-    o_out  => txpmaresetdone_vio_sync(1)
-  );
-
-  -- Synchronize rxpmaresetdone into the free-running clock domain for VIO usage
-  bit_synchronizer_vio_rxpmaresetdone_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => rxpmaresetdone_int(0),
-    o_out  => rxpmaresetdone_vio_sync(0)
-  );
-
-  bit_synchronizer_vio_rxpmaresetdone_1_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => rxpmaresetdone_int(1),
-    o_out  => rxpmaresetdone_vio_sync(1)
-  );
-
-  -- Synchronize gtwiz_reset_tx_done into the free-running clock domain for VIO usage
-  bit_synchronizer_vio_gtwiz_reset_tx_done_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => gtwiz_reset_tx_done_int,
-    o_out  => gtwiz_reset_tx_done_vio_sync
-  );
-
-  -- Synchronize gtwiz_reset_rx_done into the free-running clock domain for VIO usage
-  bit_synchronizer_vio_gtwiz_reset_rx_done_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => hb_gtwiz_reset_clk_freerun_buf_int,
-    i_in   => gtwiz_reset_rx_done_int,
-    o_out  => gtwiz_reset_rx_done_vio_sync
-  );
 
   -- Synchronize the latched link down reset input and the VIO-driven signal into the free-running clock domain
   bit_synchronizer_link_down_latched_reset_inst: gtwiz_example_bit_synchronizer
@@ -666,7 +553,8 @@ begin
   hb1_gtwiz_userdata_tx_int <= ch1_txdata_reg;
 
   -- Synchronize the example stimulus reset condition into the txusrclk2 domain
-  gtwiz_tx_stimulus_reset_int <= hb_gtwiz_reset_all_int or (not hb0_gtwiz_reset_rx_done_int) or (not hb0_gtwiz_userclk_tx_active_int);
+  -- gtwiz_tx_stimulus_reset_int <= hb_gtwiz_reset_all_int or (not hb0_gtwiz_reset_rx_done_int) or (not hb0_gtwiz_userclk_tx_active_int);
+  gtwiz_tx_stimulus_reset_int <= hb_gtwiz_reset_all_int; -- modulized one do not have active or done signals output
   hb0_gtwiz_reset_rx_done_int <= gtwiz_reset_rx_done_int;
 
   gtwiz_tx_stimulus_reset_synchronizer_inst : gtwiz_example_reset_synchronizer
@@ -676,33 +564,29 @@ begin
     rst_out => gtwiz_tx_stimulus_reset_sync
   );
 
-  txdata_gen_inst : process (hb0_gtwiz_userclk_tx_usrclk2_int)
+  txdata_gen_inst : process (gtwiz_userclk_tx_usrclk2_int)
   begin
     if (rising_edge(gtwiz_userclk_tx_usrclk2_int)) then
       if (gtwiz_tx_stimulus_reset_sync = '1') then
         ch0_txdata_reg <= x"0000_0000";
         ch1_txdata_reg <= x"0000_0000";
-        ch0_txctrl2_int <= x"00";
-        ch1_txctrl2_int <= x"00";
-        txdata_gen_ctr  <= x"0000";
+        txdata_valid_int <= "00";
+        txdata_gen_ctr <= x"0000";
         txdata_init_ctr <= x"0000";
       else
-        if (txdata_init_ctr < 100) then
-          ch0_txdata_reg <= x"ABCD" & x"503C";
-          ch1_txdata_reg <= x"ABCD" & x"503C";
-          ch0_txctrl2_int <= x"01";
-          ch1_txctrl2_int <= x"01";
+        if (txdata_init_ctr < 100 or or_reduce(bad_rx_int) = '1') then
+          ch0_txdata_reg <= x"0000_0000"; -- will be replaced by the IDLE word
+          ch1_txdata_reg <= x"0000_0000"; -- will be replaced by the IDLE word
+          txdata_valid_int <= "00";
           txdata_init_ctr <= txdata_init_ctr + 1;
-        elsif (nand_reduce(rxbyteisaligned_int) = '1' or txdata_gen_ctr(3 downto 0) = x"0") then
+        elsif (txdata_gen_ctr(7 downto 0) = x"0") then
           ch0_txdata_reg  <= std_logic_vector(txdata_gen_ctr) & x"503C";
           ch1_txdata_reg  <= (not std_logic_vector(txdata_gen_ctr)) & x"503C";
-          ch0_txctrl2_int <= x"01";
-          ch1_txctrl2_int <= x"01";
+          txdata_valid_int <= "11";
         else
           ch0_txdata_reg  <= (not std_logic_vector(txdata_gen_ctr)) & std_logic_vector(txdata_gen_ctr);
           ch1_txdata_reg  <= std_logic_vector(txdata_gen_ctr) & (not std_logic_vector(txdata_gen_ctr));
-          ch0_txctrl2_int <= x"00";
-          ch1_txctrl2_int <= x"00";
+          txdata_valid_int <= "11";
         end if;
         txdata_gen_ctr <= txdata_gen_ctr + 1;
       end if;
@@ -731,18 +615,21 @@ begin
   --     rst_in  => gtwiz_rx_stimulus_reset_int,
   --     rst_out => gtwiz_rx_stimulus_reset_sync
   --   );
-  ch0_rxctrl2_int <= rxctrl2_int(7 downto 0);
-  ch1_rxctrl2_int <= rxctrl2_int(15 downto 8);
+
+  -- ch0_rxctrl2_int <= rxctrl2_int(7 downto 0);
+  -- ch1_rxctrl2_int <= rxctrl2_int(15 downto 8);
+  ch0_rxctrl2_int <= x"0" & "000" & rxdata_valid_int(0);
+  ch1_rxctrl2_int <= x"0" & "000" & rxdata_valid_int(1);
 
   rxdata_checking_ch0 : process (hb0_gtwiz_userclk_rx_usrclk2_int)
   begin
-    if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int)) then
+    if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int) and rxdata_valid_int(0) = '1') then
       if (ch0_rxdata_gen_ctr = 0) then
         if (hb0_gtwiz_userdata_rx_int(31 downto 16) = (not hb0_gtwiz_userdata_rx_int(15 downto 0))) then
           ch0_rxdata_gen_ctr <= unsigned(hb0_gtwiz_userdata_rx_int(15 downto 0)) - 1;
         end if;
       else
-        if (ch0_rxctrl2_int = x"01" and hb0_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
+        if (hb0_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
           if (std_logic_vector(ch0_rxdata_gen_ctr) /= hb0_gtwiz_userdata_rx_int(31 downto 16)) then
             prbs_match_int(0) <= '0';
           end if;
@@ -760,13 +647,13 @@ begin
 
   rxdata_checking_ch1 : process (hb0_gtwiz_userclk_rx_usrclk2_int)
   begin
-    if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int)) then
+    if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int) and rxdata_valid_int(1) = '1') then
       if (ch1_rxdata_gen_ctr = 0) then
         if (hb1_gtwiz_userdata_rx_int(31 downto 16) = (not hb1_gtwiz_userdata_rx_int(15 downto 0))) then
           ch1_rxdata_gen_ctr <= unsigned(hb1_gtwiz_userdata_rx_int(15 downto 0)) + 1;
         end if;
       else
-        if (ch1_rxctrl2_int = x"01" and hb1_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
+        if (hb1_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
           if (std_logic_vector(ch1_rxdata_gen_ctr) /= hb1_gtwiz_userdata_rx_int(31 downto 16)) then
             prbs_match_int(1) <= '0';
           end if;
@@ -828,7 +715,7 @@ begin
     probe0 => ila_data_rx
   );
 
-  gtwiz_kcu_sfp_vio_0_inst : gtwiz_kcu_sfp_vio_0
+  gtwiz_kcu_test_vio_0_inst : gtwiz_kcu_sfp_vio_0
   port map (
     clk => hb_gtwiz_reset_clk_freerun_buf_int,
     probe_in0 => link_status_out,
@@ -850,117 +737,104 @@ begin
     probe_out6 => rxdata_errctr_reset_vio_int
   );
 
-
-  -- ===================================================================================================================
-  -- IN-SYSTEM IBERT FOR HARDWARE BRING-UP AND LINK ANALYSIS
-  -- ===================================================================================================================
-
-  gtwiz_kcu_sfp_in_system_ibert_inst : gtwiz_kcu_sfp_in_system_ibert
+  mgt_sfp_inst : mgt_sfp
   port map (
-    drpclk_o       => drpclk_int,
-    gt0_drpen_o    => drpen_int(0 downto 0),
-    gt0_drpwe_o    => drpwe_int(0 downto 0),
-    gt0_drpaddr_o  => drpaddr_int(8 downto 0),
-    gt0_drpdi_o    => drpdi_int(15 downto 0),
-    gt0_drprdy_i   => drprdy_int(0 downto 0),
-    gt0_drpdo_i    => drpdo_int(15 downto 0),
-    gt1_drpen_o    => drpen_int(1 downto 1),
-    gt1_drpwe_o    => drpwe_int(1 downto 1),
-    gt1_drpaddr_o  => drpaddr_int(17 downto 9),
-    gt1_drpdi_o    => drpdi_int(31 downto 16),
-    gt1_drprdy_i   => drprdy_int(1 downto 1),
-    gt1_drpdo_i    => drpdo_int(31 downto 16),
-    eyescanreset_o => eyescanreset_int,
-    rxrate_o       => rxrate_int,
-    txdiffctrl_o   => txdiffctrl_int,
-    txprecursor_o  => txprecursor_int,
-    txpostcursor_o => txpostcursor_int,
-    rxlpmen_o      => rxlpmen_int,
-    rxrate_i       => "000000",
-    txdiffctrl_i   => "11001100",
-    txprecursor_i  => "0000000000",
-    txpostcursor_i => "0000000000",
-    rxlpmen_i      => "11",
-    rxoutclk_i(0)  => hb0_gtwiz_userclk_rx_usrclk2_int,
-    rxoutclk_i(1)  => hb0_gtwiz_userclk_rx_usrclk2_int,
-    drpclk_i(0)    => hb_gtwiz_reset_clk_freerun_buf_int,
-    drpclk_i(1)    => hb_gtwiz_reset_clk_freerun_buf_int,
-    clk            => hb_gtwiz_reset_clk_freerun_buf_int
-  );
-
-
-  -- -- variables to be set when in the input to in-system IBERT
-  -- rxlpmen_int <= "11";
-  -- rxrate_int <= "000" & "000";
-  -- txdiffctrl_int <= "1100" & "1100";
-  -- txpostcursor_int <= "00000" & "00000";
-  -- txprecursor_int <= "00000" & "00000";
-
-  -- ===================================================================================================================
-  -- EXAMPLE WRAPPER INSTANCE
-  -- ===================================================================================================================
-  gtwiz_kcu_sfp_inst : gtwiz_kcu_sfp_example_wrapper 
-  port map (
-     gthrxn_in                          => gthrxn_int
-    ,gthrxp_in                          => gthrxp_int
-    ,gthtxn_out                         => gthtxn_int
-    ,gthtxp_out                         => gthtxp_int
-    ,gtwiz_userclk_tx_reset_in          => gtwiz_userclk_tx_reset_int
-    ,gtwiz_userclk_tx_srcclk_out        => gtwiz_userclk_tx_srcclk_int
-    ,gtwiz_userclk_tx_usrclk_out        => gtwiz_userclk_tx_usrclk_int
-    ,gtwiz_userclk_tx_usrclk2_out       => gtwiz_userclk_tx_usrclk2_int
-    ,gtwiz_userclk_tx_active_out        => gtwiz_userclk_tx_active_int
-    ,gtwiz_userclk_rx_reset_in          => gtwiz_userclk_rx_reset_int
-    ,gtwiz_userclk_rx_srcclk_out        => gtwiz_userclk_rx_srcclk_int
-    ,gtwiz_userclk_rx_usrclk_out        => gtwiz_userclk_rx_usrclk_int
-    ,gtwiz_userclk_rx_usrclk2_out       => gtwiz_userclk_rx_usrclk2_int
-    ,gtwiz_userclk_rx_active_out        => gtwiz_userclk_rx_active_int
-    ,gtwiz_reset_clk_freerun_in         => hb_gtwiz_reset_clk_freerun_buf_int
-    ,gtwiz_reset_all_in                 => hb_gtwiz_reset_all_int
-    ,gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_int
-    ,gtwiz_reset_tx_datapath_in         => gtwiz_reset_tx_datapath_int
-    ,gtwiz_reset_rx_pll_and_datapath_in => hb_gtwiz_reset_rx_pll_and_datapath_int
-    ,gtwiz_reset_rx_datapath_in         => hb_gtwiz_reset_rx_datapath_int
-    ,gtwiz_reset_rx_cdr_stable_out      => gtwiz_reset_rx_cdr_stable_int
-    ,gtwiz_reset_tx_done_out            => gtwiz_reset_tx_done_int
-    ,gtwiz_reset_rx_done_out            => gtwiz_reset_rx_done_int
-    ,gtwiz_userdata_tx_in               => gtwiz_userdata_tx_int
-    ,gtwiz_userdata_rx_out              => gtwiz_userdata_rx_int
-    ,gtrefclk00_in                      => gtrefclk00_int
-    ,qpll0outclk_out                    => qpll0outclk_int
-    ,qpll0outrefclk_out                 => qpll0outrefclk_int
-    ,drpaddr_in                         => drpaddr_int
-    ,drpclk_in                          => drpclk_int
-    ,drpdi_in                           => drpdi_int
-    ,drpen_in                           => drpen_int
-    ,drpwe_in                           => drpwe_int
-    ,eyescanreset_in                    => eyescanreset_int
-    ,rx8b10ben_in                       => rx8b10ben_int
-    ,rxcommadeten_in                    => rxcommadeten_int
-    ,rxlpmen_in                         => rxlpmen_int
-    ,rxmcommaalignen_in                 => rxmcommaalignen_int
-    ,rxpcommaalignen_in                 => rxpcommaalignen_int
-    ,rxrate_in                          => rxrate_int
-    ,tx8b10ben_in                       => tx8b10ben_int
-    ,txctrl0_in                         => txctrl0_int
-    ,txctrl1_in                         => txctrl1_int
-    ,txctrl2_in                         => txctrl2_int
-    ,txdiffctrl_in                      => txdiffctrl_int
-    ,txpostcursor_in                    => txpostcursor_int
-    ,txprecursor_in                     => txprecursor_int
-    ,drpdo_out                          => drpdo_int
-    ,drprdy_out                         => drprdy_int
-    ,gtpowergood_out                    => gtpowergood_int
-    ,rxbyteisaligned_out                => rxbyteisaligned_int
-    ,rxbyterealign_out                  => rxbyterealign_int
-    ,rxcommadet_out                     => rxcommadet_int
-    ,rxctrl0_out                        => rxctrl0_int
-    ,rxctrl1_out                        => rxctrl1_int
-    ,rxctrl2_out                        => rxctrl2_int
-    ,rxctrl3_out                        => rxctrl3_int
-    ,rxpmaresetdone_out                 => rxpmaresetdone_int
-    ,txpmaresetdone_out                 => txpmaresetdone_int
+    mgtrefclk       => gtrefclk00_int,
+    txusrclk        => gtwiz_userclk_tx_usrclk2_int,
+    rxusrclk        => gtwiz_userclk_rx_usrclk2_int,
+    sysclk          => hb_gtwiz_reset_clk_freerun_buf_int,
+    sfp_ch0_rx_n    => sfp_ch0_rx_n,
+    sfp_ch0_rx_p    => sfp_ch0_rx_p,
+    sfp_ch0_tx_n    => sfp_ch0_tx_n,
+    sfp_ch0_tx_p    => sfp_ch0_tx_p,
+    sfp_ch1_rx_n    => sfp_ch1_rx_n,
+    sfp_ch1_rx_p    => sfp_ch1_rx_p,
+    sfp_ch1_tx_n    => sfp_ch1_tx_n,
+    sfp_ch1_tx_p    => sfp_ch1_tx_p,
+    txdata_ch0      => hb0_gtwiz_userdata_tx_int,
+    txdata_ch1      => hb1_gtwiz_userdata_tx_int,
+    txdata_valid    => txdata_valid_int,
+    txdiffctrl_ch0  => "1100",          -- fix value
+    txdiffctrl_ch1  => "1100",          -- fix value
+    loopback        => loopback_int,
+    rxdata_ch0      => hb0_gtwiz_userdata_rx_int,
+    rxdata_ch1      => hb1_gtwiz_userdata_rx_int,
+    rxdata_valid    => rxdata_valid_int,
+    bad_rx          => bad_rx_int,
+    prbs_type       => prbs_type_int,
+    prbs_tx_en      => prbs_tx_en_int,
+    prbs_rx_en      => prbs_rx_en_int,
+    prbs_en_tst_cnt => prbs_en_tst_cnt_int,
+    prbs_err_cnt    => prbs_err_cnt_int,
+    reset           => hb_gtwiz_reset_all_int
 );
+
+
+  -- -- ===================================================================================================================
+  -- -- EXAMPLE WRAPPER INSTANCE
+  -- -- ===================================================================================================================
+  -- gtwiz_kcu_sfp_inst : gtwiz_kcu_sfp_example_wrapper 
+  -- port map (
+  --    gthrxn_in                          => gthrxn_int
+  --   ,gthrxp_in                          => gthrxp_int
+  --   ,gthtxn_out                         => gthtxn_int
+  --   ,gthtxp_out                         => gthtxp_int
+  --   ,gtwiz_userclk_tx_reset_in          => gtwiz_userclk_tx_reset_int
+  --   ,gtwiz_userclk_tx_srcclk_out        => gtwiz_userclk_tx_srcclk_int
+  --   ,gtwiz_userclk_tx_usrclk_out        => gtwiz_userclk_tx_usrclk_int
+  --   ,gtwiz_userclk_tx_usrclk2_out       => gtwiz_userclk_tx_usrclk2_int
+  --   ,gtwiz_userclk_tx_active_out        => gtwiz_userclk_tx_active_int
+  --   ,gtwiz_userclk_rx_reset_in          => gtwiz_userclk_rx_reset_int
+  --   ,gtwiz_userclk_rx_srcclk_out        => gtwiz_userclk_rx_srcclk_int
+  --   ,gtwiz_userclk_rx_usrclk_out        => gtwiz_userclk_rx_usrclk_int
+  --   ,gtwiz_userclk_rx_usrclk2_out       => gtwiz_userclk_rx_usrclk2_int
+  --   ,gtwiz_userclk_rx_active_out        => gtwiz_userclk_rx_active_int
+  --   ,gtwiz_reset_clk_freerun_in         => hb_gtwiz_reset_clk_freerun_buf_int
+  --   ,gtwiz_reset_all_in                 => hb_gtwiz_reset_all_int
+  --   ,gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_int
+  --   ,gtwiz_reset_tx_datapath_in         => gtwiz_reset_tx_datapath_int
+  --   ,gtwiz_reset_rx_pll_and_datapath_in => hb_gtwiz_reset_rx_pll_and_datapath_int
+  --   ,gtwiz_reset_rx_datapath_in         => hb_gtwiz_reset_rx_datapath_int
+  --   ,gtwiz_reset_rx_cdr_stable_out      => gtwiz_reset_rx_cdr_stable_int
+  --   ,gtwiz_reset_tx_done_out            => gtwiz_reset_tx_done_int
+  --   ,gtwiz_reset_rx_done_out            => gtwiz_reset_rx_done_int
+  --   ,gtwiz_userdata_tx_in               => gtwiz_userdata_tx_int
+  --   ,gtwiz_userdata_rx_out              => gtwiz_userdata_rx_int
+  --   ,gtrefclk00_in                      => gtrefclk00_int
+  --   ,qpll0outclk_out                    => qpll0outclk_int
+  --   ,qpll0outrefclk_out                 => qpll0outrefclk_int
+  --   ,drpaddr_in                         => drpaddr_int
+  --   ,drpclk_in                          => drpclk_int
+  --   ,drpdi_in                           => drpdi_int
+  --   ,drpen_in                           => drpen_int
+  --   ,drpwe_in                           => drpwe_int
+  --   ,eyescanreset_in                    => eyescanreset_int
+  --   ,rx8b10ben_in                       => rx8b10ben_int
+  --   ,rxcommadeten_in                    => rxcommadeten_int
+  --   ,rxlpmen_in                         => rxlpmen_int
+  --   ,rxmcommaalignen_in                 => rxmcommaalignen_int
+  --   ,rxpcommaalignen_in                 => rxpcommaalignen_int
+  --   ,rxrate_in                          => rxrate_int
+  --   ,tx8b10ben_in                       => tx8b10ben_int
+  --   ,txctrl0_in                         => txctrl0_int
+  --   ,txctrl1_in                         => txctrl1_int
+  --   ,txctrl2_in                         => txctrl2_int
+  --   ,txdiffctrl_in                      => txdiffctrl_int
+  --   ,txpostcursor_in                    => txpostcursor_int
+  --   ,txprecursor_in                     => txprecursor_int
+  --   ,drpdo_out                          => drpdo_int
+  --   ,drprdy_out                         => drprdy_int
+  --   ,gtpowergood_out                    => gtpowergood_int
+  --   ,rxbyteisaligned_out                => rxbyteisaligned_int
+  --   ,rxbyterealign_out                  => rxbyterealign_int
+  --   ,rxcommadet_out                     => rxcommadet_int
+  --   ,rxctrl0_out                        => rxctrl0_int
+  --   ,rxctrl1_out                        => rxctrl1_int
+  --   ,rxctrl2_out                        => rxctrl2_int
+  --   ,rxctrl3_out                        => rxctrl3_int
+  --   ,rxpmaresetdone_out                 => rxpmaresetdone_int
+  --   ,txpmaresetdone_out                 => txpmaresetdone_int
+  --    );
 
 
 end Behavioral;

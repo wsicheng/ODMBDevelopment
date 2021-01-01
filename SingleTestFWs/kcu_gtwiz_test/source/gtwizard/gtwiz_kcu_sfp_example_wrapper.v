@@ -89,11 +89,14 @@ module gtwiz_kcu_sfp_example_wrapper (
  ,input  wire [1:0] drpen_in
  ,input  wire [1:0] drpwe_in
  ,input  wire [1:0] eyescanreset_in
+ ,input  wire [5:0] loopback_in
  ,input  wire [1:0] rx8b10ben_in
  ,input  wire [1:0] rxcommadeten_in
  ,input  wire [1:0] rxlpmen_in
  ,input  wire [1:0] rxmcommaalignen_in
  ,input  wire [1:0] rxpcommaalignen_in
+ ,input  wire [1:0] rxprbscntreset_in
+ ,input  wire [7:0] rxprbssel_in
  ,input  wire [5:0] rxrate_in
  ,input  wire [1:0] tx8b10ben_in
  ,input  wire [31:0] txctrl0_in
@@ -101,6 +104,8 @@ module gtwiz_kcu_sfp_example_wrapper (
  ,input  wire [15:0] txctrl2_in
  ,input  wire [7:0] txdiffctrl_in
  ,input  wire [9:0] txpostcursor_in
+ ,input  wire [1:0] txprbsforceerr_in
+ ,input  wire [7:0] txprbssel_in
  ,input  wire [9:0] txprecursor_in
  ,output wire [31:0] drpdo_out
  ,output wire [1:0] drprdy_out
@@ -113,6 +118,8 @@ module gtwiz_kcu_sfp_example_wrapper (
  ,output wire [15:0] rxctrl2_out
  ,output wire [15:0] rxctrl3_out
  ,output wire [1:0] rxpmaresetdone_out
+ ,output wire [1:0] rxprbserr_out
+ ,output wire [1:0] rxprbslocked_out
  ,output wire [1:0] txpmaresetdone_out
 );
 
@@ -125,7 +132,7 @@ module gtwiz_kcu_sfp_example_wrapper (
   localparam [191:0] P_CHANNEL_ENABLE = 192'b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011000000000;
   `include "gtwiz_example_wrapper_functions.v"
   localparam integer P_TX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(10);
-  localparam integer P_RX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(10);
+  localparam integer P_RX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(9);
 
 
   // ===================================================================================================================
@@ -250,11 +257,14 @@ module gtwiz_kcu_sfp_example_wrapper (
    ,.drpen_in                                (drpen_in)
    ,.drpwe_in                                (drpwe_in)
    ,.eyescanreset_in                         (eyescanreset_in)
+   ,.loopback_in                             (loopback_in)
    ,.rx8b10ben_in                            (rx8b10ben_in)
    ,.rxcommadeten_in                         (rxcommadeten_in)
    ,.rxlpmen_in                              (rxlpmen_in)
    ,.rxmcommaalignen_in                      (rxmcommaalignen_in)
    ,.rxpcommaalignen_in                      (rxpcommaalignen_in)
+   ,.rxprbscntreset_in                       (rxprbscntreset_in)
+   ,.rxprbssel_in                            (rxprbssel_in)
    ,.rxrate_in                               (rxrate_in)
    ,.rxusrclk_in                             (rxusrclk_int)
    ,.rxusrclk2_in                            (rxusrclk2_int)
@@ -264,6 +274,8 @@ module gtwiz_kcu_sfp_example_wrapper (
    ,.txctrl2_in                              (txctrl2_in)
    ,.txdiffctrl_in                           (txdiffctrl_in)
    ,.txpostcursor_in                         (txpostcursor_in)
+   ,.txprbsforceerr_in                       (txprbsforceerr_in)
+   ,.txprbssel_in                            (txprbssel_in)
    ,.txprecursor_in                          (txprecursor_in)
    ,.txusrclk_in                             (txusrclk_int)
    ,.txusrclk2_in                            (txusrclk2_int)
@@ -279,6 +291,8 @@ module gtwiz_kcu_sfp_example_wrapper (
    ,.rxctrl3_out                             (rxctrl3_out)
    ,.rxoutclk_out                            (rxoutclk_int)
    ,.rxpmaresetdone_out                      (rxpmaresetdone_out)
+   ,.rxprbserr_out                           (rxprbserr_out)
+   ,.rxprbslocked_out                        (rxprbslocked_out)
    ,.txoutclk_out                            (txoutclk_int)
    ,.txpmaresetdone_out                      (txpmaresetdone_out)
 );

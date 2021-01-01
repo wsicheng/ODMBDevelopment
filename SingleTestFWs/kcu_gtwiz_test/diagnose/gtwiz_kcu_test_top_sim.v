@@ -55,7 +55,7 @@
 // indicator to demonstrate simple data integrity checking of the design. This module is for use in simulation only.
 // =====================================================================================================================
 
-module gtwiz_kcu_sfp_example_top_sim ();
+module gtwiz_kcu_test_top_sim ();
 
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -69,6 +69,14 @@ module gtwiz_kcu_sfp_example_top_sim ();
   // Declare wires to loop back serial data ports for transceiver channel 1
   wire ch1_gthxn;
   wire ch1_gthxp;
+
+  // Declare wires to loop back serial data ports for transceiver channel 2
+  wire ch2_gthxn;
+  wire ch2_gthxp;
+
+  // Declare wires to loop back serial data ports for transceiver channel 3
+  wire ch3_gthxn;
+  wire ch3_gthxp;
 
   // Declare register to drive reference clock at location MGTREFCLK0_X0Y3
   reg mgtrefclk0_x0y3 = 1'b0;
@@ -94,7 +102,7 @@ module gtwiz_kcu_sfp_example_top_sim ();
   initial begin
     hb_gtwiz_reset_clk_freerun = 1'b0;
     forever
-      hb_gtwiz_reset_clk_freerun = #25000 ~hb_gtwiz_reset_clk_freerun;
+      hb_gtwiz_reset_clk_freerun = #3103 ~hb_gtwiz_reset_clk_freerun;
   end
 
   // Declare registers to drive reset helper block(s)
@@ -111,7 +119,7 @@ module gtwiz_kcu_sfp_example_top_sim ();
   // Declare registers and wires to interface to the PRBS-based link status ports
   reg  link_down_latched_reset = 1'b0;
   wire link_status;
-  wire link_down_latched;
+  wire link_down_latched = 1'b0;
 
   // -------------------------------------------------------------------------------------------------------------------
   // Basic data integrity checking, making use of PRBS-based link status ports
@@ -127,18 +135,21 @@ module gtwiz_kcu_sfp_example_top_sim ();
 
   // Create a basic stable link monitor which is set after 2048 consecutive cycles of link up and is reset after any
   // link loss
-  reg [10:0] link_up_ctr = 11'd0;
+  // reg [10:0] link_up_ctr = 11'd0;
+  reg [7:0] link_up_ctr = 8'd0;
   reg        link_stable = 1'b0;
   always @(posedge hb_gtwiz_reset_clk_freerun) begin
     if (link_status !== 1'b1) begin
-      link_up_ctr <= 11'd0;
+      // link_up_ctr <= 11'd0;
+      link_up_ctr <= 8'd0;
       link_stable <= 1'b0;
     end
     else begin
       if (&link_up_ctr)
         link_stable <= 1'b1;
       else
-        link_up_ctr <= link_up_ctr + 11'd1;
+        // link_up_ctr <= link_up_ctr + 11'd1;
+        link_up_ctr <= link_up_ctr + 8'd1;
     end
   end
 
@@ -196,25 +207,33 @@ module gtwiz_kcu_sfp_example_top_sim ();
   // Instantiate example design top module as the simulation DUT
   // -------------------------------------------------------------------------------------------------------------------
 
-  gtwiz_kcu_sfp_example_top example_top_inst (
+  gtwiz_kcu_test_top kcu_sfp_top_inst (
     .mgtrefclk0_x0y3_p (mgtrefclk0_x0y3),
     .mgtrefclk0_x0y3_n (~mgtrefclk0_x0y3),
-    .ch0_gthrxn_in (ch1_gthxn),
-    .ch0_gthrxp_in (ch1_gthxp),
-    .ch0_gthtxn_out (ch0_gthxn),
-    .ch0_gthtxp_out (ch0_gthxp),
-    .ch1_gthrxn_in (ch0_gthxn),
-    .ch1_gthrxp_in (ch0_gthxp),
-    .ch1_gthtxn_out (ch1_gthxn),
-    .ch1_gthtxp_out (ch1_gthxp),
+    .sfp_ch0_rx_n (ch1_gthxn),
+    .sfp_ch0_rx_p (ch1_gthxp),
+    .sfp_ch0_tx_n (ch0_gthxn),
+    .sfp_ch0_tx_p (ch0_gthxp),
+    .sfp_ch1_rx_n (ch0_gthxn),
+    .sfp_ch1_rx_p (ch0_gthxp),
+    .sfp_ch1_tx_n (ch1_gthxn),
+    .sfp_ch1_tx_p (ch1_gthxp),
+    // .ch2_gthrxn_in (ch2_gthxn),
+    // .ch2_gthrxp_in (ch2_gthxp),
+    // .ch2_gthtxn_out (ch2_gthxn),
+    // .ch2_gthtxp_out (ch2_gthxp),
+    // .ch3_gthrxn_in (ch3_gthxn),
+    // .ch3_gthrxp_in (ch3_gthxp),
+    // .ch3_gthtxn_out (ch3_gthxn),
+    // .ch3_gthtxp_out (ch3_gthxp),
     // .hb_gtwiz_reset_clk_freerun_in (hb_gtwiz_reset_clk_freerun),
     .hb_gtwiz_reset_all_in (hb_gtwiz_reset_all),
     .link_down_latched_reset_in (link_down_latched_reset),
-    .link_status_out (link_status),
-    .link_down_latched_out (link_down_latched),
-    .CLK_IN_P (clk_kcu_300mhz),
-    .CLK_IN_N (~clk_kcu_300mhz),
-    .SEL_SI570_CLK (sel_si570_clk)
+    .link_status_out_sim (link_status),
+    // .link_down_latched_out_sim (link_down_latched),
+    .clk_in_p (clk_kcu_300mhz),
+    .clk_in_n (~clk_kcu_300mhz),
+    .sel_si570_clk (sel_si570_clk)
   );
 
 
