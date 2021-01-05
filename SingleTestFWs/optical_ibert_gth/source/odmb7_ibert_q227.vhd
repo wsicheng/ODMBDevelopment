@@ -14,7 +14,7 @@ use unisim.vcomponents.all;
 
 -- use work.Firmware_pkg.all;     -- for switch between sim and synthesis
 
-entity odmb7_ibert_4quads is
+entity odmb7_ibert_q227 is
   generic (
     NCFEB       : integer range 1 to 7 := 7  -- Number of DCFEBS, 7 for ME1/1, 5
   );
@@ -22,29 +22,33 @@ entity odmb7_ibert_4quads is
     --------------------
     -- Clock
     --------------------
+    -- CLK160      : in std_logic;  -- For dcfeb prbs (160MHz)
+    -- CLK40       : in std_logic;  -- NEW (fastclk -> 40MHz)
+    -- CLK10       : in std_logic;  -- NEW (midclk -> fastclk/4 -> 10MHz)
+
     CMS_CLK_FPGA_P : in std_logic;      -- system clock: 40.07897 MHz
     CMS_CLK_FPGA_N : in std_logic;      -- system clock: 40.07897 MHz
-    GP_CLK_6_P : in std_logic;          -- clock synthesizer ODIV6: ? MHz
-    GP_CLK_6_N : in std_logic;          -- clock synthesizer ODIV6: ? MHz
-    GP_CLK_7_P : in std_logic;          -- clock synthesizer ODIV7: 80 MHz
-    GP_CLK_7_N : in std_logic;          -- clock synthesizer ODIV7: 80 MHz
-    REF_CLK_1_P : in std_logic;         -- refclk0 to 224
-    REF_CLK_1_N : in std_logic;         -- refclk0 to 224
-    REF_CLK_2_P : in std_logic;         -- refclk0 to 227
-    REF_CLK_2_N : in std_logic;         -- refclk0 to 227
-    REF_CLK_3_P : in std_logic;         -- refclk0 to 226
-    REF_CLK_3_N : in std_logic;         -- refclk0 to 226
-    REF_CLK_4_P : in std_logic;         -- refclk0 to 225
-    REF_CLK_4_N : in std_logic;         -- refclk0 to 225
-    REF_CLK_5_P : in std_logic;         -- refclk1 to 227
-    REF_CLK_5_N : in std_logic;         -- refclk1 to 227
-    CLK_125_REF_P : in std_logic;       -- refclk1 to 226
-    CLK_125_REF_N : in std_logic;       -- refclk1 to 226
+    GP_CLK_6_P : in std_logic;          -- system clock: ? MHz
+    GP_CLK_6_N : in std_logic;          -- system clock: ? MHz
+    GP_CLK_7_P : in std_logic;          -- system clock: ? MHz, pretend 80
+    GP_CLK_7_N : in std_logic;          -- system clock: ? MHz, pretend 80
+    REF_CLK_1_P : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_1_N : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_2_P : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_2_N : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_3_P : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_3_N : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_4_P : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_4_N : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_5_P : in std_logic;         -- optical TX/RX refclk
+    REF_CLK_5_N : in std_logic;         -- optical TX/RX refclk
+    CLK_125_REF_P : in std_logic;       -- optical TX/RX refclk
+    CLK_125_REF_N : in std_logic;       -- optical TX/RX refclk
 
     --------------------------------
     -- ODMB optical signals
     --------------------------------
-    -- Acutally connected optical TX/RX signals
+    -- Optical TX/RX signals
     DAQ_RX_P : in std_logic_vector(10 downto 0);
     DAQ_RX_N : in std_logic_vector(10 downto 0);
     DAQ_SPY_RX_P : in std_logic;        -- DAQ_RX_P11 or SPY_RX_P
@@ -55,14 +59,12 @@ entity odmb7_ibert_4quads is
     BCK_PRS_P : in std_logic; -- copy of B04_RX_P1
     BCK_PRS_N : in std_logic; -- copy of B04_RX_N1
 
-    SPY_TX_P : out std_logic;        -- output to PC
-    SPY_TX_N : out std_logic;        -- output to PC
+    -- SPY_TX_P : out std_logic;        -- output to PC
+    -- SPY_TX_N : out std_logic;        -- output to PC
     DAQ_TX_P : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
     DAQ_TX_N : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
 
-    --------------------------------
     -- Optical control signals
-    --------------------------------
     DAQ_SPY_SEL    : out std_logic;      -- 0 for DAQ_RX_P/N11, 1 for SPY_RX_P/N
 
     RX12_I2C_ENA   : out std_logic;
@@ -110,11 +112,24 @@ entity odmb7_ibert_4quads is
     --------------------------------
     LEDS_CFV      : out std_logic_vector(11 downto 0)
 
+    --------------------------------
+    -- IBERT test signals for
+    --------------------------------
+    -- gth_txn_o : out std_logic_vector(15 downto 0);
+    -- gth_txp_o : out std_logic_vector(15 downto 0);
+    -- gth_rxn_i : in std_logic_vector(15 downto 0);
+    -- gth_rxp_i : in std_logic_vector(15 downto 0)
+    -- gth_sysclkp_i : in std_logic;  -- ibert sysclk
+    -- gth_sysclkn_i : in std_logic;  -- ibert sysclk
+    -- gth_refclk0p_i : in std_logic_vector(3 downto 0);
+    -- gth_refclk0n_i : in std_logic_vector(3 downto 0);
+    -- gth_refclk1p_i : in std_logic_vector(3 downto 0);
+    -- gth_refclk1n_i : in std_logic_vector(3 downto 0)
 
     );
-end odmb7_ibert_4quads;
+end odmb7_ibert_q227;
 
-architecture odmb_inst of odmb7_ibert_4quads is
+architecture odmb_inst of odmb7_ibert_q227 is
 
   --------------------------------------
   -- Component and signals for the IBERT test
@@ -134,41 +149,33 @@ architecture odmb_inst of odmb7_ibert_4quads is
   --------------------------------------
   -- Component and signals for the IBERT test
   --------------------------------------
-  component ibert_4quads_sepclks
-    PORT (
-      txn_o : out std_logic_vector(15 downto 0);
-      txp_o : out std_logic_vector(15 downto 0);
-      rxoutclk_o : out std_logic_vector(15 downto 0);
-      rxn_i : in std_logic_vector(15 downto 0);
-      rxp_i : in std_logic_vector(15 downto 0);
-      gtrefclk0_i : in std_logic_vector(3 downto 0);
-      gtrefclk1_i : in std_logic_vector(3 downto 0);
-      gtnorthrefclk0_i : in std_logic_vector(3 downto 0);
-      gtnorthrefclk1_i : in std_logic_vector(3 downto 0);
-      gtsouthrefclk0_i : in std_logic_vector(3 downto 0);
-      gtsouthrefclk1_i : in std_logic_vector(3 downto 0);
-      gtrefclk00_i : in std_logic_vector(3 downto 0);
-      gtrefclk10_i : in std_logic_vector(3 downto 0);
-      gtrefclk01_i : in std_logic_vector(3 downto 0);
-      gtrefclk11_i : in std_logic_vector(3 downto 0);
-      gtnorthrefclk00_i : in std_logic_vector(3 downto 0);
-      gtnorthrefclk10_i : in std_logic_vector(3 downto 0);
-      gtnorthrefclk01_i : in std_logic_vector(3 downto 0);
-      gtnorthrefclk11_i : in std_logic_vector(3 downto 0);
-      gtsouthrefclk00_i : in std_logic_vector(3 downto 0);
-      gtsouthrefclk10_i : in std_logic_vector(3 downto 0);
-      gtsouthrefclk01_i : in std_logic_vector(3 downto 0);
-      gtsouthrefclk11_i : in std_logic_vector(3 downto 0);
+  component ibert_odmb7_q227
+    port (
+      txn_o : out std_logic_vector(3 downto 0);
+      txp_o : out std_logic_vector(3 downto 0);
+      rxoutclk_o : out std_logic_vector(3 downto 0);
+      rxn_i : in std_logic_vector(3 downto 0);
+      rxp_i : in std_logic_vector(3 downto 0);
+      gtrefclk0_i : in std_logic_vector(0 downto 0);
+      gtrefclk1_i : in std_logic_vector(0 downto 0);
+      gtnorthrefclk0_i : in std_logic_vector(0 downto 0);
+      gtnorthrefclk1_i : in std_logic_vector(0 downto 0);
+      gtsouthrefclk0_i : in std_logic_vector(0 downto 0);
+      gtsouthrefclk1_i : in std_logic_vector(0 downto 0);
+      gtrefclk00_i : in std_logic_vector(0 downto 0);
+      gtrefclk10_i : in std_logic_vector(0 downto 0);
+      gtrefclk01_i : in std_logic_vector(0 downto 0);
+      gtrefclk11_i : in std_logic_vector(0 downto 0);
+      gtnorthrefclk00_i : in std_logic_vector(0 downto 0);
+      gtnorthrefclk10_i : in std_logic_vector(0 downto 0);
+      gtnorthrefclk01_i : in std_logic_vector(0 downto 0);
+      gtnorthrefclk11_i : in std_logic_vector(0 downto 0);
+      gtsouthrefclk00_i : in std_logic_vector(0 downto 0);
+      gtsouthrefclk10_i : in std_logic_vector(0 downto 0);
+      gtsouthrefclk01_i : in std_logic_vector(0 downto 0);
+      gtsouthrefclk11_i : in std_logic_vector(0 downto 0);
       clk : in std_logic
     );
-  end component;
-
-  component vio_ibert is
-    port (
-      clk        : in  std_logic := '0';
-      probe_in0  : in  std_logic_vector(11 downto 0) := (others => '0');
-      probe_out0 : out std_logic
-      );
   end component;
 
   component clock_counting is
@@ -178,38 +185,34 @@ architecture odmb_inst of odmb7_ibert_4quads is
       );
   end component;
 
-  signal gth_txn_o : std_logic_vector(15 downto 0);
-  signal gth_txp_o : std_logic_vector(15 downto 0);
-  signal gth_rxn_i : std_logic_vector(15 downto 0);
-  signal gth_rxp_i : std_logic_vector(15 downto 0);
-  signal gth_qrefclk0_i : std_logic_vector(3 downto 0);
-  signal gth_qrefclk1_i : std_logic_vector(3 downto 0);
-  signal gth_qnorthrefclk0_i : std_logic_vector(3 downto 0);
-  signal gth_qnorthrefclk1_i : std_logic_vector(3 downto 0);
-  signal gth_qsouthrefclk0_i : std_logic_vector(3 downto 0);
-  signal gth_qsouthrefclk1_i : std_logic_vector(3 downto 0);
-  signal gth_qrefclk00_i : std_logic_vector(3 downto 0);
-  signal gth_qrefclk10_i : std_logic_vector(3 downto 0);
-  signal gth_qrefclk01_i : std_logic_vector(3 downto 0);
-  signal gth_qrefclk11_i : std_logic_vector(3 downto 0);
-  signal gth_qnorthrefclk00_i : std_logic_vector(3 downto 0);
-  signal gth_qnorthrefclk10_i : std_logic_vector(3 downto 0);
-  signal gth_qnorthrefclk01_i : std_logic_vector(3 downto 0);
-  signal gth_qnorthrefclk11_i : std_logic_vector(3 downto 0);
-  signal gth_qsouthrefclk00_i : std_logic_vector(3 downto 0);
-  signal gth_qsouthrefclk10_i : std_logic_vector(3 downto 0);
-  signal gth_qsouthrefclk01_i : std_logic_vector(3 downto 0);
-  signal gth_qsouthrefclk11_i : std_logic_vector(3 downto 0);
+  signal gth_txn_o : std_logic_vector(3 downto 0);
+  signal gth_txp_o : std_logic_vector(3 downto 0);
+  signal gth_rxn_i : std_logic_vector(3 downto 0);
+  signal gth_rxp_i : std_logic_vector(3 downto 0);
+  signal gth_qrefclk0_i : std_logic_vector(0 downto 0);
+  signal gth_qrefclk1_i : std_logic_vector(0 downto 0);
+  signal gth_qnorthrefclk0_i : std_logic_vector(0 downto 0);
+  signal gth_qnorthrefclk1_i : std_logic_vector(0 downto 0);
+  signal gth_qsouthrefclk0_i : std_logic_vector(0 downto 0);
+  signal gth_qsouthrefclk1_i : std_logic_vector(0 downto 0);
+  signal gth_qrefclk00_i : std_logic_vector(0 downto 0);
+  signal gth_qrefclk10_i : std_logic_vector(0 downto 0);
+  signal gth_qrefclk01_i : std_logic_vector(0 downto 0);
+  signal gth_qrefclk11_i : std_logic_vector(0 downto 0);
+  signal gth_qnorthrefclk00_i : std_logic_vector(0 downto 0);
+  signal gth_qnorthrefclk10_i : std_logic_vector(0 downto 0);
+  signal gth_qnorthrefclk01_i : std_logic_vector(0 downto 0);
+  signal gth_qnorthrefclk11_i : std_logic_vector(0 downto 0);
+  signal gth_qsouthrefclk00_i : std_logic_vector(0 downto 0);
+  signal gth_qsouthrefclk10_i : std_logic_vector(0 downto 0);
+  signal gth_qsouthrefclk01_i : std_logic_vector(0 downto 0);
+  signal gth_qsouthrefclk11_i : std_logic_vector(0 downto 0);
 
-  signal mgtrefclk0_224_i : std_logic;
-  signal mgtrefclk0_225_i : std_logic;
   signal mgtrefclk0_226_i : std_logic;
   signal mgtrefclk1_226_i : std_logic;
-  signal mgtrefclk0_227_i : std_logic;
-  signal mgtrefclk0_224_odiv2 : std_logic;
-  signal mgtrefclk0_225_odiv2 : std_logic;
   signal mgtrefclk0_226_odiv2 : std_logic;
   signal mgtrefclk1_226_odiv2 : std_logic;
+  signal mgtrefclk0_227_i : std_logic;
   signal mgtrefclk0_227_odiv2 : std_logic;
   signal gth_sysclk_i : std_logic;
   signal clk_sysclk40 : std_logic;
@@ -218,9 +221,20 @@ architecture odmb_inst of odmb7_ibert_4quads is
   signal clk_gp7 : std_logic;
   signal clk_mgtclk0 : std_logic;
   signal clk_mgtclk1 : std_logic;
-  signal clk_mgtclk2 : std_logic;
-  signal clk_mgtclk3 : std_logic;
-  signal clk_mgtclk4 : std_logic;
+
+  -- counters for clock monitor
+  signal cntr_cmsclk  : unsigned(40 downto 0) := (others => '0');
+  signal cntr_gthclk  : unsigned(40 downto 0) := (others => '0');
+  signal cntr_mgtclk  : unsigned(40 downto 0) := (others => '0');
+  signal cntr_clkgp7  : unsigned(40 downto 0) := (others => '0');
+  signal cntr_clkgp6  : unsigned(40 downto 0) := (others => '0');
+  signal cntr_refclk1 : unsigned(40 downto 0) := (others => '0');
+  signal cntr_refclk2 : unsigned(40 downto 0) := (others => '0');
+  signal cntr_refclk3 : unsigned(40 downto 0) := (others => '0');
+  signal cntr_refclk4 : unsigned(40 downto 0) := (others => '0');
+  signal cntr_refclk5 : unsigned(40 downto 0) := (others => '0');
+  signal cntr_clk125  : unsigned(40 downto 0) := (others => '0');
+  signal cntr_clk80   : unsigned(40 downto 0) := (others => '0');
 
 begin
 
@@ -247,43 +261,6 @@ begin
   -------------------------------------------------------------------------------------------
   -- Handle VME signals
   -------------------------------------------------------------------------------------------
-
-  u_buf_gth_q0_clk0 : IBUFDS_GTE3
-    port map (
-      O     => mgtrefclk0_224_i,
-      ODIV2 => mgtrefclk0_224_odiv2,
-      CEB   => '0',
-      I     => REF_CLK_1_P,
-      IB    => REF_CLK_1_N
-      );
-
-  u_buf_gth_q1_clk0 : IBUFDS_GTE3
-    port map (
-      O     => mgtrefclk0_225_i,
-      ODIV2 => mgtrefclk0_225_odiv2,
-      CEB   => '0',
-      I     => REF_CLK_4_P,
-      IB    => REF_CLK_4_N
-      );
-
-  u_buf_gth_q2_clk0 : IBUFDS_GTE3
-    port map (
-      O     => mgtrefclk0_226_i,
-      ODIV2 => mgtrefclk0_226_odiv2,
-      CEB   => '0',
-      I     => REF_CLK_3_P,
-      IB    => REF_CLK_3_N
-      );
-
-  u_buf_gth_q2_clk1 : IBUFDS_GTE3
-    port map (
-      O     => mgtrefclk1_226_i,
-      ODIV2 => mgtrefclk1_226_odiv2,
-      CEB   => '0',
-      I     => CLK_125_REF_P,
-      IB    => CLK_125_REF_N
-      );
-
 
   u_buf_gth_q3_clk0 : IBUFDS_GTE3
     port map (
@@ -313,21 +290,10 @@ begin
     );
 
   -- Using optical refclk as IBERT sysclk <- option 3
-  u_mgtclk0_q226 : BUFG_GT
-    port map(
-      I       => mgtrefclk0_226_odiv2,
-      O       => clk_mgtclk2,
-      CE      => '1',
-      CEMASK  => '0',
-      CLR     => '0',
-      CLRMASK => '0',
-      DIV     => "000"
-      );
-
   u_mgtclk0_q227 : BUFG_GT
     port map(
       I       => mgtrefclk0_227_odiv2,
-      O       => clk_mgtclk3,
+      O       => clk_mgtclk1,
       CE      => '1',
       CEMASK  => '0',
       CLR     => '0',
@@ -339,17 +305,15 @@ begin
   clockManager_i : clockManager
     port map (
       clk_in1   => clk_cmsclk,     -- input 40 MHz
-      -- clk_in1_p  => CMS_CLK_FPGA_P,
-      -- clk_in1_n  => CMS_CLK_FPGA_N,
       clk_out40 => clk_sysclk40,   -- output 40 MHz
       clk_out80 => clk_sysclk80    -- output 80 MHz
       );
 
   -- gth_sysclk_i <= clk_sysclk80;
-  -- gth_sysclk_i <= clk_mgtclk0;
+  -- gth_sysclk_i <= clk_mgtclk1;
   gth_sysclk_i <= clk_gp7;
 
-  -- DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
+  DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
 
   -- Clock counting and LED outputs
   u_cntr_cmsclk   : clock_counting port map (clk_i => clk_cmsclk,   led_o => LEDS_CFV(0));
@@ -359,75 +323,41 @@ begin
   u_cntr_mgtclk1  : clock_counting port map (clk_i => clk_mgtclk1,  led_o => LEDS_CFV(4));
   u_cntr_sysclk   : clock_counting port map (clk_i => gth_sysclk_i, led_o => LEDS_CFV(5));
 
-  vio_gth : vio_ibert
-  port map (
-    clk        => gth_sysclk_i,
-    probe_in0  => (others => '0'),
-    probe_out0 => DAQ_SPY_SEL
-  );
-
   -- MGT I/O pins assignment
-  gth_rxp_i(10 downto 0)  <= DAQ_RX_P;
-  gth_rxn_i(10 downto 0)  <= DAQ_RX_N;
-  gth_rxp_i(11)           <= DAQ_SPY_RX_P;
-  gth_rxn_i(11)           <= DAQ_SPY_RX_N;
-  gth_rxp_i(12)           <= BCK_PRS_P;
-  gth_rxn_i(12)           <= BCK_PRS_N;
-  gth_rxp_i(15 downto 13) <= B04_RX_P;
-  gth_rxn_i(15 downto 13) <= B04_RX_N;
+  -- gth_rxp_i(10 downto 0)  <= DAQ_RX_P;
+  -- gth_rxn_i(10 downto 0)  <= DAQ_RX_N;
+  -- gth_rxp_i(11)           <= DAQ_SPY_RX_P;
+  -- gth_rxn_i(11)           <= DAQ_SPY_RX_N;
 
-  DAQ_TX_P <= gth_txp_o(15 downto 12);
-  DAQ_TX_N <= gth_txn_o(15 downto 12);
-  SPY_TX_P <= gth_txp_o(11);
-  SPY_TX_N <= gth_txn_o(11);
+  gth_rxp_i(0)          <= BCK_PRS_P;
+  gth_rxn_i(0)          <= BCK_PRS_N;
+  gth_rxp_i(3 downto 1) <= B04_RX_P;
+  gth_rxn_i(3 downto 1) <= B04_RX_N;
 
-  -- Clocks for Bank 224 <-- use refclk1
-  gth_qrefclk0_i(0) <= mgtrefclk0_224_i;
-  gth_qrefclk1_i(0) <= '0';
-  gth_qrefclk00_i(0) <= mgtrefclk0_224_i;
-  gth_qrefclk10_i(0) <= '0';
-  gth_qrefclk01_i(0) <= '0';
-  gth_qrefclk11_i(0) <= '0';
-
-  -- Clocks for Bank 225 <-- use refclk4
-  gth_qrefclk0_i(1) <= mgtrefclk0_225_i;
-  gth_qrefclk1_i(1) <= '0';
-  gth_qrefclk00_i(1) <= mgtrefclk0_225_i;
-  gth_qrefclk10_i(1) <= '0';
-  gth_qrefclk01_i(1) <= '0';
-  gth_qrefclk11_i(1) <= '0';
-
-  -- Clocks for Bank 226 <-- use refclk3 (clk0), clk125ref (clk1)
-  gth_qrefclk0_i(2) <= mgtrefclk0_226_i;
-  gth_qrefclk1_i(2) <= mgtrefclk1_226_i;
-  gth_qrefclk00_i(2) <= mgtrefclk0_226_i;
-  gth_qrefclk10_i(2) <= mgtrefclk1_226_i;
-  gth_qrefclk01_i(2) <= '0';
-  gth_qrefclk11_i(2) <= '0';
+  DAQ_TX_P <= gth_txp_o(3 downto 0);
+  DAQ_TX_N <= gth_txn_o(3 downto 0);
 
   -- Clocks for Bank 227 <-- use refclk2
-  gth_qrefclk0_i(3) <= mgtrefclk0_227_i;
-  gth_qrefclk1_i(3) <= '0';
-  gth_qrefclk00_i(3) <= mgtrefclk0_227_i;
-  gth_qrefclk10_i(3) <= '0';
-  gth_qrefclk01_i(3) <= '0';
-  gth_qrefclk11_i(3) <= '0';
+  gth_qrefclk0_i(0) <= mgtrefclk0_227_i;
+  gth_qrefclk1_i(0) <= '0';
+  gth_qnorthrefclk0_i(0) <= '0';
+  gth_qnorthrefclk1_i(0) <= '0';
+  gth_qsouthrefclk0_i(0) <= '0';
+  gth_qsouthrefclk1_i(0) <= '0';
+  gth_qrefclk00_i(0) <= mgtrefclk0_227_i;
+  gth_qrefclk10_i(0) <= '0';
+  gth_qrefclk01_i(0) <= '0';
+  gth_qrefclk11_i(0) <= '0';  
+  gth_qnorthrefclk00_i(0) <= '0';
+  gth_qnorthrefclk10_i(0) <= '0';
+  gth_qnorthrefclk01_i(0) <= '0';
+  gth_qnorthrefclk11_i(0) <= '0';  
+  gth_qsouthrefclk00_i(0) <= '0';
+  gth_qsouthrefclk10_i(0) <= '0';  
+  gth_qsouthrefclk01_i(0) <= '0';
+  gth_qsouthrefclk11_i(0) <= '0'; 
 
-  -- Cross quad reference clocks <-- not used
-  gth_qnorthrefclk0_i <= "0000";
-  gth_qnorthrefclk1_i <= "0000";
-  gth_qsouthrefclk0_i <= "0000";
-  gth_qsouthrefclk1_i <= "0000";
-  gth_qnorthrefclk00_i <= "0000";
-  gth_qnorthrefclk10_i <= "0000";
-  gth_qnorthrefclk01_i <= "0000";
-  gth_qnorthrefclk11_i <= "0000";
-  gth_qsouthrefclk00_i <= "0000";
-  gth_qsouthrefclk10_i <= "0000";
-  gth_qsouthrefclk01_i <= "0000";
-  gth_qsouthrefclk11_i <= "0000";
-
-  u_ibert_gth_core : ibert_4quads_sepclks
+  u_ibert_gth_core : ibert_odmb7_q227
     port map (
       txn_o => gth_txn_o,
       txp_o => gth_txp_o,

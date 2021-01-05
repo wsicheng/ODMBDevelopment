@@ -1,0 +1,9 @@
+*/ip/
+*/*/ip/
+*.hw/
+*.runs/
+*.srcs/
+*.cache/
+*.ip_user_files/
+*.bak
+*/firmware/

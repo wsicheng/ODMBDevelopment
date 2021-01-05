@@ -5,7 +5,8 @@
 set BOARD ODMB7
 # set BOARD KCU105
 # set CONFIG TwoQuads
-set CONFIG FourQuads
+# set CONFIG FourQuads
+set CONFIG Quad227
 
 if {[string equal $BOARD ODMB7]} {
     set FPGA_TYPE xcku035-ffva1156-1-c; # for ODMB7
@@ -23,6 +24,10 @@ if {[string equal $CONFIG TwoQuads]} {
     set TOP_MODULE "odmb7_ibert_4quads"
     set IBERT_MODULE "ibert_4quads_sepclks"
     set PROJECT_NAME project_4quads_sepclks
+} elseif {[string equal $CONFIG Quad227]} {
+    set TOP_MODULE "odmb7_ibert_q227"
+    set IBERT_MODULE "ibert_odmb7_q227"
+    set PROJECT_NAME project_quad227
 } else {
     set TOP_MODULE "odmb7_ucsb_dev"
     set IBERT_MODULE "ibert_odmb7_gth"
