@@ -133,7 +133,7 @@
 
 `timescale 1ps/1ps
 
-module gtwiz_kcu_sfp_prbs_any(RST, CLK, DATA_IN, EN, DATA_OUT);
+module gtwiz_prbs_any(RST, CLK, DATA_IN, EN, DATA_OUT);
 
   //--------------------------------------------
   // Configuration parameters

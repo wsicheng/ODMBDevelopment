@@ -29,6 +29,15 @@ add_wave -into {hw_ila_data_1.wcfg} -radix hex  { {rxdata_errctr_1} }
 add_wave -into {hw_ila_data_1.wcfg} -radix hex  { {rxdata_nmlctr_i} }
 
 
+create_hw_probe -map {probe0[97:96]}  rxdata_valid_int[1:0]   [get_hw_ilas hw_ila_1]
+create_hw_probe -map {probe0[99:98]}  bad_rx_int[1:0]         [get_hw_ilas hw_ila_1]
+create_hw_probe -map {probe0[100]}    hb_gtwiz_reset_all_int  [get_hw_ilas hw_ila_1]
+
+add_wave -into {hw_ila_data_1.wcfg} -radix hex { {rxdata_valid_int} }
+add_wave -into {hw_ila_data_1.wcfg} -radix hex { {bad_rx_int} }
+add_wave -into {hw_ila_data_1.wcfg} -radix hex { {hb_gtwiz_reset_all_int} }
+
+
 # create_hw_probe -map {probe0[31:0]}  userdata_tx_0[31:0] [get_hw_ilas hw_ila_2]
 # create_hw_probe -map {probe0[63:32]} userdata_tx_1[31:0] [get_hw_ilas hw_ila_2]
 # create_hw_probe -map {probe0[71:64]} txctrl2_0[7:0]     [get_hw_ilas hw_ila_2]

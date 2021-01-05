@@ -57,7 +57,10 @@ use UNISIM.VComponents.all;
 use ieee.std_logic_misc.all;
 
 entity gtwiz_kcu_test_top is
-  PORT (
+  generic (
+    DATA_PATTERN : integer range 0 to 3 := 0 -- 0: PRBS pattern, 1: counter pattern
+  );
+  port (
 
     -- reference clk from si750
     mgtrefclk0_x0y3_p : in std_logic;
@@ -120,6 +123,9 @@ architecture Behavioral of gtwiz_kcu_test_top is
     sfp_ch1_tx_n    : out std_logic;
     sfp_ch1_tx_p    : out std_logic;
     
+    txready         : out std_logic; -- Flag for tx reset done
+    rxready         : out std_logic; -- Flag for rx reset done
+
     -- Transmitter signals
     txdata_ch0      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
     txdata_ch1      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
@@ -157,6 +163,23 @@ architecture Behavioral of gtwiz_kcu_test_top is
     reset_rx_out : out std_logic := '0';
     init_done_out : out std_logic := '0';
     retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
+  );
+  end component;
+
+  component gtwiz_prbs_any is
+  generic (
+    CHK_MODE : integer := 0;
+    INV_PATTERN : integer := 0;
+    POLY_LENGHT : integer := 31;
+    POLY_TAP : integer := 3;
+    NBITS : integer := 16
+  );
+  port (
+    rst : in std_logic := '0';
+    clk : in std_logic := '0';
+    data_in : in std_logic_vector(31 downto 0) := (others=> '0');
+    en : in std_logic := '0';
+    data_out : out std_logic_vector(31 downto 0) := (others=> '0')
   );
   end component;
 
@@ -322,6 +345,11 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal hb0_gtwiz_userdata_rx_int : std_logic_vector(31 downto 0) := (others=> '0');
   signal hb1_gtwiz_userdata_rx_int : std_logic_vector(31 downto 0) := (others=> '0');
 
+  signal txready_int : std_logic := '0';
+  signal rxready_int : std_logic := '0';
+  signal rxdata_valid_int : std_logic_vector(1 downto 0) := (others=> '0');
+  signal bad_rx_int : std_logic_vector(1 downto 0) := (others=> '0');
+
   -- ref clock
   signal mgtrefclk0_x0y3_int: std_logic := '0';
 
@@ -357,6 +385,9 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal hb0_gtwiz_reset_rx_done_int : std_logic := '0';
 
   signal txdata_valid_int : std_logic_vector(1 downto 0) :=(others=> '0');
+  signal txdata_prbs_int : std_logic_vector(31 downto 0) :=(others=> '0');
+  signal ch0_rxdata_prbs_anyerr : std_logic_vector(31 downto 0) :=(others=> '0');
+  signal ch1_rxdata_prbs_anyerr : std_logic_vector(31 downto 0) :=(others=> '0');
 
   signal ch0_txdata_reg : std_logic_vector(31 downto 0) :=(others=> '0');
   signal ch1_txdata_reg : std_logic_vector(31 downto 0) :=(others=> '0');
@@ -367,9 +398,6 @@ architecture Behavioral of gtwiz_kcu_test_top is
   -- rx data checking
   signal prbs_match_int : std_logic_vector(1 downto 0) := (others=> '0');
   signal loopback_int : std_logic_vector(2 downto 0) := (others=> '0');
-
-  signal rxdata_valid_int : std_logic_vector(1 downto 0) := (others=> '0');
-  signal bad_rx_int : std_logic_vector(1 downto 0) := (others=> '0');
 
   signal ch0_rxctrl2_int: std_logic_vector(7 downto 0) := (others=> '0');
   signal ch1_rxctrl2_int: std_logic_vector(7 downto 0) := (others=> '0');
@@ -438,7 +466,7 @@ begin
   -- bufg_clk_freerun_inst: BUFG port map(I => hb_gtwiz_reset_clk_freerun_in, O => hb_gtwiz_reset_clk_freerun_buf_int );
   hb_gtwiz_reset_clk_freerun_buf_int <= clk80;
 
-  hb_gtwiz_reset_all_int <= hb_gtwiz_reset_all_buf_int or hb_gtwiz_reset_all_init_int or hb_gtwiz_reset_all_vio_int
+  hb_gtwiz_reset_all_int <= hb_gtwiz_reset_all_init_int or hb_gtwiz_reset_all_vio_int
                             -- synthesis translate_off
                             or hb_gtwiz_reset_all_in
                             -- synthesis translate_on
@@ -455,7 +483,7 @@ begin
   -- destabilize the data stream. It is a demonstration only and can be modified to suit your system needs.
 
   process(hb_gtwiz_reset_clk_freerun_buf_int)
-   begin
+  begin
       if (rising_edge(hb_gtwiz_reset_clk_freerun_buf_int)) then
         if (sm_link_counter < x"43") then
           sm_link <= '0';
@@ -472,8 +500,8 @@ begin
   port map (
     clk_freerun_in    => hb_gtwiz_reset_clk_freerun_buf_int,
     reset_all_in      => hb_gtwiz_reset_all_int,
-    tx_init_done_in   => gtwiz_reset_tx_done_int,
-    rx_init_done_in   => gtwiz_reset_rx_done_int,
+    tx_init_done_in   => txready_int,
+    rx_init_done_in   => rxready_int,
     rx_data_good_in   => sm_link,
     reset_all_out     => hb_gtwiz_reset_all_init_int,
     reset_rx_out      => hb_gtwiz_reset_rx_datapath_init_int,
@@ -536,21 +564,11 @@ begin
       elsif (sm_link = '0') then
         link_down_latched_out <= '1';
       end if;
-   end if;
+    end if;
   end process;
 
   -- Assign the link status indicator to the top-level two-state output for user reference
   link_status_out <= sm_link;
-
-  ---------------------------------------------------------------------------------------------------------------------
-  -- User-data generate, checking
-  ---------------------------------------------------------------------------------------------------------------------
-  txctrl0_int <= (others => '0'); -- unused in 8b10b
-  txctrl1_int <= (others => '0'); -- unused in 8b10b
-  txctrl2_int <= ch1_txctrl2_int & ch0_txctrl2_int;
-
-  hb0_gtwiz_userdata_tx_int <= ch0_txdata_reg;
-  hb1_gtwiz_userdata_tx_int <= ch1_txdata_reg;
 
   -- Synchronize the example stimulus reset condition into the txusrclk2 domain
   -- gtwiz_tx_stimulus_reset_int <= hb_gtwiz_reset_all_int or (not hb0_gtwiz_reset_rx_done_int) or (not hb0_gtwiz_userclk_tx_active_int);
@@ -564,35 +582,194 @@ begin
     rst_out => gtwiz_tx_stimulus_reset_sync
   );
 
-  txdata_gen_inst : process (gtwiz_userclk_tx_usrclk2_int)
-  begin
-    if (rising_edge(gtwiz_userclk_tx_usrclk2_int)) then
-      if (gtwiz_tx_stimulus_reset_sync = '1') then
-        ch0_txdata_reg <= x"0000_0000";
-        ch1_txdata_reg <= x"0000_0000";
-        txdata_valid_int <= "00";
-        txdata_gen_ctr <= x"0000";
-        txdata_init_ctr <= x"0000";
-      else
-        if (txdata_init_ctr < 100 or or_reduce(bad_rx_int) = '1') then
-          ch0_txdata_reg <= x"0000_0000"; -- will be replaced by the IDLE word
-          ch1_txdata_reg <= x"0000_0000"; -- will be replaced by the IDLE word
+  ---------------------------------------------------------------------------------------------------------------------
+  -- PRBS stimulus and checking
+  ---------------------------------------------------------------------------------------------------------------------
+  userdata_gen_prbs : if DATA_PATTERN = 0 generate
+
+    -- TX PRBS pattern generation
+    prbs_stimulus_inst : gtwiz_prbs_any
+    generic map (
+      CHK_MODE    => 0,
+      INV_PATTERN => 1,
+      POLY_LENGHT => 31,
+      POLY_TAP    => 28,
+      NBITS       => 32
+    )
+    port map (
+      RST      => hb_gtwiz_reset_all_int,
+      CLK      => gtwiz_userclk_tx_usrclk2_int,
+      DATA_IN  => (others => '0'),
+      EN       => '1',
+      DATA_OUT => txdata_prbs_int
+    );
+  
+    hb0_gtwiz_userdata_tx_int <= txdata_prbs_int;
+    hb1_gtwiz_userdata_tx_int <= txdata_prbs_int;
+
+    txdata_init_inst : process (gtwiz_userclk_tx_usrclk2_int)
+    begin
+      if (rising_edge(gtwiz_userclk_tx_usrclk2_int)) then
+        if (gtwiz_tx_stimulus_reset_sync = '1') then
+          txdata_valid_int <= "00";
+          txdata_init_ctr <= x"0000";
+        elsif (txdata_init_ctr < 100 or rxready_int = '0') then
           txdata_valid_int <= "00";
           txdata_init_ctr <= txdata_init_ctr + 1;
-        elsif (txdata_gen_ctr(7 downto 0) = x"0") then
-          ch0_txdata_reg  <= std_logic_vector(txdata_gen_ctr) & x"503C";
-          ch1_txdata_reg  <= (not std_logic_vector(txdata_gen_ctr)) & x"503C";
-          txdata_valid_int <= "11";
         else
-          ch0_txdata_reg  <= (not std_logic_vector(txdata_gen_ctr)) & std_logic_vector(txdata_gen_ctr);
-          ch1_txdata_reg  <= std_logic_vector(txdata_gen_ctr) & (not std_logic_vector(txdata_gen_ctr));
           txdata_valid_int <= "11";
         end if;
-        txdata_gen_ctr <= txdata_gen_ctr + 1;
       end if;
-    end if;
-  end process;
+    end process;
 
+    -- RX PRBS pattern checking
+    prbs_checking_inst0 : gtwiz_prbs_any
+    generic map (
+      CHK_MODE    => 1,
+      INV_PATTERN => 1,
+      POLY_LENGHT => 31,
+      POLY_TAP    => 28,
+      NBITS       => 32
+    )
+    port map (
+      RST      => hb_gtwiz_reset_all_int,
+      CLK      => gtwiz_userclk_rx_usrclk2_int,
+      DATA_IN  => hb0_gtwiz_userdata_rx_int,
+      EN       => rxdata_valid_int(0),
+      DATA_OUT => ch0_rxdata_prbs_anyerr
+    );
+
+    prbs_checking_inst1 : gtwiz_prbs_any
+    generic map (
+      CHK_MODE    => 1,
+      INV_PATTERN => 1,
+      POLY_LENGHT => 31,
+      POLY_TAP    => 28,
+      NBITS       => 32
+    )
+    port map (
+      RST      => hb_gtwiz_reset_all_int,
+      CLK      => gtwiz_userclk_rx_usrclk2_int,
+      DATA_IN  => hb1_gtwiz_userdata_rx_int,
+      EN       => rxdata_valid_int(1),
+      DATA_OUT => ch1_rxdata_prbs_anyerr
+    );
+
+    prbs_match_int(0) <= not or_reduce(ch0_rxdata_prbs_anyerr);
+    prbs_match_int(1) <= not or_reduce(ch1_rxdata_prbs_anyerr);
+
+  end generate;
+
+  ---------------------------------------------------------------------------------------------------------------------
+  -- User-data generate, checking
+  ---------------------------------------------------------------------------------------------------------------------
+  userdata_gen_counter : if DATA_PATTERN = 1 generate
+    txctrl0_int <= (others => '0'); -- unused in 8b10b
+    txctrl1_int <= (others => '0'); -- unused in 8b10b
+    txctrl2_int <= ch1_txctrl2_int & ch0_txctrl2_int;
+
+    hb0_gtwiz_userdata_tx_int <= ch0_txdata_reg;
+    hb1_gtwiz_userdata_tx_int <= ch1_txdata_reg;
+
+    txdata_gen_inst : process (gtwiz_userclk_tx_usrclk2_int)
+    begin
+      if (rising_edge(gtwiz_userclk_tx_usrclk2_int)) then
+        if (gtwiz_tx_stimulus_reset_sync = '1') then
+          ch0_txdata_reg <= x"0000_0000";
+          ch1_txdata_reg <= x"0000_0000";
+          txdata_valid_int <= "00";
+          txdata_gen_ctr <= x"0000";
+          txdata_init_ctr <= x"0000";
+        else
+          if (txdata_init_ctr < 100 or rxready_int = '0') then
+            ch0_txdata_reg <= x"0000_0000"; -- will be replaced by the IDLE word
+            ch1_txdata_reg <= x"0000_0000"; -- will be replaced by the IDLE word
+            txdata_valid_int <= "00";
+            txdata_init_ctr <= txdata_init_ctr + 1;
+          -- elsif (txdata_gen_ctr(7 downto 0) = x"0") then
+          --   ch0_txdata_reg  <= std_logic_vector(txdata_gen_ctr) & x"503C";
+          --   ch1_txdata_reg  <= (not std_logic_vector(txdata_gen_ctr)) & x"503C";
+          --   txdata_valid_int <= "11";
+          else
+            ch0_txdata_reg  <= (not std_logic_vector(txdata_gen_ctr)) & std_logic_vector(txdata_gen_ctr);
+            ch1_txdata_reg  <= std_logic_vector(txdata_gen_ctr) & (not std_logic_vector(txdata_gen_ctr));
+            txdata_valid_int <= "11";
+          end if;
+          txdata_gen_ctr <= txdata_gen_ctr + 1;
+        end if;
+      end if;
+    end process;
+
+    -- The RX checking part
+    -- Synchronize the example stimulus reset condition into the txusrclk2 domain
+
+    -- gtwiz_rx_stimulus_reset_int <= hb_gtwiz_reset_all_int or (not hb0_gtwiz_reset_rx_done_int) or (not hb0_gtwiz_userclk_rx_active_int);
+    -- gtwiz_rx_checking_reset_synchronizer_inst : gtwiz_example_reset_synchronizer
+    --   port map (
+    --     clk_in  => hb0_gtwiz_userclk_rx_usrclk2_int,
+    --     rst_in  => gtwiz_rx_stimulus_reset_int,
+    --     rst_out => gtwiz_rx_stimulus_reset_sync
+    --   );
+
+    -- ch0_rxctrl2_int <= rxctrl2_int(7 downto 0);
+    -- ch1_rxctrl2_int <= rxctrl2_int(15 downto 8);
+    ch0_rxctrl2_int <= x"0" & "000" & rxdata_valid_int(0);
+    ch1_rxctrl2_int <= x"0" & "000" & rxdata_valid_int(1);
+
+    rxdata_checking_ch0 : process (hb0_gtwiz_userclk_rx_usrclk2_int)
+    begin
+      if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int) and rxdata_valid_int(0) = '1') then
+        if (ch0_rxdata_gen_ctr = 0) then
+          if (hb0_gtwiz_userdata_rx_int(31 downto 16) = (not hb0_gtwiz_userdata_rx_int(15 downto 0))) then
+            ch0_rxdata_gen_ctr <= unsigned(hb0_gtwiz_userdata_rx_int(15 downto 0)) - 1;
+          end if;
+        else
+          -- if (hb0_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
+          --   if (std_logic_vector(ch0_rxdata_gen_ctr) /= hb0_gtwiz_userdata_rx_int(31 downto 16)) then
+          --     prbs_match_int(0) <= '0';
+          --   end if;
+          --   ch0_rxdata_gen_ctr <= unsigned(hb0_gtwiz_userdata_rx_int(31 downto 16)) - 1;
+          if (((not std_logic_vector(ch0_rxdata_gen_ctr)) & std_logic_vector(ch0_rxdata_gen_ctr)) = hb0_gtwiz_userdata_rx_int) then
+            prbs_match_int(0) <= '1';
+            ch0_rxdata_gen_ctr <= ch0_rxdata_gen_ctr - 1;
+          else 
+            prbs_match_int(0) <= '0';
+            ch0_rxdata_gen_ctr <= x"0000";
+          end if;
+        end if;
+      end if;
+    end process;
+
+    rxdata_checking_ch1 : process (hb0_gtwiz_userclk_rx_usrclk2_int)
+    begin
+      if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int) and rxdata_valid_int(1) = '1') then
+        if (ch1_rxdata_gen_ctr = 0) then
+          if (hb1_gtwiz_userdata_rx_int(31 downto 16) = (not hb1_gtwiz_userdata_rx_int(15 downto 0))) then
+            ch1_rxdata_gen_ctr <= unsigned(hb1_gtwiz_userdata_rx_int(15 downto 0)) + 1;
+          end if;
+        else
+          -- if (hb1_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
+          --   if (std_logic_vector(ch1_rxdata_gen_ctr) /= hb1_gtwiz_userdata_rx_int(31 downto 16)) then
+          --     prbs_match_int(1) <= '0';
+          --   end if;
+          --   ch1_rxdata_gen_ctr <= unsigned(hb1_gtwiz_userdata_rx_int(31 downto 16)) + 1;
+          if (((not std_logic_vector(ch1_rxdata_gen_ctr)) & std_logic_vector(ch1_rxdata_gen_ctr)) = hb1_gtwiz_userdata_rx_int) then
+            prbs_match_int(1) <= '1';
+            ch1_rxdata_gen_ctr <= ch1_rxdata_gen_ctr + 1;
+          else 
+            prbs_match_int(1) <= '0';
+            ch1_rxdata_gen_ctr <= x"0000";
+          end if;
+        end if;
+      end if;
+    end process;
+
+    ila_data_rx(79 downto 64) <= std_logic_vector(ch0_rxdata_gen_ctr);
+    ila_data_rx(95 downto 80) <= std_logic_vector(ch1_rxdata_gen_ctr);
+
+  end generate;
+
+  -- ILA for tx data
   ila_data_tx(31 downto 0)  <= hb0_gtwiz_userdata_tx_int;
   ila_data_tx(63 downto 32) <= hb1_gtwiz_userdata_tx_int;
   ila_data_tx(71 downto 64) <= ch0_txctrl2_int;
@@ -603,71 +780,6 @@ begin
     clk => hb0_gtwiz_userclk_tx_usrclk2_int,
     probe0 => ila_data_tx
   );
-
-
-  -- The RX checking part
-  -- Synchronize the example stimulus reset condition into the txusrclk2 domain
-
-  -- gtwiz_rx_stimulus_reset_int <= hb_gtwiz_reset_all_int or (not hb0_gtwiz_reset_rx_done_int) or (not hb0_gtwiz_userclk_rx_active_int);
-  -- gtwiz_rx_checking_reset_synchronizer_inst : gtwiz_example_reset_synchronizer
-  --   port map (
-  --     clk_in  => hb0_gtwiz_userclk_rx_usrclk2_int,
-  --     rst_in  => gtwiz_rx_stimulus_reset_int,
-  --     rst_out => gtwiz_rx_stimulus_reset_sync
-  --   );
-
-  -- ch0_rxctrl2_int <= rxctrl2_int(7 downto 0);
-  -- ch1_rxctrl2_int <= rxctrl2_int(15 downto 8);
-  ch0_rxctrl2_int <= x"0" & "000" & rxdata_valid_int(0);
-  ch1_rxctrl2_int <= x"0" & "000" & rxdata_valid_int(1);
-
-  rxdata_checking_ch0 : process (hb0_gtwiz_userclk_rx_usrclk2_int)
-  begin
-    if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int) and rxdata_valid_int(0) = '1') then
-      if (ch0_rxdata_gen_ctr = 0) then
-        if (hb0_gtwiz_userdata_rx_int(31 downto 16) = (not hb0_gtwiz_userdata_rx_int(15 downto 0))) then
-          ch0_rxdata_gen_ctr <= unsigned(hb0_gtwiz_userdata_rx_int(15 downto 0)) - 1;
-        end if;
-      else
-        if (hb0_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
-          if (std_logic_vector(ch0_rxdata_gen_ctr) /= hb0_gtwiz_userdata_rx_int(31 downto 16)) then
-            prbs_match_int(0) <= '0';
-          end if;
-          ch0_rxdata_gen_ctr <= unsigned(hb0_gtwiz_userdata_rx_int(31 downto 16)) - 1;
-        elsif (((not std_logic_vector(ch0_rxdata_gen_ctr)) & std_logic_vector(ch0_rxdata_gen_ctr)) = hb0_gtwiz_userdata_rx_int) then
-          prbs_match_int(0) <= '1';
-          ch0_rxdata_gen_ctr <= ch0_rxdata_gen_ctr - 1;
-        else 
-          prbs_match_int(0) <= '0';
-          ch0_rxdata_gen_ctr <= x"0000";
-        end if;
-      end if;
-    end if;
-  end process;
-
-  rxdata_checking_ch1 : process (hb0_gtwiz_userclk_rx_usrclk2_int)
-  begin
-    if (rising_edge(hb0_gtwiz_userclk_rx_usrclk2_int) and rxdata_valid_int(1) = '1') then
-      if (ch1_rxdata_gen_ctr = 0) then
-        if (hb1_gtwiz_userdata_rx_int(31 downto 16) = (not hb1_gtwiz_userdata_rx_int(15 downto 0))) then
-          ch1_rxdata_gen_ctr <= unsigned(hb1_gtwiz_userdata_rx_int(15 downto 0)) + 1;
-        end if;
-      else
-        if (hb1_gtwiz_userdata_rx_int(15 downto 0) = x"503C") then
-          if (std_logic_vector(ch1_rxdata_gen_ctr) /= hb1_gtwiz_userdata_rx_int(31 downto 16)) then
-            prbs_match_int(1) <= '0';
-          end if;
-          ch1_rxdata_gen_ctr <= unsigned(hb1_gtwiz_userdata_rx_int(31 downto 16)) + 1;
-        elsif (((not std_logic_vector(ch1_rxdata_gen_ctr)) & std_logic_vector(ch1_rxdata_gen_ctr)) = hb1_gtwiz_userdata_rx_int) then
-          prbs_match_int(1) <= '1';
-          ch1_rxdata_gen_ctr <= ch1_rxdata_gen_ctr + 1;
-        else 
-          prbs_match_int(1) <= '0';
-          ch1_rxdata_gen_ctr <= x"0000";
-        end if;
-      end if;
-    end if;
-  end process;
 
   -- -- Error rate counting, reusing the gen_ctr as total rate first
   -- -- wire [15:0] ch0_rxdata_gen_ctr = hb0_rxdata_nml_ctr[15:0];
@@ -683,7 +795,7 @@ begin
         hb0_rxdata_nml_ctr <= (others => '0');
         ch0_rxdata_err_ctr <= (others => '0');
         ch1_rxdata_err_ctr <= (others => '0');
-      elsif (hb0_gtwiz_userclk_rx_active_int = '1') then
+      elsif (rxready_int = '1') then
         hb0_rxdata_nml_ctr <= hb0_rxdata_nml_ctr + 1;
         if (prbs_match_int(0) = '0') then
           ch0_rxdata_err_ctr <= ch0_rxdata_err_ctr + 1;
@@ -697,17 +809,16 @@ begin
 
   ila_data_rx(31 downto 0)  <= hb0_gtwiz_userdata_rx_int;
   ila_data_rx(63 downto 32) <= hb1_gtwiz_userdata_rx_int;
-  ila_data_rx(79 downto 64) <= std_logic_vector(ch0_rxdata_gen_ctr);
-  ila_data_rx(95 downto 80) <= std_logic_vector(ch1_rxdata_gen_ctr);
-  ila_data_rx(103 downto 96)  <= rxctrl2_int(7 downto 0);
-  ila_data_rx(111 downto 104) <= rxctrl2_int(15 downto 8);
-  ila_data_rx(113 downto 112) <= rxbyteisaligned_int;
-  ila_data_rx(115 downto 114) <= rxbyterealign_int;
-  ila_data_rx(117 downto 116) <= rxcommadet_int;
+  ila_data_rx(97 downto 96) <= rxdata_valid_int;
+  ila_data_rx(99 downto 98) <= bad_rx_int;
+  ila_data_rx(100) <= hb_gtwiz_reset_all_int;
+  ila_data_rx(101) <= txready_int;
+  ila_data_rx(102) <= rxready_int;
   ila_data_rx(119 downto 118) <= prbs_match_int;
   ila_data_rx(135 downto 120) <= std_logic_vector(ch0_rxdata_err_ctr(16 downto 1));
   ila_data_rx(151 downto 136) <= std_logic_vector(ch1_rxdata_err_ctr(16 downto 1));
   ila_data_rx(191 downto 152) <= std_logic_vector(hb0_rxdata_nml_ctr(39 downto 0));
+
 
   ila_rx_inst : ila
   port map(
@@ -751,6 +862,8 @@ begin
     sfp_ch1_rx_p    => sfp_ch1_rx_p,
     sfp_ch1_tx_n    => sfp_ch1_tx_n,
     sfp_ch1_tx_p    => sfp_ch1_tx_p,
+    txready         => txready_int,
+    rxready         => rxready_int,
     txdata_ch0      => hb0_gtwiz_userdata_tx_int,
     txdata_ch1      => hb1_gtwiz_userdata_tx_int,
     txdata_valid    => txdata_valid_int,

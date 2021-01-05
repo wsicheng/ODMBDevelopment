@@ -35,10 +35,14 @@ port (
   sfp_ch1_tx_n    : out std_logic;
   sfp_ch1_tx_p    : out std_logic;
 
+  -- Clock active signals
+  txready         : out std_logic; -- Flag for tx reset done
+  rxready         : out std_logic; -- Flag for rx reset done
+
   -- Transmitter signals
   txdata_ch0      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
   txdata_ch1      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
-  txdata_valid    : in std_logic_vector(1 downto 0);   -- Flag for valid data;
+  txdata_valid    : in std_logic_vector(NLINK-1 downto 0);   -- Flag for valid data;
   txdiffctrl_ch0  : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
   txdiffctrl_ch1  : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
   loopback        : in std_logic_vector(2 downto 0);   -- For internal loopback tests
@@ -371,6 +375,7 @@ architecture Behavioral of mgt_sfp is
   signal ch1_codevalid : std_logic_vector(3 downto 0);
 
   signal bad_rx_int : std_logic_vector(NLINK-1 downto 0);
+  signal rxready_int : std_logic;
 
   -- GT control
   signal loopback_int : std_logic_vector(5 downto 0) := (others=> '0');
@@ -383,6 +388,7 @@ architecture Behavioral of mgt_sfp is
   signal txprbssel_int : std_logic_vector(7 downto 0) := (others=> '0');
 
   -- debug signals
+  signal ila_data_rx: std_logic_vector(191 downto 0) := (others=> '0');
   signal gtpowergood_vio_sync : std_logic_vector(1 downto 0) := (others=> '0');
   signal txpmaresetdone_vio_sync: std_logic_vector(1 downto 0) := (others=> '0');
   signal rxpmaresetdone_vio_sync: std_logic_vector(1 downto 0) := (others=> '0');
@@ -393,7 +399,6 @@ architecture Behavioral of mgt_sfp is
   signal hb_gtwiz_reset_rx_datapath_vio_int: std_logic;
   signal hb_gtwiz_reset_rx_pll_and_datapath_vio_int: std_logic;
   signal rxdata_errctr_reset_vio_int : std_logic;
-
 
   attribute dont_touch : string;
   attribute dont_touch of bit_synchronizer_vio_gtpowergood_0_inst : label is "true";
@@ -442,15 +447,19 @@ begin
   ch0_codevalid <= not (ch0_rxnotintable or ch0_rxdisperr); -- May need to sync the input signals
   ch1_codevalid <= not (ch1_rxnotintable or ch1_rxdisperr); -- May need to sync the input signals
 
-  bad_rx_int(0) <= not( gtwiz_reset_rx_done_int and rxbyteisaligned_int(0) and (not rxbyterealign_int(0)) );
-  bad_rx_int(1) <= not( gtwiz_reset_rx_done_int and rxbyteisaligned_int(1) and (not rxbyterealign_int(1)) );
+  bad_rx_int(0) <= not( rxbyteisaligned_int(0) and (not rxbyterealign_int(0)) );
+  bad_rx_int(1) <= not( rxbyteisaligned_int(1) and (not rxbyterealign_int(1)) );
 
   BAD_RX <= bad_rx_int;
 
+  TXREADY <= gtwiz_userclk_tx_active_int and gtwiz_reset_tx_done_int;
+  RXREADY <= rxready_int;
+  rxready_int <= gtwiz_userclk_rx_active_int and gtwiz_reset_rx_done_int;
+
   -- RXDATA is valid only when it's been deemed aligned, recognized 8B/10B pattern and does not contain a K-character.
   -- The RXVALID port is not explained in UG576, so it's not used.
-  RXDATA_VALID(0) <= '1' when (bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
-  RXDATA_VALID(1) <= '1' when (bad_rx_int(1) = '0' and ch1_codevalid = x"F" and ch1_rxchariscomma = x"0") else '0';
+  RXDATA_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
+  RXDATA_VALID(1) <= '1' when (rxready_int = '1' and bad_rx_int(1) = '0' and ch1_codevalid = x"F" and ch1_rxchariscomma = x"0") else '0';
 
   -- MGT reference clk
   gtrefclk00_int <= MGTREFCLK;
@@ -512,8 +521,8 @@ begin
     txprecursor_i  => "0000000000",
     txpostcursor_i => "0000000000",
     rxlpmen_i      => "11",
-    rxoutclk_i(0)  => hb0_gtwiz_userclk_rx_usrclk2_int,
-    rxoutclk_i(1)  => hb0_gtwiz_userclk_rx_usrclk2_int,
+    rxoutclk_i(0)  => gtwiz_userclk_rx_usrclk2_int,
+    rxoutclk_i(1)  => gtwiz_userclk_rx_usrclk2_int,
     drpclk_i(0)    => SYSCLK,
     drpclk_i(1)    => SYSCLK,
     clk            => SYSCLK
@@ -618,6 +627,25 @@ begin
   ---------------------------------------------------------------------------------------------------------------------
   -- Debug session
   ---------------------------------------------------------------------------------------------------------------------
+
+  ila_data_rx(63 downto 0) <= gtwiz_userdata_rx_int;
+  ila_data_rx(67 downto 64) <= ch0_codevalid;
+  ila_data_rx(71 downto 68) <= ch1_codevalid;
+  ila_data_rx(75 downto 72) <= ch0_rxchariscomma;
+  ila_data_rx(79 downto 76) <= ch1_rxchariscomma;
+  ila_data_rx(99 downto 98) <= bad_rx_int;
+  ila_data_rx(103 downto 96)  <= rxctrl2_int(7 downto 0);
+  ila_data_rx(111 downto 104) <= rxctrl2_int(15 downto 8);
+  ila_data_rx(113 downto 112) <= rxbyteisaligned_int;
+  ila_data_rx(115 downto 114) <= rxbyterealign_int;
+  ila_data_rx(117 downto 116) <= rxcommadet_int;
+
+  mgt_sfp_ila_inst : ila
+  port map(
+    clk => gtwiz_userclk_rx_usrclk2_int,
+    probe0 => ila_data_rx
+  );
+
 
   mgt_sfp_vio_inst : gtwiz_kcu_sfp_vio_0
   port map (
