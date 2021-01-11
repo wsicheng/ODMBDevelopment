@@ -1,27 +1,20 @@
-# Test firmware with IBERT 
-This testbench uses the template from the [KintexUltraScale Testbench Template](https://github.com/odmb/odmbDevelopment)
-Only the source folder is requried. Other folders can be generated using the generator tcl files.
+# IBERT firmwares for KCU105
+IBERT test in VHDL for KCU105, with different configurations using some shared code.
 
-This testbench is specific to test the reading and writing to the fifo generator, as well as being a learning project.
+## Projects
 
-## File description 
-- source/Firmware.vhd: Module
-- source/Firmware_pkg.vhd: Pakage file that holds global variables
-- source/Firmware_tb.vhd: Testbench for module
-- source/Firmware_tb.xdc: Constraint file for testbench
-- source/Firmware_tb.tcl: Simulation file
-- source/data: COE data files for LUTs
+### project_[N]quads
+Project with all N quads configured to use the reference clock connect to that quad.
+- Top file: `source/kcu_ibert_4quads.vhd`
+- DAQ_SPY_SEL controlled by vio, but should always be 0
+- SYSMON for MGT V/I monitoring
 
-## Generator files
-- source/ip_generator.tcl: Tcl file that can generate IPs according to the FPGA
-- source/tb_project_generator.tcl: Tcl file that can generate testbench Vivado project
+## Generator script
+- `scripts/project_generator.tcl`: used to generate projects for different configs with setup on top
 
 ## To re-make the testbench project, run the below commands. The testbench is targeted for the KCU105 board.
 ~~~~bash
-cd source; vivado -nojournal -nolog -mode batch -source tb_project_generator.tcl
-~~~~
-
-## To re-make the ip cores, run one of the below command according to the FPGA target
-~~~~bash
-cd source; vivado -nojournal -nolog -mode batch -source ip_generator.tcl -tclargs xcku040-ffva1156-2-e
+cd scripts # this step is needed
+emacs -nw project_generator.tcl # edit the configure variables at the top
+vivado -nojournal -nolog -mode batch -source project_generator.tcl
 ~~~~
