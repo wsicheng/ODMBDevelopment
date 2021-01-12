@@ -13,6 +13,7 @@ set_property C_CLK_INPUT_FREQ_HZ 80000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER true [get_debug_cores dbg_hub]
 
 # Refclk constraints
+create_clock -name gth_refclk0_225 -period 6.4  [get_ports REF_CLK_1_P]
 create_clock -name gth_refclk0_227 -period 6.4  [get_ports REF_CLK_3_P]
 create_clock -name gth_refclk0_228 -period 6.4  [get_ports REF_CLK_2_P]
 create_clock -name gth_refclk1_227 -period 8    [get_ports CLK_125_REF_P]

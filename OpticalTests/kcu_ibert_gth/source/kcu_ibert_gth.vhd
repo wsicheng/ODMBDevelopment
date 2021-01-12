@@ -9,11 +9,11 @@ use unisim.vcomponents.all;
 
 -- To mimic the behavior of ODMB_VME on the component CFEBJTAG
 
-entity kcu_ibert_4quads is
+entity kcu_ibert_gth is
   generic (
-    NQUAD    : integer range 0 to 5 := 4   -- Number of Quads used for IBERT
-  );
-  PORT (
+    NQUAD    : integer range 0 to 5 := 3   -- Number of Quads used for IBERT
+    );
+  port (
     --------------------
     -- Clock
     --------------------
@@ -46,46 +46,38 @@ entity kcu_ibert_4quads is
     BCK_PRS_P : in std_logic; -- copy of B04_RX_P1
     BCK_PRS_N : in std_logic; -- copy of B04_RX_N1
 
-    SPY_TX_P : out std_logic;        -- quad 227, link 3: 
-    SPY_TX_N : out std_logic;        -- quad 227, link 3: 
-    DAQ_TX_P : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
-    DAQ_TX_N : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
+    -- SPY_TX_P : out std_logic;        -- quad 227, link 3:
+    -- SPY_TX_N : out std_logic;        -- quad 227, link 3:
+    -- DAQ_TX_P : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
+    -- DAQ_TX_N : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
 
-    FMC_TX_P : out std_logic_vector(2 downto 0); -- Empty in ODMB, quad 227 link 0-2
-    FMC_TX_N : out std_logic_vector(2 downto 0); -- Empty in ODMB, quad 227 link 0-2
-    SFP_TX_P : out std_logic_vector(1 downto 0); -- Empty in ODMB, needed for SFP0/1 on KCU105
-    SFP_TX_N : out std_logic_vector(1 downto 0); -- Empty in ODMB, needed for SFP0/1 on KCU105
+    -- FMC_TX_P : out std_logic_vector(2 downto 0); -- Empty in ODMB, quad 227 link 0-2
+    -- FMC_TX_N : out std_logic_vector(2 downto 0); -- Empty in ODMB, quad 227 link 0-2
+    -- SFP_TX_P : out std_logic_vector(1 downto 0); -- Empty in ODMB, needed for SFP0/1 on KCU105
+    -- SFP_TX_N : out std_logic_vector(1 downto 0); -- Empty in ODMB, needed for SFP0/1 on KCU105
+
+    DAQ_TX_P : out std_logic_vector(4*NQUAD-1 downto 0); -- B04 TX, output to FED
+    DAQ_TX_N : out std_logic_vector(4*NQUAD-1 downto 0); -- B04 TX, output to FED
 
     -- Optical control signals
     DAQ_SPY_SEL : out std_logic;      -- 0 for DAQ_RX_P/N11, 1 for SPY_RX_P/N
-
-    --------------------------------
-    -- IBERT test signals for KCU
-    --------------------------------
-    -- gth_txn_o : out std_logic_vector(15 downto 0);
-    -- gth_txp_o : out std_logic_vector(15 downto 0);
-    -- gth_rxn_i : in std_logic_vector(15 downto 0);
-    -- gth_rxp_i : in std_logic_vector(15 downto 0)
 
     --------------------------------
     -- SYSMON ports
     --------------------------------
     -- selectors
     SYSMON_MUX_ADDR_LS : out std_logic_vector(2 downto 0);
-    -- MGTAVCC 1.0V SCALED to 0.5V
-    SYSMON_AD0_R_P : in std_logic;
+    SYSMON_AD0_R_P : in std_logic; -- MGTAVCC 1.0V SCALED to 0.5V
     SYSMON_AD0_R_N : in std_logic;
-    -- MGTAVTT 1.2V SCALED to 0.6V
-    SYSMON_AD8_R_P : in std_logic;
+    SYSMON_AD8_R_P : in std_logic; -- MGTAVTT 1.2V SCALED to 0.6V
     SYSMON_AD8_R_N : in std_logic;
-    -- SYSMON_MUX0_SENSE
-    SYSMON_AD2_R_P : in std_logic;
+    SYSMON_AD2_R_P : in std_logic; -- SYSMON_MUX0_SENSE
     SYSMON_AD2_R_N : in std_logic
 
     );
-end kcu_ibert_4quads;
+end kcu_ibert_gth;
 
-architecture kcu_inst of kcu_ibert_4quads is
+architecture kcu_inst of kcu_ibert_gth is
 
   --------------------------------------
   -- Component definiton for the IP cores
@@ -114,8 +106,8 @@ architecture kcu_inst of kcu_ibert_4quads is
   --------------------------------------
   -- Component and signals for the IBERT test
   --------------------------------------
-  component ibert_odmb7_gth
-    PORT (
+  component ibert_kcu_gth
+    port (
       txn_o : out std_logic_vector(4*NQUAD-1 downto 0);
       txp_o : out std_logic_vector(4*NQUAD-1 downto 0);
       rxoutclk_o : out std_logic_vector(4*NQUAD-1 downto 0);
@@ -140,7 +132,7 @@ architecture kcu_inst of kcu_ibert_4quads is
       gtsouthrefclk01_i : in std_logic_vector(NQUAD-1 downto 0);
       gtsouthrefclk11_i : in std_logic_vector(NQUAD-1 downto 0);
       clk : in std_logic
-    );
+      );
   end component;
 
   signal gth_txn_o : std_logic_vector(4*NQUAD-1 downto 0);
@@ -167,6 +159,8 @@ architecture kcu_inst of kcu_ibert_4quads is
   signal gth_qsouthrefclk01_i : std_logic_vector(NQUAD-1 downto 0);
   signal gth_qsouthrefclk11_i : std_logic_vector(NQUAD-1 downto 0);
 
+  signal mgtrefclk0_225_i : std_logic;
+  signal mgtrefclk0_225_odiv2 : std_logic;
   signal mgtrefclk0_227_i : std_logic;
   signal mgtrefclk0_227_odiv2 : std_logic;
   signal mgtrefclk1_227_i : std_logic;
@@ -211,12 +205,17 @@ begin
   -- Handle clock synthesizer signals and generate clocks
   -------------------------------------------------------------------------------------------
 
-  -------------------------------------------------------------------------------------------
-  -- Handle VME signals
-  -------------------------------------------------------------------------------------------
+  u_buf_gth_q1_clk0 : IBUFDS_GTE3
+    port map (
+      O     => mgtrefclk0_225_i,
+      ODIV2 => mgtrefclk0_225_odiv2,
+      CEB   => '0',
+      I     => REF_CLK_1_P,
+      IB    => REF_CLK_1_N
+      );
 
   -- SI570 clock on KCU105 connect to Quad-227
-  u_buf_gth_q3_clk0 : IBUFDS_GTE3 
+  u_buf_gth_q3_clk0 : IBUFDS_GTE3
     port map (
       O     => mgtrefclk0_227_i,
       ODIV2 => mgtrefclk0_227_odiv2,
@@ -225,7 +224,7 @@ begin
       IB    => REF_CLK_3_N
       );
 
-  u_buf_gth_q3_clk1 : IBUFDS_GTE3 
+  u_buf_gth_q3_clk1 : IBUFDS_GTE3
     port map (
       O     => mgtrefclk1_227_i,
       ODIV2 => mgtrefclk1_227_odiv2,
@@ -235,7 +234,7 @@ begin
       );
 
   -- SI570 clock on FMC card connect to Quad-228
-  u_buf_gth_q4_clk0 : IBUFDS_GTE3 
+  u_buf_gth_q4_clk0 : IBUFDS_GTE3
     port map (
       O     => mgtrefclk0_228_i,
       ODIV2 => mgtrefclk0_228_odiv2,
@@ -256,7 +255,7 @@ begin
       );
 
   -- -- Using input clock pin as IBERT sysclk <- option 1
-  -- u_ibufgds_gp7 : IBUFGDS 
+  -- u_ibufgds_gp7 : IBUFGDS
   --   generic map (DIFF_TERM => FALSE)
   --   port map (
   --     I => GP_CLK_7_P,
@@ -264,7 +263,7 @@ begin
   --     O => clk_gp7
   --   );
 
-  -- u_ibufgds_cms : IBUFGDS 
+  -- u_ibufgds_cms : IBUFGDS
   --   generic map (DIFF_TERM => FALSE)
   --   port map (
   --     I => CMS_CLK_FPGA_P,
@@ -330,81 +329,109 @@ begin
       );
 
   -- GTH ports
-  gth_rxp_i(10 downto 0)  <= DAQ_RX_P;
-  gth_rxn_i(10 downto 0)  <= DAQ_RX_N;
-  gth_rxp_i(11)           <= DAQ_SPY_RX_P;
-  gth_rxn_i(11)           <= DAQ_SPY_RX_N;
-  gth_rxp_i(12)           <= BCK_PRS_P;
-  gth_rxn_i(12)           <= BCK_PRS_N;
-  gth_rxp_i(15 downto 13) <= B04_RX_P;
-  gth_rxn_i(15 downto 13) <= B04_RX_N;
+  pin_assign_224 : if NQUAD >= 5 generate 
+    -- Quad 225: refclk0
+    gth_qrefclk0_i(NQUAD-5) <= '0';
+    gth_qnorthrefclk0_i(NQUAD-5) <= '0';
+    gth_qsouthrefclk0_i(NQUAD-5) <= mgtrefclk0_225_i;
+    gth_qrefclk00_i(NQUAD-5) <= '0';
+    gth_qrefclk01_i(NQUAD-5) <= '0';
+    gth_qnorthrefclk00_i(NQUAD-5) <= '0';
+    gth_qnorthrefclk01_i(NQUAD-5) <= '0';
+    gth_qsouthrefclk00_i(NQUAD-5) <= mgtrefclk0_225_i;
+    gth_qsouthrefclk01_i(NQUAD-5) <= '0';
+  end generate;
 
-  DAQ_TX_P <= gth_txp_o(15 downto 12);
-  DAQ_TX_N <= gth_txn_o(15 downto 12);
-  SPY_TX_P <= gth_txp_o(11);
-  SPY_TX_N <= gth_txn_o(11);
-  FMC_TX_P <= gth_txp_o(10 downto 8);
-  FMC_TX_N <= gth_txn_o(10 downto 8);
-  SFP_TX_P <= gth_txp_o(6 downto 5);
-  SFP_TX_N <= gth_txn_o(6 downto 5);
+  pin_assign_225 : if NQUAD >= 4 generate 
+    gth_rxp_i(4*NQUAD-13 downto 4*NQUAD-16) <= DAQ_RX_P(3 downto 0);  -- 4 quads
+    gth_rxn_i(4*NQUAD-13 downto 4*NQUAD-16) <= DAQ_RX_N(3 downto 0);  -- 4 quads
+
+    -- Quad 225: refclk0
+    gth_qrefclk0_i(NQUAD-4) <= '0';
+    gth_qnorthrefclk0_i(NQUAD-4) <= '0';
+    gth_qsouthrefclk0_i(NQUAD-4) <= mgtrefclk0_227_i;
+    gth_qrefclk00_i(NQUAD-4) <= '0';
+    gth_qrefclk01_i(NQUAD-4) <= '0';
+    gth_qnorthrefclk00_i(NQUAD-4) <= '0';
+    gth_qnorthrefclk01_i(NQUAD-4) <= '0';
+    gth_qsouthrefclk00_i(NQUAD-4) <= mgtrefclk0_227_i;
+    gth_qsouthrefclk01_i(NQUAD-4) <= '0';
+  end generate;
+
+  pin_assign_226 : if NQUAD >= 3 generate 
+    gth_rxp_i(4*NQUAD-9 downto 4*NQUAD-12) <= DAQ_RX_P(7 downto 4);  -- 3 quads
+    gth_rxn_i(4*NQUAD-9 downto 4*NQUAD-12) <= DAQ_RX_N(7 downto 4);  -- 3 quads
+    -- SFP_TX_P <= gth_txp_o(4*NQUAD-10 downto 4*NQUAD-11);
+    -- SFP_TX_N <= gth_txn_o(4*NQUAD-10 downto 4*NQUAD-11);
+
+    -- Quad 226: refclk0
+    gth_qrefclk0_i(NQUAD-3) <= '0';
+    gth_qnorthrefclk0_i(NQUAD-3) <= '0';
+    gth_qsouthrefclk0_i(NQUAD-3) <= mgtrefclk0_227_i;
+    gth_qrefclk00_i(NQUAD-3) <= '0';
+    gth_qrefclk01_i(NQUAD-3) <= '0';
+    gth_qnorthrefclk00_i(NQUAD-3) <= '0';
+    gth_qnorthrefclk01_i(NQUAD-3) <= '0';
+    gth_qsouthrefclk00_i(NQUAD-3) <= mgtrefclk0_227_i;
+    gth_qsouthrefclk01_i(NQUAD-3) <= '0';
+  end generate;
+
+  -- Quad 227
+  pin_assign_227 : if NQUAD >= 2 generate 
+    gth_rxp_i(4*NQUAD-6 downto 4*NQUAD-8) <= DAQ_RX_P(10 downto 8); -- 2 quads
+    gth_rxn_i(4*NQUAD-6 downto 4*NQUAD-8) <= DAQ_RX_N(10 downto 8); -- 2 quads
+    -- SPY_TX_P <= gth_txp_o(4*NQUAD-5);
+    -- SPY_TX_N <= gth_txn_o(4*NQUAD-5);
+    -- FMC_TX_P <= gth_txp_o(4*NQUAD-6  downto 4*NQUAD-8);
+    -- FMC_TX_N <= gth_txn_o(4*NQUAD-6  downto 4*NQUAD-8);
+    gth_rxp_i(4*NQUAD-5) <= DAQ_SPY_RX_P;
+    gth_rxn_i(4*NQUAD-5) <= DAQ_SPY_RX_N;
+
+    -- Quad 227: refclk0
+    gth_qrefclk0_i(NQUAD-2) <= mgtrefclk0_227_i;
+    gth_qnorthrefclk0_i(NQUAD-2) <= '0';
+    gth_qsouthrefclk0_i(NQUAD-2) <= '0';
+    gth_qrefclk00_i(NQUAD-2) <= mgtrefclk0_227_i;
+    gth_qrefclk01_i(NQUAD-2) <= '0';
+    gth_qnorthrefclk00_i(NQUAD-2) <= '0';
+    gth_qnorthrefclk01_i(NQUAD-2) <= '0';
+    gth_qsouthrefclk00_i(NQUAD-2) <= '0';
+    gth_qsouthrefclk01_i(NQUAD-2) <= '0';
+  end generate;
+
+  -- Quad 228
+  gth_rxp_i(4*NQUAD-4) <= BCK_PRS_P;
+  gth_rxn_i(4*NQUAD-4) <= BCK_PRS_N;
+  gth_rxp_i(4*NQUAD-1 downto 4*NQUAD-3) <= B04_RX_P;
+  gth_rxn_i(4*NQUAD-1 downto 4*NQUAD-3) <= B04_RX_N;
+
+  DAQ_TX_P <= gth_txp_o;
+  DAQ_TX_N <= gth_txn_o;
 
   -- Refclk connection from each IBUFDS to respective quads depending on the source selected in gui
-  -- Quad 225: refclk0
-  gth_qrefclk0_i(0) <= '0';
-  gth_qnorthrefclk0_i(0) <= '0';
-  gth_qsouthrefclk0_i(0) <= mgtrefclk0_227_i;
-  gth_qrefclk00_i(0) <= '0';
-  gth_qrefclk01_i(0) <= '0';
-  gth_qnorthrefclk00_i(0) <= '0';
-  gth_qnorthrefclk01_i(0) <= '0';
-  gth_qsouthrefclk00_i(0) <= mgtrefclk0_227_i;
-  gth_qsouthrefclk01_i(0) <= '0';
- 
-  -- Quad 226: refclk0
-  gth_qrefclk0_i(1) <= '0';
-  gth_qnorthrefclk0_i(1) <= '0';
-  gth_qsouthrefclk0_i(1) <= mgtrefclk0_227_i;
-  gth_qrefclk00_i(1) <= '0';
-  gth_qrefclk01_i(1) <= '0';
-  gth_qnorthrefclk00_i(1) <= '0';
-  gth_qnorthrefclk01_i(1) <= '0';
-  gth_qsouthrefclk00_i(1) <= mgtrefclk0_227_i;
-  gth_qsouthrefclk01_i(1) <= '0';
- 
-  -- Quad 227: refclk0
-  gth_qrefclk0_i(2) <= mgtrefclk0_227_i;
-  gth_qnorthrefclk0_i(2) <= '0';
-  gth_qsouthrefclk0_i(2) <= '0';
-  gth_qrefclk00_i(2) <= mgtrefclk0_227_i;
-  gth_qrefclk01_i(2) <= '0';
-  gth_qnorthrefclk00_i(2) <= '0';
-  gth_qnorthrefclk01_i(2) <= '0';
-  gth_qsouthrefclk00_i(2) <= '0';
-  gth_qsouthrefclk01_i(2) <= '0';
- 
   -- Quad 228: refclk0
-  gth_qrefclk0_i(3) <= '0';
-  gth_qnorthrefclk0_i(3) <= mgtrefclk0_227_i;
-  gth_qsouthrefclk0_i(3) <= '0';
-  gth_qrefclk00_i(3) <= '0';
-  gth_qrefclk01_i(3) <= '0';
-  gth_qnorthrefclk00_i(3) <= mgtrefclk0_227_i;
-  gth_qnorthrefclk01_i(3) <= '0';
-  gth_qsouthrefclk00_i(3) <= '0';
-  gth_qsouthrefclk01_i(3) <= '0';
- 
-  -- Refclk1
-  gth_qrefclk1_i <= "0000";
-  gth_qnorthrefclk1_i <= "0000";
-  gth_qsouthrefclk1_i <= "0000";
-  gth_qrefclk10_i <= "0000";
-  gth_qrefclk11_i <= "0000";
-  gth_qnorthrefclk10_i <= "0000";
-  gth_qnorthrefclk11_i <= "0000";
-  gth_qsouthrefclk10_i <= "0000";
-  gth_qsouthrefclk11_i <= "0000";
+  gth_qrefclk0_i(NQUAD-1) <= mgtrefclk0_228_i;
+  gth_qnorthrefclk0_i(NQUAD-1) <= '0';
+  gth_qsouthrefclk0_i(NQUAD-1) <= '0';
+  gth_qrefclk00_i(NQUAD-1) <= mgtrefclk0_228_i;
+  gth_qrefclk01_i(NQUAD-1) <= '0';
+  gth_qnorthrefclk00_i(NQUAD-1) <= '0';
+  gth_qnorthrefclk01_i(NQUAD-1) <= '0';
+  gth_qsouthrefclk00_i(NQUAD-1) <= '0';
+  gth_qsouthrefclk01_i(NQUAD-1) <= '0';
 
-  u_ibert_gth_core : ibert_kcu_4quads
+  -- Refclk1
+  gth_qrefclk1_i <= (others => '0');
+  gth_qnorthrefclk1_i <= (others => '0');
+  gth_qsouthrefclk1_i <= (others => '0');
+  gth_qrefclk10_i <= (others => '0');
+  gth_qrefclk11_i <= (others => '0');
+  gth_qnorthrefclk10_i <= (others => '0');
+  gth_qnorthrefclk11_i <= (others => '0');
+  gth_qsouthrefclk10_i <= (others => '0');
+  gth_qsouthrefclk11_i <= (others => '0');
+
+  u_ibert_gth_core : ibert_kcu_gth
     port map (
       txn_o => gth_txn_o,
       txp_o => gth_txp_o,
