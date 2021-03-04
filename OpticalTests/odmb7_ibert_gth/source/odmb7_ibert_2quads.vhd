@@ -24,8 +24,8 @@ entity odmb7_ibert_2quads is
     --------------------
     CMS_CLK_FPGA_P : in std_logic;      -- system clock: 40.07897 MHz
     CMS_CLK_FPGA_N : in std_logic;      -- system clock: 40.07897 MHz
-    GP_CLK_6_P : in std_logic;          -- clock synthesizer ODIV6: ? MHz
-    GP_CLK_6_N : in std_logic;          -- clock synthesizer ODIV6: ? MHz
+    GP_CLK_6_P : in std_logic;          -- clock synthesizer ODIV6: 80 MHz
+    GP_CLK_6_N : in std_logic;          -- clock synthesizer ODIV6: 80 MHz
     GP_CLK_7_P : in std_logic;          -- clock synthesizer ODIV7: 80 MHz
     GP_CLK_7_N : in std_logic;          -- clock synthesizer ODIV7: 80 MHz
     REF_CLK_1_P : in std_logic;         -- refclk0 to 224
@@ -40,6 +40,9 @@ entity odmb7_ibert_2quads is
     REF_CLK_5_N : in std_logic;         -- refclk1 to 227
     CLK_125_REF_P : in std_logic;       -- refclk1 to 226
     CLK_125_REF_N : in std_logic;       -- refclk1 to 226
+
+    EMCCLK : in std_logic;       -- Low frequency, 133 MHz for SPI programing clock
+    LF_CLK : in std_logic;       -- Low frequency, 10 kHz
 
     --------------------------------
     -- ODMB optical signals
@@ -116,6 +119,10 @@ entity odmb7_ibert_2quads is
     CCB_HARDRST_B : in std_logic;
     CCB_SOFT_RST  : in std_logic;
     DONE          : in std_logic;
+
+    --------------------------------
+    -- Clock synthesizer 
+    --------------------------------
 
     --------------------------------
     -- Others
@@ -223,9 +230,14 @@ architecture odmb_inst of odmb7_ibert_2quads is
   signal clk_sysclk40 : std_logic;
   signal clk_sysclk80 : std_logic;
   signal clk_cmsclk : std_logic;
+  signal clk_gp6 : std_logic;
   signal clk_gp7 : std_logic;
   signal clk_mgtclk0 : std_logic;
   signal clk_mgtclk1 : std_logic;
+
+  signal clk_cmsclk_buf : std_logic;
+  signal clk_gp6_buf : std_logic;
+  signal clk_gp7_buf : std_logic;
 
   -- counters for clock monitor
   signal cntr_cmsclk  : unsigned(40 downto 0) := (others => '0');
@@ -285,7 +297,6 @@ begin
       IB    => CLK_125_REF_N
       );
 
-
   u_buf_gth_q3_clk0 : IBUFDS_GTE3
     port map (
       O     => mgtrefclk0_227_i,
@@ -304,6 +315,14 @@ begin
       O => clk_gp7
     );
 
+  u_ibufgds_gp6 : IBUFGDS
+    generic map (DIFF_TERM => TRUE)
+    port map (
+      I => GP_CLK_6_P,
+      IB => GP_CLK_6_N,
+      O => clk_gp6
+      );
+
   -- Using the clock manager output as IBERT sysclk <- option 2
   u_ibufgds_cms : IBUFGDS
     -- generic map (DIFF_TERM => TRUE)
@@ -312,6 +331,11 @@ begin
       IB => CMS_CLK_FPGA_N,
       O => clk_cmsclk
     );
+
+  -- Adding BUFG to the clocks
+  u_bufg_gp7 : BUFG port map (I => clk_gp7, O => clk_gp7_buf);
+  u_bufg_gp6 : BUFG port map (I => clk_gp6, O => clk_gp6_buf);
+  u_bufg_cms : BUFG port map (I => clk_cmsclk, O => clk_cmsclk_buf);
 
   -- Using optical refclk as IBERT sysclk <- option 3
   u_mgtclk0_q226 : BUFG_GT
@@ -339,7 +363,7 @@ begin
   -- Extras for LED
   clockManager_i : clockManager
     port map (
-      clk_in1   => clk_cmsclk,     -- input 40 MHz
+      clk_in1   => clk_cmsclk_buf,     -- input 40 MHz
       -- clk_in1_p  => CMS_CLK_FPGA_P,
       -- clk_in1_n  => CMS_CLK_FPGA_N,
       clk_out40 => clk_sysclk40,   -- output 40 MHz
@@ -348,17 +372,19 @@ begin
 
   -- gth_sysclk_i <= clk_sysclk80;
   -- gth_sysclk_i <= clk_mgtclk0;
-  gth_sysclk_i <= clk_gp7;
+  -- gth_sysclk_i <= clk_gp7;
+  gth_sysclk_i <= clk_gp6_buf;
 
   -- DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
 
   -- Clock counting and LED outputs
-  u_cntr_cmsclk   : clock_counting port map (clk_i => clk_cmsclk,   led_o => LEDS_CFV(0));
-  u_cntr_sysclk80 : clock_counting port map (clk_i => clk_sysclk80, led_o => LEDS_CFV(1));
-  u_cntr_gp7      : clock_counting port map (clk_i => clk_gp7,      led_o => LEDS_CFV(2));
-  u_cntr_mgtclk0  : clock_counting port map (clk_i => clk_mgtclk0,  led_o => LEDS_CFV(3));
-  u_cntr_mgtclk1  : clock_counting port map (clk_i => clk_mgtclk1,  led_o => LEDS_CFV(4));
-  u_cntr_sysclk   : clock_counting port map (clk_i => gth_sysclk_i, led_o => LEDS_CFV(5));
+  u_cntr_cmsclk   : clock_counting port map (clk_i => clk_cmsclk_buf,led_o => LEDS_CFV(0));
+  u_cntr_sysclk80 : clock_counting port map (clk_i => clk_sysclk80,  led_o => LEDS_CFV(1));
+  u_cntr_gp7      : clock_counting port map (clk_i => clk_gp7_buf,   led_o => LEDS_CFV(2));
+  u_cntr_mgtclk0  : clock_counting port map (clk_i => clk_mgtclk0,   led_o => LEDS_CFV(3));
+  u_cntr_mgtclk1  : clock_counting port map (clk_i => clk_mgtclk1,   led_o => LEDS_CFV(4));
+  u_cntr_sysclk   : clock_counting port map (clk_i => gth_sysclk_i,  led_o => LEDS_CFV(5));
+  u_cntr_gp6      : clock_counting port map (clk_i => clk_gp6_buf,   led_o => LEDS_CFV(6));
 
   vio_gth : vio_ibert
   port map (

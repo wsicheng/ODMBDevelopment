@@ -6,10 +6,10 @@ use ieee.std_logic_misc.all;
 library unisim;
 use unisim.vcomponents.all;
 
-entity odmb7_ibert_q227 is
+entity odmb7_ibert_gth is
   generic (
     NCFEB       : integer range 1 to 7 := 7;  -- Number of DCFEBS, 7 for ME1/1, 5
-    NQUAD       : integer range 0 to 4 := 1   -- Number of Quads used for IBERT
+    NQUAD       : integer range 0 to 4 := 3   -- Number of Quads used for IBERT
   );
   PORT (
     --------------------
@@ -50,8 +50,8 @@ entity odmb7_ibert_q227 is
     BCK_PRS_P : in std_logic; -- copy of B04_RX_P1
     BCK_PRS_N : in std_logic; -- copy of B04_RX_N1
 
-    -- SPY_TX_P : out std_logic;        -- output to PC
-    -- SPY_TX_N : out std_logic;        -- output to PC
+    SPY_TX_P : out std_logic;        -- output to PC
+    SPY_TX_N : out std_logic;        -- output to PC
     DAQ_TX_P : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
     DAQ_TX_N : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
 
@@ -120,9 +120,9 @@ entity odmb7_ibert_q227 is
     LEDS_CFV      : out std_logic_vector(11 downto 0)
 
     );
-end odmb7_ibert_q227;
+end odmb7_ibert_gth;
 
-architecture odmb_inst of odmb7_ibert_q227 is
+architecture odmb_inst of odmb7_ibert_gth is
 
   --------------------------------------
   -- Component and signals for the IBERT test
@@ -173,6 +173,7 @@ architecture odmb_inst of odmb7_ibert_q227 is
     port (
       clk        : in  std_logic := '0';
       probe_in0  : in  std_logic_vector(11 downto 0) := (others => '0');
+      probe_in1  : in  std_logic;
       probe_out0 : out std_logic;
       probe_out1 : out std_logic_vector(4 downto 0)
       );
@@ -218,6 +219,8 @@ architecture odmb_inst of odmb7_ibert_q227 is
   signal mgtrefclk1_226_odiv2 : std_logic;
   signal mgtrefclk0_227_i : std_logic;
   signal mgtrefclk0_227_odiv2 : std_logic;
+  signal mgtrefclk1_227_i : std_logic;
+  signal mgtrefclk1_227_odiv2 : std_logic;
   signal gth_sysclk_i : std_logic;
   signal clk_sysclk40 : std_logic;
   signal clk_sysclk80 : std_logic;
@@ -228,6 +231,8 @@ architecture odmb_inst of odmb7_ibert_q227 is
   signal clk_mgtclk1 : std_logic;
   signal clk_mgtclk2 : std_logic;
   signal clk_mgtclk3 : std_logic;
+  signal clk_mgtclk4 : std_logic;
+  signal clk_mgtclk5 : std_logic;
 
   signal clk_cmsclk_buf : std_logic;
   signal clk_gp6_buf : std_logic;
@@ -268,6 +273,7 @@ begin
   B04_I2C_ENA <= '0';
   B04_CS_B <= '1';
   B04_RST_B <= '1';
+  SPY_TDIS <= '0';
 
   u_buf_gth_q0_clk0 : IBUFDS_GTE3
     port map (
@@ -314,6 +320,15 @@ begin
       IB    => REF_CLK_2_N
       );
 
+  u_buf_gth_q3_clk1 : IBUFDS_GTE3
+    port map (
+      O     => mgtrefclk1_227_i,
+      ODIV2 => mgtrefclk1_227_odiv2,
+      CEB   => '0',
+      I     => REF_CLK_5_P,
+      IB    => REF_CLK_5_N
+      );
+
   -- Using external input clock pin as IBERT sysclk <- option 1
   u_ibufgds_gp7 : IBUFGDS
     generic map (DIFF_TERM => TRUE)
@@ -340,10 +355,10 @@ begin
       O => clk_cmsclk
     );
 
-  -- Adding BUFG to the clocks
-  u_bufg_gp7 : BUFG port map (I => clk_gp7, O => clk_gp7_buf);
-  u_bufg_gp6 : BUFG port map (I => clk_gp6, O => clk_gp6_buf);
-  u_bufg_cms : BUFG port map (I => clk_cmsclk, O => clk_cmsclk_buf);
+  -- -- Adding BUFG to the clocks
+  -- u_bufg_gp7 : BUFG port map (I => clk_gp7, O => clk_gp7_buf);
+  -- u_bufg_gp6 : BUFG port map (I => clk_gp6, O => clk_gp6_buf);
+  -- u_bufg_cms : BUFG port map (I => clk_cmsclk, O => clk_cmsclk_buf);
 
   -- Using optical refclk as IBERT sysclk <- option 3
   u_mgtclk0_q224 : BUFG_GT
@@ -379,6 +394,17 @@ begin
       DIV     => "000"
       );
 
+  u_mgtclk1_q226 : BUFG_GT
+    port map(
+      I       => mgtrefclk1_226_odiv2,
+      O       => clk_mgtclk4,
+      CE      => '1',
+      CEMASK  => '0',
+      CLR     => '0',
+      CLRMASK => '0',
+      DIV     => "000"
+      );
+
   u_mgtclk0_q227 : BUFG_GT
     port map(
       I       => mgtrefclk0_227_odiv2,
@@ -390,31 +416,42 @@ begin
       DIV     => "000"
       );
 
+  u_mgtclk1_q227 : BUFG_GT
+    port map(
+      I       => mgtrefclk1_227_odiv2,
+      O       => clk_mgtclk5,
+      CE      => '1',
+      CEMASK  => '0',
+      CLR     => '0',
+      CLRMASK => '0',
+      DIV     => "000"
+      );
+
   -- Extras for LED
   clockManager_i : clockManager
     port map (
-      clk_in1   => clk_cmsclk_buf,     -- input 40 MHz
-      -- clk_in1_p  => CMS_CLK_FPGA_P,
-      -- clk_in1_n  => CMS_CLK_FPGA_N,
+      clk_in1   => clk_cmsclk,     -- input 40 MHz
       clk_out40 => clk_sysclk40,   -- output 40 MHz
       clk_out80 => clk_sysclk80    -- output 80 MHz
       );
 
-  -- gth_sysclk_i <= clk_sysclk80;
+  gth_sysclk_i <= clk_sysclk80;
   -- gth_sysclk_i <= clk_mgtclk0;
   -- gth_sysclk_i <= clk_gp7;
-  gth_sysclk_i <= clk_gp6_buf;
+  -- gth_sysclk_i <= clk_gp6_buf;
 
   -- DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
 
   -- Clock counting and LED outputs
-  u_cntr_cmsclk   : clock_counting port map (clk_i => clk_cmsclk_buf,led_o => LEDS_CFV(0));
+  u_cntr_cmsclk   : clock_counting port map (clk_i => clk_cmsclk,    led_o => LEDS_CFV(0));
   u_cntr_sysclk80 : clock_counting port map (clk_i => clk_sysclk80,  led_o => LEDS_CFV(1));
-  u_cntr_gp7      : clock_counting port map (clk_i => clk_gp7_buf,   led_o => LEDS_CFV(2));
+  u_cntr_gp7      : clock_counting port map (clk_i => clk_gp7,       led_o => LEDS_CFV(2));
   u_cntr_mgtclk0  : clock_counting port map (clk_i => clk_mgtclk0,   led_o => LEDS_CFV(3));
   u_cntr_mgtclk1  : clock_counting port map (clk_i => clk_mgtclk1,   led_o => LEDS_CFV(4));
   u_cntr_sysclk   : clock_counting port map (clk_i => gth_sysclk_i,  led_o => LEDS_CFV(5));
-  u_cntr_gp6      : clock_counting port map (clk_i => clk_gp6_buf,   led_o => LEDS_CFV(6));
+  u_cntr_gp6      : clock_counting port map (clk_i => clk_gp6,       led_o => LEDS_CFV(6));
+  u_cntr_mgtclk4  : clock_counting port map (clk_i => clk_mgtclk4,   led_o => LEDS_CFV(7));
+  u_cntr_mgtclk5  : clock_counting port map (clk_i => clk_mgtclk5,   led_o => LEDS_CFV(8));
 
   -------------------------------------------------------------------------------------------
   -- SYSMON signals
@@ -461,6 +498,7 @@ begin
   port map (
     clk        => gth_sysclk_i,
     probe_in0  => std_logic_vector(cntr_gthclk(37 downto 26)),
+    probe_in1  => SPY_SD,
     probe_out0 => DAQ_SPY_SEL,
     probe_out1 => ADC_CS_B
   );
@@ -472,14 +510,9 @@ begin
 
     -- Quad 225: refclk0
     gth_qrefclk0_i(NQUAD-4) <= mgtrefclk0_224_i;
-    gth_qnorthrefclk0_i(NQUAD-4) <= '0';
-    gth_qsouthrefclk0_i(NQUAD-4) <= '0';
+    gth_qrefclk1_i(NQUAD-4) <= '0';
     gth_qrefclk00_i(NQUAD-4) <= mgtrefclk0_224_i;
-    gth_qrefclk01_i(NQUAD-4) <= '0';
-    gth_qnorthrefclk00_i(NQUAD-4) <= '0';
-    gth_qnorthrefclk01_i(NQUAD-4) <= '0';
-    gth_qsouthrefclk00_i(NQUAD-4) <= '0';
-    gth_qsouthrefclk01_i(NQUAD-4) <= '0';
+    gth_qrefclk11_i(NQUAD-4) <= '0';
   end generate;
 
   sig_asgn_225 : if NQUAD >= 3 generate 
@@ -488,14 +521,9 @@ begin
 
     -- Clocks for Quad 225 refclk0 <-- use refclk4
     gth_qrefclk0_i(NQUAD-3) <= mgtrefclk0_225_i;
-    gth_qnorthrefclk0_i(NQUAD-3) <= '0';
-    gth_qsouthrefclk0_i(NQUAD-3) <= '0';
+    gth_qrefclk1_i(NQUAD-3) <= '0';
     gth_qrefclk00_i(NQUAD-3) <= mgtrefclk0_225_i;
-    gth_qrefclk01_i(NQUAD-3) <= '0';
-    gth_qnorthrefclk00_i(NQUAD-3) <= '0';
-    gth_qnorthrefclk01_i(NQUAD-3) <= '0';
-    gth_qsouthrefclk00_i(NQUAD-3) <= '0';
-    gth_qsouthrefclk01_i(NQUAD-3) <= '0';
+    gth_qrefclk11_i(NQUAD-3) <= '0';
   end generate;
 
   sig_asgn_226 : if NQUAD >= 2 generate 
@@ -503,19 +531,14 @@ begin
     gth_rxn_i(4*NQUAD-6 downto 4*NQUAD-8) <= DAQ_RX_N(10 downto 8);
     gth_rxp_i(4*NQUAD-5) <= DAQ_SPY_RX_P;
     gth_rxn_i(4*NQUAD-5) <= DAQ_SPY_RX_N;
-    -- SPY_TX_P <= gth_txp_o(4*NQUAD-5);
-    -- SPY_TX_N <= gth_txn_o(4*NQUAD-5);
+    SPY_TX_P <= gth_txp_o(4*NQUAD-5);
+    SPY_TX_N <= gth_txn_o(4*NQUAD-5);
 
     -- Clocks for Quad 226 refclk0 <-- use refclk3
     gth_qrefclk0_i(NQUAD-2) <= mgtrefclk0_226_i;
-    gth_qnorthrefclk0_i(NQUAD-2) <= '0';
-    gth_qsouthrefclk0_i(NQUAD-2) <= '0';
+    gth_qrefclk1_i(NQUAD-2) <= mgtrefclk1_226_i;
     gth_qrefclk00_i(NQUAD-2) <= mgtrefclk0_226_i;
-    gth_qrefclk01_i(NQUAD-2) <= '0';
-    gth_qnorthrefclk00_i(NQUAD-2) <= '0';
-    gth_qnorthrefclk01_i(NQUAD-2) <= '0';
-    gth_qsouthrefclk00_i(NQUAD-2) <= '0';
-    gth_qsouthrefclk01_i(NQUAD-2) <= '0';
+    gth_qrefclk11_i(NQUAD-2) <= mgtrefclk1_226_i;
   end generate;
 
   -- Quad 227 <-- there should be at least 1 quad
@@ -529,21 +552,21 @@ begin
 
   -- Clocks for Quad 227 refclk0 <-- use refclk2
   gth_qrefclk0_i(NQUAD-1) <= mgtrefclk0_227_i;
-  gth_qnorthrefclk0_i(NQUAD-1) <= '0';
-  gth_qsouthrefclk0_i(NQUAD-1) <= '0';
+  gth_qrefclk1_i(NQUAD-1) <= mgtrefclk1_227_i;
   gth_qrefclk00_i(NQUAD-1) <= mgtrefclk0_227_i;
-  gth_qrefclk01_i(NQUAD-1) <= '0';
-  gth_qnorthrefclk00_i(NQUAD-1) <= '0';
-  gth_qnorthrefclk01_i(NQUAD-1) <= '0';
-  gth_qsouthrefclk00_i(NQUAD-1) <= '0';
-  gth_qsouthrefclk01_i(NQUAD-1) <= '0';
+  gth_qrefclk11_i(NQUAD-1) <= mgtrefclk1_227_i;
 
   -- Refclk1 for all quads
-  gth_qrefclk1_i <= (others => '0');
+  gth_qnorthrefclk0_i <= (others => '0');
+  gth_qsouthrefclk0_i <= (others => '0');
   gth_qnorthrefclk1_i <= (others => '0');
   gth_qsouthrefclk1_i <= (others => '0');
+  gth_qrefclk01_i <= (others => '0');
   gth_qrefclk10_i <= (others => '0');
-  gth_qrefclk11_i <= (others => '0');
+  gth_qnorthrefclk00_i <= (others => '0');
+  gth_qnorthrefclk01_i <= (others => '0');
+  gth_qsouthrefclk00_i <= (others => '0');
+  gth_qsouthrefclk01_i <= (others => '0');
   gth_qnorthrefclk10_i <= (others => '0');
   gth_qnorthrefclk11_i <= (others => '0');
   gth_qsouthrefclk10_i <= (others => '0');

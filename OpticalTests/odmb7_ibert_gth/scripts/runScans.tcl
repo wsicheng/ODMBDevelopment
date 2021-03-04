@@ -5,8 +5,8 @@
 # ----------------------------------------------------------------------------------
 # Constants
 # ----------------------------------------------------------------------------------
-set DEVICE_NAME {xcku040_0}
-set PRBS_PATTERN {PRBS 31-bit}
+set DEVICE_NAME {xcku035_0}
+set PRBS_PATTERN {PRBS 7-bit}
 
 # ----------------------------------------------------------------------------------
 # Optional parameters
@@ -17,7 +17,7 @@ set PRBS_PATTERN {PRBS 31-bit}
 set programfpga 0
 set bitfilename {}
 set disable_spy_tx 0
-set spy_tx_loc {localhost:.../Quad_226/MGT_X0Y11}
+set spy_tx_loc {localhost:3121/xilinx_tcf/Xilinx/000013ca286601/0_1_0_0/IBERT/Quad_226/MGT_X0Y11}
 set tag "test2"
 
 # # Connect to the Digilent Cable on localhost:3121
@@ -43,13 +43,13 @@ if {$disable_spy_tx} {
     commit_hw_sio [get_hw_sio_gts $spy_tx_loc]
 
     startgroup
-    set_property OUTPUT_VALUE 0 [get_hw_probes DAQ_SPY_SEL -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
-    commit_hw_vio [get_hw_probes {DAQ_SPY_SEL} -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
+    set_property OUTPUT_VALUE 0 [get_hw_probes DAQ_SPY_SEL -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_gth"}]]
+    commit_hw_vio [get_hw_probes {DAQ_SPY_SEL} -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_gth"}]]
     endgroup
 } else {
     startgroup
-    set_property OUTPUT_VALUE 1 [get_hw_probes DAQ_SPY_SEL -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
-    commit_hw_vio [get_hw_probes {DAQ_SPY_SEL} -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_i"}]]
+    set_property OUTPUT_VALUE 1 [get_hw_probes DAQ_SPY_SEL_OBUF -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_gth"}]]
+    commit_hw_vio [get_hw_probes {DAQ_SPY_SEL_OBUF} -of_objects [get_hw_vios -of_objects [get_hw_devices $DEVICE_NAME] -filter {CELL_NAME=~"vio_gth"}]]
     endgroup
 }
 
@@ -234,6 +234,5 @@ for {set i 0} {$i < 10} {incr i} {
     record_BER_all $links $tag
     puts "Finish the $i-th recording"
 }
-
 
 # close_hw_manager
