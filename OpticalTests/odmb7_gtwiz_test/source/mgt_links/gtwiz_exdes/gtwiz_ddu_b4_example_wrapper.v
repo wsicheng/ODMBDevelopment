@@ -78,7 +78,7 @@ module gtwiz_ddu_b4_example_wrapper (
  ,output wire [0:0] gtwiz_reset_rx_cdr_stable_out
  ,output wire [0:0] gtwiz_reset_tx_done_out
  ,output wire [0:0] gtwiz_reset_rx_done_out
- ,input  wire [63:0] gtwiz_userdata_tx_in
+ ,input  wire [127:0] gtwiz_userdata_tx_in
  ,output wire [63:0] gtwiz_userdata_rx_out
  ,input  wire [0:0] gtrefclk00_in
  ,input  wire [0:0] gtrefclk01_in

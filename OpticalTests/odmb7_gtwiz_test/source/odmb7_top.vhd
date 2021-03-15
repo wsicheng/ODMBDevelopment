@@ -330,8 +330,10 @@ architecture odmb_inst of odmb7_dev_top is
       sysclk       : in  std_logic; -- clock for the helper block, 80 MHz
       daq_tx_n     : out std_logic_vector(NTXLINK-1 downto 0);
       daq_tx_p     : out std_logic_vector(NTXLINK-1 downto 0);
-      bck_rx_n     : in  std_logic_vector(NRXLINK-1 downto 0); -- for back pressure / loopback
-      bck_rx_p     : in  std_logic_vector(NRXLINK-1 downto 0); -- for back pressure / loopback
+      bck_rx_n     : in  std_logic; -- for back pressure / loopback
+      bck_rx_p     : in  std_logic; -- for back pressure / loopback
+      b04_rx_n     : in  std_logic_vector(3 downto 1); -- for back pressure / loopback
+      b04_rx_p     : in  std_logic_vector(3 downto 1); -- for back pressure / loopback
       txdata_ch0   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
       txdata_ch1   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
       txdata_ch2   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
@@ -355,9 +357,11 @@ architecture odmb_inst of odmb7_dev_top is
 
   component prbs_tester is
     generic (
+      DDU_NRXLINK  : integer := 1;
       SPYDATAWIDTH : integer := 16;
       FEBDATAWIDTH : integer := 16;
-      DDUDATAWIDTH : integer := 16
+      DDUTXDWIDTH  : integer := 32;
+      DDURXDWIDTH  : integer := 16
       );
     port (
       sysclk         : in std_logic; -- sysclk
@@ -368,20 +372,22 @@ architecture odmb_inst of odmb7_dev_top is
       usrclk_spy_rx  : in std_logic;  -- USRCLK for SPY RX data readout
       rxdata_spy     : in std_logic_vector(SPYDATAWIDTH-1 downto 0); -- PRBS data out 
       rxd_valid_spy  : in std_logic;
+      rxready_spy    : in std_logic; -- Flag for rx reset done
       -- Pattern generation for mgt_ddu
       usrclk_ddu_tx  : in std_logic; -- USRCLK for SPY TX data generation
-      txdata_ddu1    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
-      txdata_ddu2    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
-      txdata_ddu3    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
-      txdata_ddu4    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
+      txdata_ddu1    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+      txdata_ddu2    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+      txdata_ddu3    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+      txdata_ddu4    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
       txd_valid_ddu  : out std_logic_vector(4 downto 1);
       -- Pattern checking for mgt_ddu
       usrclk_ddu_rx  : in std_logic;  -- USRCLK for DDU RX data readout
-      rxdata_ddu1    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-      rxdata_ddu2    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-      rxdata_ddu3    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-      rxdata_ddu4    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-      rxd_valid_ddu  : in std_logic_vector(4 downto 1);
+      rxdata_ddu1    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+      rxdata_ddu2    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+      rxdata_ddu3    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+      rxdata_ddu4    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+      rxd_valid_ddu  : in std_logic_vector(DDU_NRXLINK downto 1);
+      rxready_ddu    : in std_logic; -- Flag for rx reset done
       -- Receiver signals for mgt_cfeb
       usrclk_mgtc    : in std_logic; -- USRCLK for RX data readout
       rxdata_cfeb1   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
@@ -392,16 +398,16 @@ architecture odmb_inst of odmb7_dev_top is
       rxdata_cfeb6   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
       rxdata_cfeb7   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
       rxd_valid_mgtc : in std_logic_vector(7 downto 1);   -- Flag for valid data;
-      mgtc_rxready   : in std_logic; -- Flag for rx reset done
+      rxready_mgtc   : in std_logic; -- Flag for rx reset done
       -- Receiver signals for mgt_alct
       usrclk_mgta    : in std_logic; -- USRCLK for RX data readout
       rxdata_alct    : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
       rxd_valid_alct : in std_logic;
+      rxready_alct   : in std_logic; -- Flag for rx reset done
       rxdata_daq8    : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
       rxdata_daq9    : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
       rxdata_daq10   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
       mgta_dvalid    : in std_logic_vector(4 downto 1);   -- Flag for valid data;
-      mgta_rxready   : in std_logic; -- Flag for rx reset done
       -- LED indicator
       led_out       : out std_logic_vector(7 downto 0);
       -- Reset
@@ -491,24 +497,29 @@ architecture odmb_inst of odmb7_dev_top is
   --------------------------------------
   -- MGT signals for DDU channels
   --------------------------------------
+  constant DDU_NTXLINK : integer := 4;
+  constant DDU_NRXLINK : integer := 1;
+  constant DDUTXDWIDTH : integer := 32;
+  constant DDURXDWIDTH : integer := 16;
+
   signal usrclk_ddu_tx : std_logic; -- USRCLK for TX data preparation
   signal usrclk_ddu_rx : std_logic; -- USRCLK for RX data readout
-  signal ddu_txdata1 : std_logic_vector(15 downto 0);   -- Data to be transmitted
-  signal ddu_txdata2 : std_logic_vector(15 downto 0);   -- Data to be transmitted
-  signal ddu_txdata3 : std_logic_vector(15 downto 0);   -- Data to be transmitted
-  signal ddu_txdata4 : std_logic_vector(15 downto 0);   -- Data to be transmitted
-  signal ddu_txd_valid : std_logic_vector(4 downto 1);   -- Flag for tx valid data;
-  signal ddu_rxdata1 : std_logic_vector(15 downto 0);   -- Data received
-  signal ddu_rxdata2 : std_logic_vector(15 downto 0);   -- Data received
-  signal ddu_rxdata3 : std_logic_vector(15 downto 0);   -- Data received
-  signal ddu_rxdata4 : std_logic_vector(15 downto 0);   -- Data received
-  signal ddu_rxd_valid : std_logic_vector(4 downto 1);   -- Flag for rx valid data;
-  signal ddu_bad_rx : std_logic_vector(4 downto 1);   -- Flag for fiber errors;
+  signal ddu_txdata1 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txdata2 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txdata3 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txdata4 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txd_valid : std_logic_vector(DDU_NTXLINK downto 1);   -- Flag for tx valid data;
+  signal ddu_rxdata1 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxdata2 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxdata3 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxdata4 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxd_valid : std_logic_vector(DDU_NRXLINK downto 1);   -- Flag for rx valid data;
+  signal ddu_bad_rx : std_logic_vector(DDU_NRXLINK downto 1);   -- Flag for fiber errors;
   signal ddu_rxready : std_logic; -- Flag for rx reset done
   signal ddu_txready : std_logic; -- Flag for rx reset done
   signal ddu_prbs_type : std_logic_vector(3 downto 0);
-  signal ddu_prbs_tx_en : std_logic_vector(4 downto 1);
-  signal ddu_prbs_rx_en : std_logic_vector(4 downto 1);
+  signal ddu_prbs_tx_en : std_logic_vector(DDU_NTXLINK downto 1);
+  signal ddu_prbs_rx_en : std_logic_vector(DDU_NRXLINK downto 1);
   signal ddu_prbs_tst_cnt : std_logic_vector(15 downto 0);
   signal ddu_prbs_err_cnt : std_logic_vector(15 downto 0);
   signal ddu_reset : std_logic;
@@ -540,6 +551,7 @@ architecture odmb_inst of odmb7_dev_top is
   signal alct_rxdata : std_logic_vector(15 downto 0);  -- Data received
   signal alct_rxd_valid : std_logic;   -- Flag for valid data;
   signal alct_bad_rx : std_logic;   -- Flag for valid data;
+  signal alct_rxready : std_logic; -- Flag for rx reset done
   signal mgta_data_valid : std_logic_vector(4 downto 1);   -- Flag for valid data;
   signal mgta_bad_rx : std_logic_vector(4 downto 1);   -- Flag for fiber errors;
   signal mgta_rxready : std_logic; -- Flag for rx reset done
@@ -656,7 +668,7 @@ begin
       mgtrefclk       => mgtrefclk1_226,
       txusrclk        => usrclk_spy_tx,
       rxusrclk        => usrclk_spy_rx,
-      sysclk          => clk_sysclk80,
+      sysclk          => clk_cmsclk,    -- maximum DRP clock frequency 62.5 MHz for 1.25 Gb/s line rate
       spy_rx_n        => spy_rx_n,
       spy_rx_p        => spy_rx_p,
       spy_tx_n        => SPY_TX_N,
@@ -714,7 +726,7 @@ begin
       sysclk          => clk_sysclk80,
       daq_rx_n        => DAQ_RX_N(7),
       daq_rx_p        => DAQ_RX_P(7),
-      rxready         => mgta_rxready,
+      rxready         => alct_rxready,
       rxdata          => alct_rxdata,
       rxd_valid       => alct_rxd_valid,
       bad_rx          => alct_bad_rx,
@@ -727,11 +739,11 @@ begin
 
   u_ddu_gth : mgt_ddu
     generic map (
-      NCHANNL     => 4,  -- number of (firmware) channels (max of TX/RX links)
-      NRXLINK     => 4,  -- number of (physical) RX links
-      NTXLINK     => 4,  -- number of (physical) TX links
-      TXDATAWIDTH => 16, -- transmitter user data width
-      RXDATAWIDTH => 16  -- receiver user data width
+      NCHANNL     => 4,            -- number of (firmware) channels (max of TX/RX links)
+      NRXLINK     => DDU_NRXLINK,  -- number of (physical) RX links
+      NTXLINK     => DDU_NTXLINK,  -- number of (physical) TX links
+      TXDATAWIDTH => DDUTXDWIDTH,  -- transmitter user data width
+      RXDATAWIDTH => DDURXDWIDTH   -- receiver user data width
       )
     port map (
       mgtrefclk    => mgtrefclk0_227,
@@ -740,10 +752,10 @@ begin
       sysclk       => clk_sysclk80,
       daq_tx_n     => DAQ_TX_N,
       daq_tx_p     => DAQ_TX_P,
-      bck_rx_n(0)  => BCK_PRS_N,
-      bck_rx_n(3 downto 1) => B04_RX_N,
-      bck_rx_p(0)  => BCK_PRS_P,
-      bck_rx_p(3 downto 1) => B04_RX_P,
+      bck_rx_n     => BCK_PRS_N,
+      bck_rx_p     => BCK_PRS_P,
+      b04_rx_n     => B04_RX_N,
+      b04_rx_p     => B04_RX_P,
       txdata_ch0   => ddu_txdata1,
       txdata_ch1   => ddu_txdata2,
       txdata_ch2   => ddu_txdata3,
@@ -770,9 +782,11 @@ begin
   -------------------------------------------------------------------------------------------
   u_mgt_tester : prbs_tester 
     generic map (
+      DDU_NRXLINK   => DDU_NRXLINK,
       SPYDATAWIDTH  => 16,
       FEBDATAWIDTH  => 16,
-      DDUDATAWIDTH  => 16
+      DDUTXDWIDTH   => DDUTXDWIDTH,
+      DDURXDWIDTH   => DDURXDWIDTH
       )
     port map (
       sysclk         => clk_cmsclk,
@@ -782,6 +796,7 @@ begin
       usrclk_spy_rx  => usrclk_spy_rx,
       rxdata_spy     => spy_rxdata,
       rxd_valid_spy  => spy_rxd_valid,
+      rxready_spy    => spy_rxready,
       usrclk_ddu_tx  => usrclk_ddu_tx,
       txdata_ddu1    => ddu_txdata1,
       txdata_ddu2    => ddu_txdata2,
@@ -794,6 +809,7 @@ begin
       rxdata_ddu3    => ddu_rxdata3,
       rxdata_ddu4    => ddu_rxdata4,
       rxd_valid_ddu  => ddu_rxd_valid,
+      rxready_ddu    => ddu_rxready,
       usrclk_mgtc    => usrclk_mgtc,
       rxdata_cfeb1   => dcfeb1_data,
       rxdata_cfeb2   => dcfeb2_data,
@@ -803,15 +819,15 @@ begin
       rxdata_cfeb6   => dcfeb6_data,
       rxdata_cfeb7   => dcfeb7_data,
       rxd_valid_mgtc => mgtc_data_valid,
-      mgtc_rxready   => mgtc_rxready,
+      rxready_mgtc   => mgtc_rxready,
       usrclk_mgta    => usrclk_mgta,
       rxdata_alct    => alct_rxdata,
       rxd_valid_alct => alct_rxd_valid,
+      rxready_alct   => alct_rxready,
       rxdata_daq8    => daq8_rxdata,
       rxdata_daq9    => daq9_rxdata,
       rxdata_daq10   => daq10_rxdata,
       mgta_dvalid    => mgta_data_valid,
-      mgta_rxready   => mgta_rxready,
       led_out        => LEDS_CFV(7 downto 0),
       reset          => global_reset
       );

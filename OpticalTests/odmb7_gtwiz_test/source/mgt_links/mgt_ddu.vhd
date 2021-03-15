@@ -19,9 +19,9 @@ use ieee.std_logic_misc.all;
 entity mgt_ddu is
   generic (
     NCHANNL     : integer range 1 to 4 := 4;  -- number of (firmware) channels (max of TX/RX links)
-    NRXLINK     : integer range 1 to 4 := 4;  -- number of (physical) RX links
+    NRXLINK     : integer range 1 to 4 := 1;  -- number of (physical) RX links
     NTXLINK     : integer range 1 to 4 := 4;  -- number of (physical) TX links
-    TXDATAWIDTH : integer := 16;              -- transmitter user data width
+    TXDATAWIDTH : integer := 32;              -- transmitter user data width
     RXDATAWIDTH : integer := 16               -- receiver user data width
     );
   port (
@@ -32,10 +32,12 @@ entity mgt_ddu is
     sysclk      : in  std_logic; -- clock for the helper block, 80 MHz
 
     -- Serial data ports for transceiver at bank 224-225
-    daq_tx_n    : out std_logic_vector(NTXLINK-1 downto 0);
-    daq_tx_p    : out std_logic_vector(NTXLINK-1 downto 0);
-    bck_rx_n    : in  std_logic_vector(NRXLINK-1 downto 0); -- for back pressure / loopback
-    bck_rx_p    : in  std_logic_vector(NRXLINK-1 downto 0); -- for back pressure / loopback
+    daq_tx_n    : out std_logic_vector(3 downto 0);
+    daq_tx_p    : out std_logic_vector(3 downto 0);
+    bck_rx_n    : in  std_logic; -- for back pressure / loopback
+    bck_rx_p    : in  std_logic; -- for back pressure / loopback
+    b04_rx_n    : in  std_logic_vector(3 downto 1);
+    b04_rx_p    : in  std_logic_vector(3 downto 1);
 
     -- Transmitter signals
     txdata_ch0  : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
@@ -97,7 +99,7 @@ architecture Behavioral of mgt_ddu is
       gtwiz_reset_rx_cdr_stable_out : out std_logic;
       gtwiz_reset_tx_done_out : out std_logic;
       gtwiz_reset_rx_done_out : out std_logic;
-      gtwiz_userdata_tx_in : in std_logic_vector(63 downto 0);
+      gtwiz_userdata_tx_in : in std_logic_vector(127 downto 0);
       gtwiz_userdata_rx_out : out std_logic_vector(63 downto 0);
       gtrefclk00_in : in std_logic;
       gtrefclk01_in : in std_logic;
@@ -148,14 +150,15 @@ architecture Behavioral of mgt_ddu is
       );
   end component;
 
-  constant IDLE : std_logic_vector(TXDATAWIDTH-1 downto 0) := x"50BC"; -- TODO: what is the IDLE word from DCFEBs?
+  constant IDLE16 : std_logic_vector(15 downto 0) := x"50BC"; -- TODO: what is the IDLE word from DCFEBs?
+  constant IDLE32 : std_logic_vector(31 downto 0) := x"503C50BC"; -- TODO: what is the IDLE word from DCFEBs?
 
   -- Synchronize the latched link down reset input and the VIO-driven signal into the free-running clock domain
   -- signals passed to wizard
-  signal gthrxn_int : std_logic_vector(NRXLINK-1 downto 0) := (others => '0');
-  signal gthrxp_int : std_logic_vector(NRXLINK-1 downto 0) := (others => '0');
-  signal gthtxn_int : std_logic_vector(NTXLINK-1 downto 0) := (others => '0');
-  signal gthtxp_int : std_logic_vector(NTXLINK-1 downto 0) := (others => '0');
+  signal gthrxn_int : std_logic_vector(NCHANNL-1 downto 0) := (others => '0');
+  signal gthrxp_int : std_logic_vector(NCHANNL-1 downto 0) := (others => '0');
+  signal gthtxn_int : std_logic_vector(NCHANNL-1 downto 0) := (others => '0');
+  signal gthtxp_int : std_logic_vector(NCHANNL-1 downto 0) := (others => '0');
   signal gtwiz_userclk_tx_reset_int : std_logic := '0';
   signal gtwiz_userclk_tx_srcclk_int : std_logic := '0';
   signal gtwiz_userclk_tx_usrclk_int : std_logic := '0';
@@ -256,18 +259,20 @@ architecture Behavioral of mgt_ddu is
 begin
 
   -- Serial ports connection
-  gthrxn_int <= bck_rx_n;
-  gthrxp_int <= bck_rx_p;
   daq_tx_n <= gthtxn_int;
   daq_tx_p <= gthtxp_int;
+  gthrxn_int(0) <= bck_rx_n;
+  gthrxp_int(0) <= bck_rx_p;
+  gthrxn_int(3 downto 1) <= b04_rx_n;
+  gthrxp_int(3 downto 1) <= b04_rx_p;
 
   ---------------------------------------------------------------------------------------------------------------------
   -- User data ports
   ---------------------------------------------------------------------------------------------------------------------
-  gtwiz_userdata_tx_int(1*RXDATAWIDTH-1 downto 0*RXDATAWIDTH) <= TXDATA_CH0 when TXD_VALID(0) = '1' else IDLE;
-  gtwiz_userdata_tx_int(2*RXDATAWIDTH-1 downto 1*RXDATAWIDTH) <= TXDATA_CH1 when TXD_VALID(1) = '1' else IDLE;
-  gtwiz_userdata_tx_int(3*RXDATAWIDTH-1 downto 2*RXDATAWIDTH) <= TXDATA_CH2 when TXD_VALID(2) = '1' else IDLE;
-  gtwiz_userdata_tx_int(4*RXDATAWIDTH-1 downto 3*RXDATAWIDTH) <= TXDATA_CH3 when TXD_VALID(3) = '1' else IDLE;
+  gtwiz_userdata_tx_int(1*TXDATAWIDTH-1 downto 0*TXDATAWIDTH) <= TXDATA_CH0 when TXD_VALID(0) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
+  gtwiz_userdata_tx_int(2*TXDATAWIDTH-1 downto 1*TXDATAWIDTH) <= TXDATA_CH1 when TXD_VALID(1) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
+  gtwiz_userdata_tx_int(3*TXDATAWIDTH-1 downto 2*TXDATAWIDTH) <= TXDATA_CH2 when TXD_VALID(2) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
+  gtwiz_userdata_tx_int(4*TXDATAWIDTH-1 downto 3*TXDATAWIDTH) <= TXDATA_CH3 when TXD_VALID(3) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
 
   RXDATA_CH0 <= gtwiz_userdata_rx_int(1*RXDATAWIDTH-1 downto 0*RXDATAWIDTH);
   u_mgt_port_assign_2 : if NRXLINK >= 2 generate
@@ -298,7 +303,7 @@ begin
     rxprbssel_int(4*I-1 downto 4*I-4) <= PRBS_TYPE when PRBS_RX_EN(I) = '1' else x"0";
   end generate gen_rx_quality;
 
-  gen_rx_disabled : for I in NRXLINK+1 to NCHANNL generate
+  gen_rx_disabled : for I in NRXLINK+1 to NCHANNL-1 generate
     rxpd_int(2*I+1 downto 2*I) <= "11";
   end generate gen_rx_disabled;
 

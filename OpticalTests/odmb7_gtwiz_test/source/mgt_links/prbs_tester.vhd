@@ -18,9 +18,11 @@ use ieee.std_logic_misc.all;
 
 entity prbs_tester is
   generic (
+    DDU_NRXLINK  : integer := 1;
     SPYDATAWIDTH : integer := 16;
     FEBDATAWIDTH : integer := 16;
-    DDUDATAWIDTH : integer := 16
+    DDUTXDWIDTH  : integer := 32;
+    DDURXDWIDTH  : integer := 16
     );
   port (
     sysclk         : in std_logic; -- sysclk
@@ -31,20 +33,22 @@ entity prbs_tester is
     usrclk_spy_rx  : in std_logic;  -- USRCLK for SPY RX data readout
     rxdata_spy     : in std_logic_vector(SPYDATAWIDTH-1 downto 0); -- PRBS data out 
     rxd_valid_spy  : in std_logic;
+    rxready_spy    : in std_logic; -- Flag for rx reset done
     -- Pattern generation for mgt_ddu
     usrclk_ddu_tx  : in std_logic; -- USRCLK for SPY TX data generation
-    txdata_ddu1    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
-    txdata_ddu2    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
-    txdata_ddu3    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
-    txdata_ddu4    : out std_logic_vector(DDUDATAWIDTH-1 downto 0); -- PRBS data out 
+    txdata_ddu1    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+    txdata_ddu2    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+    txdata_ddu3    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+    txdata_ddu4    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
     txd_valid_ddu  : out std_logic_vector(4 downto 1);
     -- Pattern checking for mgt_ddu
     usrclk_ddu_rx  : in std_logic;  -- USRCLK for DDU RX data readout
-    rxdata_ddu1    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-    rxdata_ddu2    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-    rxdata_ddu3    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-    rxdata_ddu4    : in std_logic_vector(DDUDATAWIDTH-1 downto 0);   -- Data received
-    rxd_valid_ddu  : in std_logic_vector(4 downto 1);
+    rxdata_ddu1    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+    rxdata_ddu2    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+    rxdata_ddu3    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+    rxdata_ddu4    : in std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+    rxd_valid_ddu  : in std_logic_vector(DDU_NRXLINK downto 1);
+    rxready_ddu    : in std_logic; -- Flag for rx reset done
     -- Receiver signals for mgt_cfeb
     usrclk_mgtc    : in std_logic; -- USRCLK for RX data readout
     rxdata_cfeb1   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
@@ -55,16 +59,16 @@ entity prbs_tester is
     rxdata_cfeb6   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
     rxdata_cfeb7   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
     rxd_valid_mgtc : in std_logic_vector(7 downto 1);   -- Flag for valid data;
-    mgtc_rxready   : in std_logic; -- Flag for rx reset done
+    rxready_mgtc   : in std_logic; -- Flag for rx reset done
     -- Receiver signals for mgt_alct
     usrclk_mgta    : in std_logic; -- USRCLK for RX data readout
     rxdata_alct    : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
     rxd_valid_alct : in std_logic;
+    rxready_alct   : in std_logic; -- Flag for rx reset done
     rxdata_daq8    : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
     rxdata_daq9    : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
     rxdata_daq10   : in std_logic_vector(FEBDATAWIDTH-1 downto 0);  -- Data received
     mgta_dvalid    : in std_logic_vector(4 downto 1);   -- Flag for valid data;
-    mgta_rxready   : in std_logic; -- Flag for rx reset done
 
     -- LED indicator
     led_out       : out std_logic_vector(7 downto 0);
@@ -95,11 +99,17 @@ architecture Behavioral of prbs_tester is
   component vio_1
     port (
       clk : in std_logic;
-      probe_in0 : in std_logic_vector(3 downto 0);
-      probe_in1 : in std_logic_vector(6 downto 0);
-      probe_in2 : in std_logic;
-      probe_in3 : in std_logic;
-      probe_out0 : out std_logic
+      probe_in0  : in std_logic_vector(3 downto 0);
+      probe_in1  : in std_logic_vector(6 downto 0);
+      probe_in2  : in std_logic;
+      probe_in3  : in std_logic;
+      probe_in4  : in std_logic_vector(15 downto 0);
+      probe_in5  : in std_logic_vector(15 downto 0);
+      probe_in6  : in std_logic_vector(15 downto 0);
+      probe_in7  : in std_logic_vector(15 downto 0);
+      probe_in8  : in std_logic_vector(15 downto 0);
+      probe_out0 : out std_logic;
+      probe_out1 : out std_logic
       );
   end component;
 
@@ -107,14 +117,14 @@ architecture Behavioral of prbs_tester is
   signal rxdata_ch : twobyte_array_ndev;
 
   signal txdata_spy_int : std_logic_vector(SPYDATAWIDTH-1 downto 0) := (others => '0');
-  signal txdata_ddu_int : std_logic_vector(DDUDATAWIDTH-1 downto 0) := (others => '0');
+  signal txdata_ddu_int : std_logic_vector(DDUTXDWIDTH-1 downto 0) := (others => '0');
 
   signal prbs_anyerr_spy  : std_logic_vector(SPYDATAWIDTH-1 downto 0) := (others => '0');
   signal prbs_match_spy : std_logic := '0';
 
-  type dwidth_array_ddu is array (1 to 4) of std_logic_vector(DDUDATAWIDTH-1 downto 0);
-  signal rxdata_ddu_ch : dwidth_array_ddu;
-  signal prbs_anyerr_ddu : dwidth_array_ddu;
+  type rdwidth_array_ddu is array (1 to 4) of std_logic_vector(DDURXDWIDTH-1 downto 0);
+  signal rxdata_ddu_ch : rdwidth_array_ddu;
+  signal prbs_anyerr_ddu : rdwidth_array_ddu;
   signal prbs_match_ddu : std_logic_vector(4 downto 1) := (others => '0');
 
   type dwidth_array_feb is array (1 to 7) of std_logic_vector(FEBDATAWIDTH-1 downto 0);
@@ -132,8 +142,23 @@ architecture Behavioral of prbs_tester is
   signal txd_spy_init_ctr : unsigned(15 downto 0) := (others => '0');
   signal txd_ddu_init_ctr : unsigned(15 downto 0) := (others => '0');
 
-  signal gtwiz_tx_stimulus_reset_sync : std_logic := '0';
   signal global_reset : std_logic := '0';
+
+  signal rxdata_errctr_reset_vio_int : std_logic;
+  signal spy_rxdata_err_ctr  : unsigned(16 downto 0) := (others=> '0');
+  signal spy_rxdata_nml_ctr  : unsigned(63 downto 0) := (others=> '0');
+  signal alct_rxdata_err_ctr : unsigned(16 downto 0) := (others=> '0');
+  signal alct_rxdata_nml_ctr : unsigned(63 downto 0) := (others=> '0');
+
+  type errctr_array_four is array (1 to 4) of unsigned(16 downto 0);
+  type nmlctr_array_four is array (1 to 4) of unsigned(63 downto 0);
+  signal ddu_rxdata_err_ctr : errctr_array_four;
+  signal ddu_rxdata_nml_ctr : nmlctr_array_four;
+
+  type errctr_array_ncfeb is array (1 to NCFEB) of unsigned(16 downto 0);
+  type nmlctr_array_ncfeb is array (1 to NCFEB) of unsigned(63 downto 0);
+  signal cfeb_rxdata_err_ctr : errctr_array_ncfeb;
+  signal cfeb_rxdata_nml_ctr : nmlctr_array_ncfeb;
 
 begin
 
@@ -182,7 +207,7 @@ begin
       INV_PATTERN => 1,
       POLY_LENGHT => 31,
       POLY_TAP    => 28,
-      NBITS       => DDUDATAWIDTH
+      NBITS       => DDUTXDWIDTH
       )
     port map (
       RST      => global_reset,
@@ -240,14 +265,14 @@ begin
   rxdata_ddu_ch(3) <= rxdata_ddu3;
   rxdata_ddu_ch(4) <= rxdata_ddu4;
 
-  gen_prbs_checking_ddu : for I in 1 to 4 generate
+  gen_prbs_checking_ddu : for I in 1 to DDU_NRXLINK generate
     prbs_checking_spy : gtwiz_prbs_any
       generic map (
         CHK_MODE    => 1,
         INV_PATTERN => 1,
         POLY_LENGHT => 31,
         POLY_TAP    => 28,
-        NBITS       => DDUDATAWIDTH
+        NBITS       => DDURXDWIDTH
         )
       port map (
         RST      => global_reset,
@@ -260,6 +285,10 @@ begin
     prbs_match_ddu(I) <= not or_reduce(prbs_anyerr_ddu(I));
   end generate gen_prbs_checking_ddu;
   
+  gen_prbs_assign_ddu : for I in DDU_NRXLINK+1 to 4 generate
+    prbs_match_ddu(I) <= '1';
+  end generate gen_prbs_assign_ddu;
+
   rxdata_cfeb_ch(1) <= rxdata_cfeb1;
   rxdata_cfeb_ch(2) <= rxdata_cfeb2;
   rxdata_cfeb_ch(3) <= rxdata_cfeb3;
@@ -317,6 +346,74 @@ begin
 
   reset <= global_reset;
 
+  rxdata_errcounting_spy : process (usrclk_spy_rx)
+  begin
+    if (rising_edge(usrclk_spy_rx)) then
+      if (rxdata_errctr_reset_vio_int = '1') then
+        spy_rxdata_nml_ctr <= (others => '0');
+        spy_rxdata_err_ctr <= (others => '0');
+      elsif (rxready_spy = '1') then
+        spy_rxdata_nml_ctr <= spy_rxdata_nml_ctr + 1;
+        if (prbs_match_spy = '0') then
+          spy_rxdata_err_ctr <= spy_rxdata_err_ctr + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  rxdata_errcounting_ddu : process (usrclk_ddu_rx)
+  begin
+    if (rising_edge(usrclk_ddu_rx)) then
+      if (rxdata_errctr_reset_vio_int = '1') then
+        for I in 1 to DDU_NRXLINK loop
+          ddu_rxdata_nml_ctr(I) <= (others => '0');
+          ddu_rxdata_err_ctr(I) <= (others => '0');
+        end loop;
+      elsif (rxready_mgtc = '1') then
+        for I in 1 to DDU_NRXLINK loop
+          ddu_rxdata_nml_ctr(I) <= ddu_rxdata_nml_ctr(I) + 1;
+          if (prbs_match_ddu(I) = '0') then
+            ddu_rxdata_err_ctr(I) <= ddu_rxdata_err_ctr(I) + 1;
+          end if;
+        end loop;
+      end if;
+    end if;
+  end process;
+
+  rxdata_errcounting_cfeb : process (usrclk_mgtc)
+  begin
+    if (rising_edge(usrclk_mgtc)) then
+      if (rxdata_errctr_reset_vio_int = '1') then
+        for I in 1 to NCFEB loop
+          cfeb_rxdata_nml_ctr(I) <= (others => '0');
+          cfeb_rxdata_err_ctr(I) <= (others => '0');
+        end loop;
+      elsif (rxready_mgtc = '1') then
+        for I in 1 to NCFEB loop
+          cfeb_rxdata_nml_ctr(I) <= cfeb_rxdata_nml_ctr(I) + 1;
+          if (prbs_match_cfeb(I) = '0') then
+            cfeb_rxdata_err_ctr(I) <= cfeb_rxdata_err_ctr(I) + 1;
+          end if;
+        end loop;
+      end if;
+    end if;
+  end process;
+
+  rxdata_errcounting_alct : process (usrclk_mgta)
+  begin
+    if (rising_edge(usrclk_mgta)) then
+      if (rxdata_errctr_reset_vio_int = '1') then
+        alct_rxdata_nml_ctr <= (others => '0');
+        alct_rxdata_err_ctr <= (others => '0');
+      elsif (rxready_alct = '1') then
+        alct_rxdata_nml_ctr <= alct_rxdata_nml_ctr + 1;
+        if (prbs_match_alct = '0') then
+          alct_rxdata_err_ctr <= alct_rxdata_err_ctr + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
   prbs_test_vio_inst : vio_1
     port map (
       clk => sysclk,
@@ -324,7 +421,13 @@ begin
       probe_in1 => prbs_match_cfeb,
       probe_in2 => prbs_match_alct,
       probe_in3 => prbs_match_spy,
-      probe_out0 => global_reset
+      probe_in4 => std_logic_vector(spy_rxdata_err_ctr(16 downto 1)),
+      probe_in5 => std_logic_vector(ddu_rxdata_err_ctr(1)(16 downto 1)),
+      probe_in6 => std_logic_vector(cfeb_rxdata_err_ctr(1)(16 downto 1)),
+      probe_in7 => std_logic_vector(cfeb_rxdata_err_ctr(7)(16 downto 1)),
+      probe_in8 => std_logic_vector(alct_rxdata_err_ctr(16 downto 1)),
+      probe_out0 => rxdata_errctr_reset_vio_int,
+      probe_out1 => global_reset
       );
 
 
