@@ -108,8 +108,16 @@ architecture Behavioral of prbs_tester is
       probe_in6  : in std_logic_vector(15 downto 0);
       probe_in7  : in std_logic_vector(15 downto 0);
       probe_in8  : in std_logic_vector(15 downto 0);
+      probe_in9  : in std_logic_vector(15 downto 0);
       probe_out0 : out std_logic;
       probe_out1 : out std_logic
+      );
+  end component;
+
+  component ila_1
+    port (
+      clk : in std_logic;
+      probe0  : in std_logic_vector(127 downto 0)
       );
   end component;
 
@@ -117,7 +125,9 @@ architecture Behavioral of prbs_tester is
   signal rxdata_ch : twobyte_array_ndev;
 
   signal txdata_spy_int : std_logic_vector(SPYDATAWIDTH-1 downto 0) := (others => '0');
+  signal txd_valid_spy_int : std_logic;
   signal txdata_ddu_int : std_logic_vector(DDUTXDWIDTH-1 downto 0) := (others => '0');
+  signal txd_valid_ddu_int : std_logic_vector(4 downto 1) := (others => '0');
 
   signal prbs_anyerr_spy  : std_logic_vector(SPYDATAWIDTH-1 downto 0) := (others => '0');
   signal prbs_match_spy : std_logic := '0';
@@ -141,6 +151,8 @@ architecture Behavioral of prbs_tester is
   -- signal txdata_valid_int : std_logic_vector(NTXLINK-1 downto 0) := (others => '0');
   signal txd_spy_init_ctr : unsigned(15 downto 0) := (others => '0');
   signal txd_ddu_init_ctr : unsigned(15 downto 0) := (others => '0');
+  signal txd_spy_gen_ctr : unsigned(15 downto 0) := (others => '0');
+  signal txd_ddu_gen_ctr : unsigned(15 downto 0) := (others => '0');
 
   signal global_reset : std_logic := '0';
 
@@ -159,6 +171,12 @@ architecture Behavioral of prbs_tester is
   type nmlctr_array_ncfeb is array (1 to NCFEB) of unsigned(63 downto 0);
   signal cfeb_rxdata_err_ctr : errctr_array_ncfeb;
   signal cfeb_rxdata_nml_ctr : nmlctr_array_ncfeb;
+
+  signal ila_data : std_logic_vector(255 downto 0);
+  signal ila_spy_rx : std_logic_vector(127 downto 0);
+  signal ila_spy_tx : std_logic_vector(127 downto 0);
+  signal ila_ddu_tx : std_logic_vector(127 downto 0);
+  signal ila_ddu_rx : std_logic_vector(127 downto 0);
 
 begin
 
@@ -183,56 +201,100 @@ begin
       DATA_OUT => txdata_spy_int
       );
   
-  txdata_spy <= txdata_spy_int;
-
   txdata_spy_init_inst : process (usrclk_spy_tx)
   begin
     if (rising_edge(usrclk_spy_tx)) then
       if (global_reset = '1') then
-        txd_valid_spy <= '0';
+        txd_valid_spy_int <= '0';
         txd_spy_init_ctr <= x"0000";
       elsif (txd_spy_init_ctr < 100) then
-        txd_valid_spy <= '0';
+        txd_valid_spy_int <= '0';
         txd_spy_init_ctr <= txd_spy_init_ctr + 1;
       else
-        txd_valid_spy <= '1';
+        txd_valid_spy_int <= '1';
       end if;
     end if;
   end process;
 
+  txdata_spy <= txdata_spy_int;
+  txd_valid_spy <= txd_valid_spy_int;
 
-  prbs_stimulus_ddu_inst : gtwiz_prbs_any
-    generic map (
-      CHK_MODE    => 0,
-      INV_PATTERN => 1,
-      POLY_LENGHT => 31,
-      POLY_TAP    => 28,
-      NBITS       => DDUTXDWIDTH
-      )
-    port map (
-      RST      => global_reset,
-      CLK      => usrclk_ddu_tx,
-      DATA_IN  => (others => '0'),
-      EN       => '1',
-      DATA_OUT => txdata_ddu_int
-      );
+  -- txdata_spy_gen_inst : process (usrclk_spy_tx)
+  -- begin
+  --   if (rising_edge(usrclk_spy_tx)) then
+  --     if (global_reset = '1') then
+  --       txd_valid_spy_int <= '0';
+  --       txdata_spy_int <= x"0000";
+  --       txd_spy_init_ctr <= x"0000";
+  --     else
+  --       if (txd_spy_init_ctr < 100 or rxready_spy = '0') then
+  --         txdata_spy_int <= x"0000";
+  --         txd_valid_spy_int <= '0';
+  --         txd_spy_init_ctr <= txd_spy_init_ctr + 1;
+  --       else
+  --         txdata_spy_int <= std_logic_vector(txd_spy_gen_ctr);
+  --         txd_valid_spy_int <= '1';
+  --       end if;
+  --       txd_spy_gen_ctr <= txd_spy_gen_ctr + 1;
+  --     end if;
+  --   end if;
+  -- end process;
+
+
+  -- prbs_stimulus_ddu_inst : gtwiz_prbs_any
+  --   generic map (
+  --     CHK_MODE    => 0,
+  --     INV_PATTERN => 1,
+  --     POLY_LENGHT => 31,
+  --     POLY_TAP    => 28,
+  --     NBITS       => DDUTXDWIDTH
+  --     )
+  --   port map (
+  --     RST      => global_reset,
+  --     CLK      => usrclk_ddu_tx,
+  --     DATA_IN  => (others => '0'),
+  --     EN       => '1',
+  --     DATA_OUT => txdata_ddu_int
+  --     );
+
+  -- txdata_ddu_init_inst : process (usrclk_ddu_tx)
+  -- begin
+  --   if (rising_edge(usrclk_ddu_tx)) then
+  --     if (global_reset = '1') then
+  --       txd_valid_ddu_int <= x"0";
+  --       txd_ddu_init_ctr <= x"0000";
+  --     elsif (txd_ddu_init_ctr < 100) then
+  --       txd_valid_ddu_int <= x"0";
+  --       txd_ddu_init_ctr <= txd_ddu_init_ctr + 1;
+  --     else
+  --       txd_valid_ddu_int <= x"F";
+  --     end if;
+  --   end if;
+  -- end process;
 
   txdata_ddu1 <= txdata_ddu_int;
   txdata_ddu2 <= txdata_ddu_int;
   txdata_ddu3 <= txdata_ddu_int;
   txdata_ddu4 <= txdata_ddu_int;
+  txd_valid_ddu <= txd_valid_ddu_int;
 
-  txdata_ddu_init_inst : process (usrclk_ddu_tx)
+  txdata_ddu_gen_inst : process (usrclk_ddu_tx)
   begin
     if (rising_edge(usrclk_ddu_tx)) then
       if (global_reset = '1') then
-        txd_valid_ddu <= x"0";
+        txd_valid_ddu_int <= x"0";
+        txdata_ddu_int <= x"0000_0000";
         txd_ddu_init_ctr <= x"0000";
-      elsif (txd_ddu_init_ctr < 100) then
-        txd_valid_ddu <= x"0";
-        txd_ddu_init_ctr <= txd_ddu_init_ctr + 1;
       else
-        txd_valid_ddu <= x"F";
+        if (txd_ddu_init_ctr < 100 or rxready_ddu = '0') then
+          txdata_ddu_int <= x"0000_0000";
+          txd_valid_ddu_int <= x"0";
+          txd_ddu_init_ctr <= txd_ddu_init_ctr + 1;
+        else
+          txdata_ddu_int <= x"503C" & std_logic_vector(txd_ddu_gen_ctr) ;
+          txd_valid_ddu_int <= x"F";
+        end if;
+        txd_ddu_gen_ctr <= txd_ddu_gen_ctr + 1;
       end if;
     end if;
   end process;
@@ -369,7 +431,7 @@ begin
           ddu_rxdata_nml_ctr(I) <= (others => '0');
           ddu_rxdata_err_ctr(I) <= (others => '0');
         end loop;
-      elsif (rxready_mgtc = '1') then
+      elsif (rxready_ddu = '1') then
         for I in 1 to DDU_NRXLINK loop
           ddu_rxdata_nml_ctr(I) <= ddu_rxdata_nml_ctr(I) + 1;
           if (prbs_match_ddu(I) = '0') then
@@ -419,16 +481,63 @@ begin
       clk => sysclk,
       probe_in0 => prbs_match_ddu,
       probe_in1 => prbs_match_cfeb,
-      probe_in2 => prbs_match_alct,
-      probe_in3 => prbs_match_spy,
+      probe_in2 => rxd_valid_spy,
+      probe_in3 => rxready_ddu,
       probe_in4 => std_logic_vector(spy_rxdata_err_ctr(16 downto 1)),
       probe_in5 => std_logic_vector(ddu_rxdata_err_ctr(1)(16 downto 1)),
-      probe_in6 => std_logic_vector(cfeb_rxdata_err_ctr(1)(16 downto 1)),
-      probe_in7 => std_logic_vector(cfeb_rxdata_err_ctr(7)(16 downto 1)),
-      probe_in8 => std_logic_vector(alct_rxdata_err_ctr(16 downto 1)),
+      probe_in6 => std_logic_vector(spy_rxdata_nml_ctr(39 downto 24)),
+      probe_in7 => std_logic_vector(ddu_rxdata_nml_ctr(1)(39 downto 24)),
+      probe_in8 => std_logic_vector(txd_spy_init_ctr),
+      probe_in9 => std_logic_vector(alct_rxdata_nml_ctr(39 downto 24)),
       probe_out0 => rxdata_errctr_reset_vio_int,
       probe_out1 => global_reset
       );
+
+  spy_tx_ila_inst : ila_1
+    port map (
+      clk => usrclk_spy_tx,
+      probe0 => ila_spy_tx
+      );
+
+  ila_spy_tx(15 downto 0)   <= txdata_spy_int;
+  ila_spy_tx(16)            <= txd_valid_spy_int;
+  ila_spy_tx(34 downto 19)  <= std_logic_vector(txd_spy_init_ctr);
+
+  spy_rx_ila_inst : ila_1
+    port map (
+      clk => usrclk_spy_rx,
+      probe0 => ila_spy_rx
+      );
+
+  ila_spy_rx(15 downto 0)   <= rxdata_spy;
+  ila_spy_rx(16)            <= rxd_valid_spy;
+  ila_spy_rx(17)            <= rxready_spy;
+  ila_spy_rx(18)            <= rxready_spy;
+  ila_spy_rx(34 downto 19)  <= prbs_anyerr_spy;
+
+  ddu_tx_ila_inst : ila_1
+    port map (
+      clk => usrclk_ddu_tx,
+      probe0 => ila_ddu_tx
+      );
+
+  ila_ddu_tx(31 downto 0)   <= txdata_ddu_int;
+  ila_ddu_tx(32)            <= txd_valid_ddu_int(1);
+  ila_ddu_tx(48 downto 33)  <= std_logic_vector(txd_ddu_init_ctr);
+  ila_ddu_tx(64 downto 49)   <= txdata_spy_int;
+
+  ddu_rx_ila_inst : ila_1
+    port map (
+      clk => usrclk_ddu_rx,
+      probe0 => ila_ddu_rx
+      );
+
+  ila_ddu_rx(15 downto 0)   <= rxdata_ddu_ch(1);
+  ila_ddu_rx(16)            <= rxd_valid_ddu(1);
+  ila_ddu_rx(17)            <= rxready_ddu;
+  ila_ddu_rx(18)            <= prbs_match_ddu(1);
+  ila_ddu_rx(34 downto 19)  <= prbs_anyerr_ddu(1);
+  ila_ddu_rx(50 downto 35)  <= rxdata_spy;
 
 
 end Behavioral;

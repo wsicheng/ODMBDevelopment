@@ -121,27 +121,26 @@ architecture Behavioral of mgt_spy is
       );
   end component;
 
-  component gtwiz_example_init is
-    port (
-      clk_freerun_in : in std_logic := '0';
-      reset_all_in : in std_logic := '0';
-      tx_init_done_in : in std_logic := '0';
-      rx_init_done_in : in std_logic := '0';
-      rx_data_good_in : in std_logic := '0';
-      reset_all_out : out std_logic := '0';
-      reset_rx_out : out std_logic := '0';
-      init_done_out : out std_logic := '0';
-      retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
-      );
-  end component;
-
-  -- component ila is
+  -- component gtwiz_example_init is
   --   port (
-  --     clk : in std_logic := '0';
-  --     probe0 : in std_logic_vector(191 downto 0) := (others=> '0')
-  --    -- probe1 : in std_logic_vector(15 downto 0) := (others=> '0')
+  --     clk_freerun_in : in std_logic := '0';
+  --     reset_all_in : in std_logic := '0';
+  --     tx_init_done_in : in std_logic := '0';
+  --     rx_init_done_in : in std_logic := '0';
+  --     rx_data_good_in : in std_logic := '0';
+  --     reset_all_out : out std_logic := '0';
+  --     reset_rx_out : out std_logic := '0';
+  --     init_done_out : out std_logic := '0';
+  --     retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
   --     );
   -- end component;
+
+  component ila_1 is
+    port (
+      clk : in std_logic := '0';
+      probe0 : in std_logic_vector(127 downto 0) := (others=> '0')
+      );
+  end component;
 
   -- component gtwiz_kcu_sfp_vio_0
   --   port (
@@ -255,12 +254,13 @@ architecture Behavioral of mgt_spy is
   signal gtrefclk0_int : std_logic := '0';
 
   -- rx helper signals
-  signal ch0_rxcharisk : std_logic_vector(3 downto 0);
-  signal ch0_rxdisperr : std_logic_vector(3 downto 0);
-  signal ch0_rxnotintable : std_logic_vector(3 downto 0);
-  signal ch0_rxchariscomma : std_logic_vector(3 downto 0);
-  signal ch0_codevalid : std_logic_vector(3 downto 0);
+  signal ch0_rxcharisk : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_rxdisperr : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_rxnotintable : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_rxchariscomma : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_codevalid : std_logic_vector(DATAWIDTH/8-1 downto 0);
 
+  signal rxd_valid_int : std_logic_vector(NLINK-1 downto 0);
   signal bad_rx_int : std_logic_vector(NLINK-1 downto 0);
   signal rxready_int : std_logic;
 
@@ -277,7 +277,7 @@ architecture Behavioral of mgt_spy is
   signal txpd_int : std_logic_vector(2*NLINK-1 downto 0) := (others => '0');
 
   -- debug signals
-  signal ila_data_rx: std_logic_vector(191 downto 0) := (others=> '0');
+  signal ila_data_rx: std_logic_vector(127 downto 0) := (others=> '0');
   signal gtpowergood_vio_sync : std_logic_vector(1 downto 0) := (others=> '0');
   signal txpmaresetdone_vio_sync: std_logic_vector(1 downto 0) := (others=> '0');
   signal rxpmaresetdone_vio_sync: std_logic_vector(1 downto 0) := (others=> '0');
@@ -311,14 +311,15 @@ begin
   -- User data ports
   ---------------------------------------------------------------------------------------------------------------------
   gtwiz_userdata_tx_int(DATAWIDTH-1 downto 0) <= TXDATA when TXD_VALID(0) = '1' else IDLE;
-  txctrl2_int(7 downto 0) <= x"00" when TXD_VALID(0) = '1' else x"01";
+  txctrl2_int(0) <= '0' when TXD_VALID(0) = '1' else '1';
+  txctrl2_int(7 downto 1) <= (others => '0');
 
   RXDATA <= gtwiz_userdata_rx_int(DATAWIDTH-1 downto 0);
 
-  ch0_rxcharisk <= rxctrl0_int(3 downto 0);
-  ch0_rxdisperr <= rxctrl1_int(3 downto 0);
-  ch0_rxchariscomma <= rxctrl2_int(3 downto 0);
-  ch0_rxnotintable <= rxctrl3_int(3 downto 0);
+  ch0_rxcharisk <= rxctrl0_int(DATAWIDTH/8-1 downto 0);
+  ch0_rxdisperr <= rxctrl1_int(DATAWIDTH/8-1 downto 0);
+  ch0_rxchariscomma <= rxctrl2_int(DATAWIDTH/8-1 downto 0);
+  ch0_rxnotintable <= rxctrl3_int(DATAWIDTH/8-1 downto 0);
 
   ch0_codevalid <= not (ch0_rxnotintable or ch0_rxdisperr); -- May need to sync the input signals
   bad_rx_int(0) <= not (rxbyteisaligned_int(0) and (not rxbyterealign_int(0)));
@@ -331,8 +332,11 @@ begin
 
   -- RXDATA is valid only when it's been deemed aligned, recognized 8B/10B pattern and does not contain a K-character.
   -- The RXVALID port is not explained in UG576, so it's not used.
-  RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
-  -- RXDATA_VALID(1) <= '1' when (rxready_int = '1' and bad_rx_int(1) = '0' and ch1_codevalid = x"F" and ch1_rxchariscomma = x"0") else '0';
+  -- RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
+  -- RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and and_reduce(ch0_codevalid) = '1' and or_reduce(ch0_rxchariscomma) = '0') else '0';
+  rxd_valid_int(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and and_reduce(ch0_codevalid) = '1' and or_reduce(ch0_rxchariscomma) = '0') else '0';
+
+  RXD_VALID <= rxd_valid_int;
 
   -- MGT reference clk
   gtrefclk0_int <= MGTREFCLK;
@@ -447,20 +451,25 @@ begin
   -- Debug session
   ---------------------------------------------------------------------------------------------------------------------
 
-  -- ila_data_rx(63 downto 0) <= gtwiz_userdata_rx_int;
-  -- ila_data_rx(67 downto 64) <= ch0_codevalid;
-  -- ila_data_rx(75 downto 72) <= ch0_rxchariscomma;
-  -- ila_data_rx(99 downto 98) <= bad_rx_int;
+  ila_data_rx(15 downto 0)    <= gtwiz_userdata_rx_int;
+  ila_data_rx(17 downto 16)   <= ch0_codevalid;
+  ila_data_rx(20)             <= bad_rx_int(0);
+  ila_data_rx(21)             <= rxd_valid_int(0);
+  ila_data_rx(25 downto 24)   <= ch0_rxcharisk;
+  ila_data_rx(29 downto 28)   <= ch0_rxdisperr;
+  ila_data_rx(33 downto 32)   <= ch0_rxchariscomma;
+  ila_data_rx(37 downto 36)   <= ch0_rxnotintable;
+
   -- ila_data_rx(103 downto 96)  <= rxctrl2_int(7 downto 0);
   -- ila_data_rx(113 downto 112) <= rxbyteisaligned_int;
   -- ila_data_rx(115 downto 114) <= rxbyterealign_int;
   -- ila_data_rx(117 downto 116) <= rxcommadet_int;
 
-  -- mgt_sfp_ila_inst : ila
-  --   port map(
-  --     clk => gtwiz_userclk_rx_usrclk2_int,
-  --     probe0 => ila_data_rx
-  --     );
+  mgt_sfp_ila_inst : ila_1
+    port map(
+      clk => gtwiz_userclk_rx_usrclk2_int,
+      probe0 => ila_data_rx
+      );
 
 
   -- mgt_sfp_vio_inst : gtwiz_kcu_sfp_vio_0

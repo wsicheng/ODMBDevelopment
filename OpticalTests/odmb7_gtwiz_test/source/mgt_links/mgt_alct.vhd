@@ -188,11 +188,11 @@ architecture Behavioral of mgt_alct is
   signal gtrefclk0_int : std_logic := '0';
 
   -- rx helper signals
-  signal ch0_rxcharisk : std_logic_vector(3 downto 0);
-  signal ch0_rxdisperr : std_logic_vector(3 downto 0);
-  signal ch0_rxnotintable : std_logic_vector(3 downto 0);
-  signal ch0_rxchariscomma : std_logic_vector(3 downto 0);
-  signal ch0_codevalid : std_logic_vector(3 downto 0);
+  signal ch0_rxcharisk : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_rxdisperr : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_rxnotintable : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_rxchariscomma : std_logic_vector(DATAWIDTH/8-1 downto 0);
+  signal ch0_codevalid : std_logic_vector(DATAWIDTH/8-1 downto 0);
 
   signal bad_rx_int : std_logic_vector(NLINK-1 downto 0);
   signal rxready_int : std_logic;
@@ -234,10 +234,10 @@ begin
   ---------------------------------------------------------------------------------------------------------------------
   RXDATA <= gtwiz_userdata_rx_int(DATAWIDTH-1 downto 0);
 
-  ch0_rxcharisk <= rxctrl0_int(3 downto 0);
-  ch0_rxdisperr <= rxctrl1_int(3 downto 0);
-  ch0_rxchariscomma <= rxctrl2_int(3 downto 0);
-  ch0_rxnotintable <= rxctrl3_int(3 downto 0);
+  ch0_rxcharisk <= rxctrl0_int(DATAWIDTH/8-1 downto 0);
+  ch0_rxdisperr <= rxctrl1_int(DATAWIDTH/8-1 downto 0);
+  ch0_rxchariscomma <= rxctrl2_int(DATAWIDTH/8-1 downto 0);
+  ch0_rxnotintable <= rxctrl3_int(DATAWIDTH/8-1 downto 0);
 
   ch0_codevalid <= not (ch0_rxnotintable or ch0_rxdisperr); -- May need to sync the input signals
   bad_rx_int(0) <= not (rxbyteisaligned_int(0) and (not rxbyterealign_int(0)));
@@ -249,8 +249,7 @@ begin
 
   -- RXDATA is valid only when it's been deemed aligned, recognized 8B/10B pattern and does not contain a K-character.
   -- The RXVALID port is not explained in UG576, so it's not used.
-  RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
-  -- RXDATA_VALID(1) <= '1' when (rxready_int = '1' and bad_rx_int(1) = '0' and ch1_codevalid = x"F" and ch1_rxchariscomma = x"0") else '0';
+  RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and and_reduce(ch0_codevalid) = '1' and or_reduce(ch0_rxchariscomma) = '0') else '0';
 
   -- MGT reference clk
   gtrefclk0_int <= MGTREFCLK;

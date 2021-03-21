@@ -202,11 +202,12 @@ architecture Behavioral of mgt_ddu is
   signal qpll1outrefclk_int : std_logic;
 
   -- rx helper signals
-  signal rxcharisk_ch : fourbit_array_ncfeb;
-  signal rxdisperr_ch : fourbit_array_ncfeb;
-  signal rxnotintable_ch : fourbit_array_ncfeb;
-  signal rxchariscomma_ch : fourbit_array_ncfeb;
-  signal codevalid_ch : fourbit_array_ncfeb;
+  type rxd_nbyte_array_nlink is array (1 to NRXLINK) of std_logic_vector(RXDATAWIDTH/8-1 downto 0);
+  signal rxcharisk_ch : rxd_nbyte_array_nlink;
+  signal rxdisperr_ch : rxd_nbyte_array_nlink;
+  signal rxnotintable_ch : rxd_nbyte_array_nlink;
+  signal rxchariscomma_ch : rxd_nbyte_array_nlink;
+  signal codevalid_ch : rxd_nbyte_array_nlink;
 
   signal bad_rx_int : std_logic_vector(NRXLINK downto 1);
   signal rxready_int : std_logic;
@@ -287,17 +288,17 @@ begin
 
   gen_rx_quality : for I in 1 to NRXLINK generate
   begin
-    rxcharisk_ch(I)     <= rxctrl0_int(16*I-13 downto 16*I-16);
-    rxdisperr_ch(I)     <= rxctrl1_int(16*I-13 downto 16*I-16);
-    rxchariscomma_ch(I) <= rxctrl2_int(8*I-5 downto 8*I-8);
-    rxnotintable_ch(I)  <= rxctrl3_int(8*I-5 downto 8*I-8);
+    rxcharisk_ch(I)     <= rxctrl0_int(16*(I-1)+RXDATAWIDTH/8-1 downto 16*(I-1));
+    rxdisperr_ch(I)     <= rxctrl1_int(16*(I-1)+RXDATAWIDTH/8-1 downto 16*(I-1));
+    rxchariscomma_ch(I) <= rxctrl2_int(8*(I-1)+RXDATAWIDTH/8-1 downto 8*(I-1));
+    rxnotintable_ch(I)  <= rxctrl3_int(8*(I-1)+RXDATAWIDTH/8-1 downto 8*(I-1));
 
     codevalid_ch(I) <= not (rxnotintable_ch(I) or rxdisperr_ch(I));
     bad_rx_int(I) <= not (rxbyteisaligned_int(I-1) and (not rxbyterealign_int(I-1)));
 
     -- RXDATA is valid only when it's been deemed aligned, recognized 8B/10B pattern and does not contain a K-character.
     -- The RXVALID port is not explained in UG576, so it's not used.
-    RXD_VALID(I) <= '1' when (rxready_int = '1' and bad_rx_int(I) = '0' and codevalid_ch(I) = x"F" and rxchariscomma_ch(I) = x"0") else '0';
+    RXD_VALID(I) <= '1' when (rxready_int = '1' and bad_rx_int(I) = '0' and and_reduce(codevalid_ch(I)) = '1' and or_reduce(rxchariscomma_ch(I)) = '0') else '0';
 
     -- Duplicating GT control inputs for all channels
     rxprbssel_int(4*I-1 downto 4*I-4) <= PRBS_TYPE when PRBS_RX_EN(I) = '1' else x"0";
