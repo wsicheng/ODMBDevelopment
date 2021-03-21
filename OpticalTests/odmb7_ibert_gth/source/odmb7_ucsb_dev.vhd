@@ -406,7 +406,7 @@ begin
   gth_qnorthrefclk11_i(0) <= '0';
   gth_qsouthrefclk00_i(0) <= mgtrefclk0_226_i;
   gth_qsouthrefclk10_i(0) <= '0';
-  gth_qsouthrefclk01_i(0) <= '0';
+  gth_qsouthrefclk01_i(0) <= mgtrefclk0_226_i;
   gth_qsouthrefclk11_i(0) <= '0';
 
   gth_qrefclk0_i(1) <= '0';
@@ -426,7 +426,7 @@ begin
   gth_qnorthrefclk11_i(1) <= '0';
   gth_qsouthrefclk00_i(1) <= mgtrefclk0_226_i;
   gth_qsouthrefclk10_i(1) <= '0';
-  gth_qsouthrefclk01_i(1) <= '0';
+  gth_qsouthrefclk01_i(1) <= mgtrefclk0_226_i;
   gth_qsouthrefclk11_i(1) <= '0';
 
   gth_qrefclk0_i(2) <= mgtrefclk0_226_i;
@@ -438,8 +438,8 @@ begin
   -- COMMON clock connection
   gth_qrefclk00_i(2) <= mgtrefclk0_226_i;
   gth_qrefclk10_i(2) <= mgtrefclk1_226_i;
-  gth_qrefclk01_i(2) <= '0';
-  gth_qrefclk11_i(2) <= '0';
+  gth_qrefclk01_i(2) <= mgtrefclk0_226_i;
+  gth_qrefclk11_i(2) <= mgtrefclk1_226_i;
   gth_qnorthrefclk00_i(2) <= '0';
   gth_qnorthrefclk10_i(2) <= '0';
   gth_qnorthrefclk01_i(2) <= '0';
@@ -448,7 +448,6 @@ begin
   gth_qsouthrefclk10_i(2) <= '0';
   gth_qsouthrefclk01_i(2) <= '0';
   gth_qsouthrefclk11_i(2) <= '0';
-
 
   gth_qrefclk0_i(3) <= '0';
   gth_qrefclk1_i(3) <= '0';
@@ -463,7 +462,7 @@ begin
   gth_qrefclk11_i(3) <= '0';
   gth_qnorthrefclk00_i(3) <= mgtrefclk0_226_i;
   gth_qnorthrefclk10_i(3) <= '0';
-  gth_qnorthrefclk01_i(3) <= '0';
+  gth_qnorthrefclk01_i(3) <= mgtrefclk0_226_i;
   gth_qnorthrefclk11_i(3) <= '0';
   gth_qsouthrefclk00_i(3) <= '0';
   gth_qsouthrefclk10_i(3) <= '0';
