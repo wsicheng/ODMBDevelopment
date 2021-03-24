@@ -7,14 +7,13 @@ library IEEE;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
-
-library work;
-use work.ucsb_types.all;
+use ieee.std_logic_misc.all;
 
 library UNISIM;
 use UNISIM.VComponents.all;
 
-use ieee.std_logic_misc.all;
+-- library work;
+-- use work.ucsb_types.all;
 
 entity mgt_ddu is
   generic (
@@ -99,59 +98,53 @@ architecture Behavioral of mgt_ddu is
       gtwiz_reset_rx_cdr_stable_out : out std_logic;
       gtwiz_reset_tx_done_out : out std_logic;
       gtwiz_reset_rx_done_out : out std_logic;
-      gtwiz_userdata_tx_in : in std_logic_vector(127 downto 0);
-      gtwiz_userdata_rx_out : out std_logic_vector(63 downto 0);
+      gtwiz_userdata_tx_in : in std_logic_vector(NCHANNL*TXDATAWIDTH-1 downto 0);
+      gtwiz_userdata_rx_out : out std_logic_vector(NCHANNL*RXDATAWIDTH-1 downto 0);
       gtrefclk00_in : in std_logic;
       gtrefclk01_in : in std_logic;
       qpll0outclk_out : out std_logic;
       qpll0outrefclk_out : out std_logic;
       qpll1outclk_out : out std_logic;
       qpll1outrefclk_out : out std_logic;
-      rx8b10ben_in : in std_logic_vector(3 downto 0);
-      rxcommadeten_in : in std_logic_vector(3 downto 0);
-      rxmcommaalignen_in : in std_logic_vector(3 downto 0);
-      rxpcommaalignen_in : in std_logic_vector(3 downto 0);
-      rxpd_in : in std_logic_vector(7 downto 0);
-      rxprbscntreset_in : in std_logic_vector(3 downto 0);
-      rxprbssel_in : in std_logic_vector(15 downto 0);
-      tx8b10ben_in : in std_logic_vector(3 downto 0);
-      txctrl0_in : in std_logic_vector(63 downto 0);
-      txctrl1_in : in std_logic_vector(63 downto 0);
-      txctrl2_in : in std_logic_vector(31 downto 0);
-      txpd_in : in std_logic_vector(7 downto 0);
-      txprbsforceerr_in : in std_logic_vector(3 downto 0);
-      txprbssel_in : in std_logic_vector(15 downto 0);
-      gtpowergood_out : out std_logic_vector(3 downto 0);
-      rxbyteisaligned_out : out std_logic_vector(3 downto 0);
-      rxbyterealign_out : out std_logic_vector(3 downto 0);
-      rxcommadet_out : out std_logic_vector(3 downto 0);
-      rxctrl0_out : out std_logic_vector(63 downto 0);
-      rxctrl1_out : out std_logic_vector(63 downto 0);
-      rxctrl2_out : out std_logic_vector(31 downto 0);
-      rxctrl3_out : out std_logic_vector(31 downto 0);
-      rxpmaresetdone_out : out std_logic_vector(3 downto 0);
-      rxprbserr_out : out std_logic_vector(3 downto 0);
-      rxprbslocked_out : out std_logic_vector(3 downto 0);
-      txpmaresetdone_out : out std_logic_vector(3 downto 0)
+      rx8b10ben_in : in std_logic_vector(NCHANNL-1 downto 0);
+      rxcommadeten_in : in std_logic_vector(NCHANNL-1 downto 0);
+      rxmcommaalignen_in : in std_logic_vector(NCHANNL-1 downto 0);
+      rxpcommaalignen_in : in std_logic_vector(NCHANNL-1 downto 0);
+      rxpd_in : in std_logic_vector(2*NCHANNL-1 downto 0);
+      rxprbscntreset_in : in std_logic_vector(NCHANNL-1 downto 0);
+      rxprbssel_in : in std_logic_vector(4*NCHANNL-1 downto 0);
+      tx8b10ben_in : in std_logic_vector(NCHANNL-1 downto 0);
+      txctrl0_in : in std_logic_vector(16*NCHANNL-1 downto 0);
+      txctrl1_in : in std_logic_vector(16*NCHANNL-1 downto 0);
+      txctrl2_in : in std_logic_vector(8*NCHANNL-1 downto 0);
+      txpd_in : in std_logic_vector(2*NCHANNL-1 downto 0);
+      txprbsforceerr_in : in std_logic_vector(NCHANNL-1 downto 0);
+      txprbssel_in : in std_logic_vector(4*NCHANNL-1 downto 0);
+      gtpowergood_out : out std_logic_vector(NCHANNL-1 downto 0);
+      rxbyteisaligned_out : out std_logic_vector(NCHANNL-1 downto 0);
+      rxbyterealign_out : out std_logic_vector(NCHANNL-1 downto 0);
+      rxcommadet_out : out std_logic_vector(NCHANNL-1 downto 0);
+      rxctrl0_out : out std_logic_vector(16*NCHANNL-1 downto 0);
+      rxctrl1_out : out std_logic_vector(16*NCHANNL-1 downto 0);
+      rxctrl2_out : out std_logic_vector(8*NCHANNL-1 downto 0);
+      rxctrl3_out : out std_logic_vector(8*NCHANNL-1 downto 0);
+      rxpmaresetdone_out : out std_logic_vector(NCHANNL-1 downto 0);
+      rxprbserr_out : out std_logic_vector(NCHANNL-1 downto 0);
+      rxprbslocked_out : out std_logic_vector(NCHANNL-1 downto 0);
+      txpmaresetdone_out : out std_logic_vector(NCHANNL-1 downto 0)
       );
   end component;
 
-  component gtwiz_example_init is
+  -- Temporary debugging
+  component ila_1 is
     port (
-      clk_freerun_in : in std_logic := '0';
-      reset_all_in : in std_logic := '0';
-      tx_init_done_in : in std_logic := '0';
-      rx_init_done_in : in std_logic := '0';
-      rx_data_good_in : in std_logic := '0';
-      reset_all_out : out std_logic := '0';
-      reset_rx_out : out std_logic := '0';
-      init_done_out : out std_logic := '0';
-      retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
+      clk : in std_logic := '0';
+      probe0 : in std_logic_vector(127 downto 0) := (others=> '0')
       );
   end component;
 
   constant IDLE16 : std_logic_vector(15 downto 0) := x"50BC"; -- TODO: what is the IDLE word from DCFEBs?
-  constant IDLE32 : std_logic_vector(31 downto 0) := x"503C50BC"; -- TODO: what is the IDLE word from DCFEBs?
+  constant IDLE32 : std_logic_vector(31 downto 0) := x"503C50BC";
 
   -- Synchronize the latched link down reset input and the VIO-driven signal into the free-running clock domain
   -- signals passed to wizard
@@ -235,7 +228,7 @@ architecture Behavioral of mgt_ddu is
   signal txprbssel_int : std_logic_vector(4*NCHANNL-1 downto 0) := (others => '0');
 
   -- debug signals
-  signal ila_data_rx: std_logic_vector(191 downto 0) := (others=> '0');
+  signal ila_data_rx: std_logic_vector(127 downto 0) := (others=> '0');
   signal gtpowergood_vio_sync : std_logic_vector(1 downto 0) := (others=> '0');
   signal txpmaresetdone_vio_sync: std_logic_vector(1 downto 0) := (others=> '0');
   signal rxpmaresetdone_vio_sync: std_logic_vector(1 downto 0) := (others=> '0');
@@ -274,6 +267,10 @@ begin
   gtwiz_userdata_tx_int(2*TXDATAWIDTH-1 downto 1*TXDATAWIDTH) <= TXDATA_CH1 when TXD_VALID(1) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
   gtwiz_userdata_tx_int(3*TXDATAWIDTH-1 downto 2*TXDATAWIDTH) <= TXDATA_CH2 when TXD_VALID(2) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
   gtwiz_userdata_tx_int(4*TXDATAWIDTH-1 downto 3*TXDATAWIDTH) <= TXDATA_CH3 when TXD_VALID(3) = '1' else IDLE16 when TXDATAWIDTH = 16 else IDLE32;
+  txctrl2_int( 7 downto  0) <= x"00" when TXD_VALID(0) = '1' else x"01";
+  txctrl2_int(15 downto  8) <= x"00" when TXD_VALID(1) = '1' else x"01";
+  txctrl2_int(23 downto 16) <= x"00" when TXD_VALID(2) = '1' else x"01";
+  txctrl2_int(31 downto 24) <= x"00" when TXD_VALID(3) = '1' else x"01";
 
   RXDATA_CH0 <= gtwiz_userdata_rx_int(1*RXDATAWIDTH-1 downto 0*RXDATAWIDTH);
   u_mgt_port_assign_2 : if NRXLINK >= 2 generate
@@ -409,19 +406,25 @@ begin
   -- Debug session
   ---------------------------------------------------------------------------------------------------------------------
 
-  -- ila_data_rx(63 downto 0) <= gtwiz_userdata_rx_int;
-  -- ila_data_rx(67 downto 64) <= ch0_codevalid;
-  -- ila_data_rx(75 downto 72) <= ch0_rxchariscomma;
-  -- ila_data_rx(99 downto 98) <= bad_rx_int;
-  -- ila_data_rx(103 downto 96)  <= rxctrl2_int(7 downto 0);
-  -- ila_data_rx(113 downto 112) <= rxbyteisaligned_int;
-  -- ila_data_rx(115 downto 114) <= rxbyterealign_int;
-  -- ila_data_rx(117 downto 116) <= rxcommadet_int;
+  ila_data_rx(63 downto 0)  <= gtwiz_userdata_rx_int;
+  ila_data_rx(65 downto 64) <= codevalid_ch(1);
+  ila_data_rx(69 downto 68) <= codevalid_ch(3);
+  ila_data_rx(73 downto 70) <= rxbyteisaligned_int;
+  ila_data_rx(77 downto 74) <= rxbyterealign_int;
+  ila_data_rx(79 downto 78) <= rxnotintable_ch(1);
+  ila_data_rx(81 downto 80) <= rxnotintable_ch(3);
+  ila_data_rx(83 downto 82) <= rxdisperr_ch(1);
+  ila_data_rx(85 downto 84) <= rxdisperr_ch(3);
+  ila_data_rx(87 downto 86) <= rxcharisk_ch(1);
+  ila_data_rx(89 downto 88) <= rxcharisk_ch(3);
+  ila_data_rx(91 downto 90) <= rxchariscomma_ch(1);
+  ila_data_rx(93 downto 92) <= rxchariscomma_ch(3);
+  ila_data_rx(97 downto 94) <= bad_rx_int;
 
-  -- mgt_sfp_ila_inst : ila
-  --   port map(
-  --     clk => gtwiz_userclk_rx_usrclk2_int,
-  --     probe0 => ila_data_rx
-  --     );
+  mgt_ddu_ila_inst : ila_1
+    port map(
+      clk => gtwiz_userclk_rx_usrclk2_int,
+      probe0 => ila_data_rx
+      );
 
 end Behavioral;

@@ -321,7 +321,7 @@ architecture odmb_inst of odmb7_dev_top is
       NRXLINK     : integer range 1 to 4 := 4;  -- number of (physical) RX links
       NTXLINK     : integer range 1 to 4 := 4;  -- number of (physical) TX links
       TXDATAWIDTH : integer := 16;              -- transmitter user data width
-      RXDATAWIDTH  : integer := 16               -- receiver user data width
+      RXDATAWIDTH : integer := 16               -- receiver user data width
       );
     port (
       mgtrefclk    : in  std_logic; -- buffer'ed reference clock signal
@@ -361,24 +361,26 @@ architecture odmb_inst of odmb7_dev_top is
       SPYDATAWIDTH : integer := 16;
       FEBDATAWIDTH : integer := 16;
       DDUTXDWIDTH  : integer := 32;
-      DDURXDWIDTH  : integer := 16
+      DDURXDWIDTH  : integer := 16;
+      SPY_PATTERN  : integer := 0;        -- 0 for PRBS, 1 for counter
+      DDU_PATTERN  : integer := 0         -- 0 for PRBS, 1 for counter
       );
     port (
       sysclk         : in std_logic; -- sysclk
       -- Pattern generation and checking for SPY channel
       usrclk_spy_tx  : in std_logic; -- USRCLK for SPY TX data generation
-      txdata_spy     : out std_logic_vector(SPYDATAWIDTH-1 downto 0); -- PRBS data out 
+      txdata_spy     : out std_logic_vector(SPYDATAWIDTH-1 downto 0); -- PRBS data out
       txd_valid_spy  : out std_logic;
       usrclk_spy_rx  : in std_logic;  -- USRCLK for SPY RX data readout
-      rxdata_spy     : in std_logic_vector(SPYDATAWIDTH-1 downto 0); -- PRBS data out 
+      rxdata_spy     : in std_logic_vector(SPYDATAWIDTH-1 downto 0); -- PRBS data out
       rxd_valid_spy  : in std_logic;
       rxready_spy    : in std_logic; -- Flag for rx reset done
       -- Pattern generation for mgt_ddu
       usrclk_ddu_tx  : in std_logic; -- USRCLK for SPY TX data generation
-      txdata_ddu1    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
-      txdata_ddu2    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
-      txdata_ddu3    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
-      txdata_ddu4    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out 
+      txdata_ddu1    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out
+      txdata_ddu2    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out
+      txdata_ddu3    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out
+      txdata_ddu4    : out std_logic_vector(DDUTXDWIDTH-1 downto 0); -- PRBS data out
       txd_valid_ddu  : out std_logic_vector(4 downto 1);
       -- Pattern checking for mgt_ddu
       usrclk_ddu_rx  : in std_logic;  -- USRCLK for DDU RX data readout
@@ -466,7 +468,7 @@ architecture odmb_inst of odmb7_dev_top is
   signal dcfeb_initjtag : std_logic := '0';
   signal dcfeb_initjtag_d : std_logic := '0';
   signal dcfeb_initjtag_dd : std_logic := '0';
-  
+
   signal global_reset : std_logic := '0';
 
   --------------------------------------
@@ -498,8 +500,8 @@ architecture odmb_inst of odmb7_dev_top is
   -- MGT signals for DDU channels
   --------------------------------------
   constant DDU_NTXLINK : integer := 4;
-  constant DDU_NRXLINK : integer := 1;
-  constant DDUTXDWIDTH : integer := 32;
+  constant DDU_NRXLINK : integer := 4;
+  constant DDUTXDWIDTH : integer := 16;
   constant DDURXDWIDTH : integer := 16;
 
   signal usrclk_ddu_tx : std_logic; -- USRCLK for TX data preparation
@@ -780,13 +782,15 @@ begin
   -------------------------------------------------------------------------------------------
   -- Tester
   -------------------------------------------------------------------------------------------
-  u_mgt_tester : prbs_tester 
+  u_mgt_tester : prbs_tester
     generic map (
       DDU_NRXLINK   => DDU_NRXLINK,
       SPYDATAWIDTH  => 16,
       FEBDATAWIDTH  => 16,
       DDUTXDWIDTH   => DDUTXDWIDTH,
-      DDURXDWIDTH   => DDURXDWIDTH
+      DDURXDWIDTH   => DDURXDWIDTH,
+      SPY_PATTERN   => 0,
+      DDU_PATTERN   => 0
       )
     port map (
       sysclk         => clk_cmsclk,
@@ -832,6 +836,10 @@ begin
       reset          => global_reset
       );
 
+  mgtc_reset <= global_reset;
+  mgta_reset <= global_reset;
+  ddu_reset  <= global_reset;
+  spy_reset  <= global_reset;
 
   -------------------------------------------------------------------------------------------
   -- SYSMON module instantiation

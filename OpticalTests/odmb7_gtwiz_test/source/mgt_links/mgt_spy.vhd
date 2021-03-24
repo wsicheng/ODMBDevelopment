@@ -121,49 +121,12 @@ architecture Behavioral of mgt_spy is
       );
   end component;
 
-  -- component gtwiz_example_init is
-  --   port (
-  --     clk_freerun_in : in std_logic := '0';
-  --     reset_all_in : in std_logic := '0';
-  --     tx_init_done_in : in std_logic := '0';
-  --     rx_init_done_in : in std_logic := '0';
-  --     rx_data_good_in : in std_logic := '0';
-  --     reset_all_out : out std_logic := '0';
-  --     reset_rx_out : out std_logic := '0';
-  --     init_done_out : out std_logic := '0';
-  --     retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
-  --     );
-  -- end component;
-
   component ila_1 is
     port (
       clk : in std_logic := '0';
       probe0 : in std_logic_vector(127 downto 0) := (others=> '0')
       );
   end component;
-
-  -- component gtwiz_kcu_sfp_vio_0
-  --   port (
-  --     clk : in std_logic;
-  --     probe_in0 : in std_logic;
-  --     probe_in1 : in std_logic;
-  --     probe_in2 : in std_logic;
-  --     probe_in3 : in std_logic_vector(3 downto 0);
-  --     probe_in4 : in std_logic_vector(1 downto 0);
-  --     probe_in5 : in std_logic_vector(1 downto 0);
-  --     probe_in6 : in std_logic_vector(1 downto 0);
-  --     probe_in7 : in std_logic;
-  --     probe_in8 : in std_logic;
-  --     probe_in9 : in std_logic;
-  --     probe_out0 : out std_logic;
-  --     probe_out1 : out std_logic;
-  --     probe_out2 : out std_logic;
-  --     probe_out3 : out std_logic;
-  --     probe_out4 : out std_logic;
-  --     probe_out5 : out std_logic;
-  --     probe_out6 : out std_logic
-  --     );
-  -- end component;
 
   component gtwiz_example_bit_synchronizer
     port (
@@ -332,7 +295,6 @@ begin
 
   -- RXDATA is valid only when it's been deemed aligned, recognized 8B/10B pattern and does not contain a K-character.
   -- The RXVALID port is not explained in UG576, so it's not used.
-  -- RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
   -- RXD_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and and_reduce(ch0_codevalid) = '1' and or_reduce(ch0_rxchariscomma) = '0') else '0';
   rxd_valid_int(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and and_reduce(ch0_codevalid) = '1' and or_reduce(ch0_rxchariscomma) = '0') else '0';
 
@@ -455,105 +417,19 @@ begin
   ila_data_rx(17 downto 16)   <= ch0_codevalid;
   ila_data_rx(20)             <= bad_rx_int(0);
   ila_data_rx(21)             <= rxd_valid_int(0);
+  ila_data_rx(22)             <= rxbyteisaligned_int(0);
+  ila_data_rx(23)             <= rxbyterealign_int(0);
   ila_data_rx(25 downto 24)   <= ch0_rxcharisk;
   ila_data_rx(29 downto 28)   <= ch0_rxdisperr;
   ila_data_rx(33 downto 32)   <= ch0_rxchariscomma;
   ila_data_rx(37 downto 36)   <= ch0_rxnotintable;
 
-  -- ila_data_rx(103 downto 96)  <= rxctrl2_int(7 downto 0);
-  -- ila_data_rx(113 downto 112) <= rxbyteisaligned_int;
-  -- ila_data_rx(115 downto 114) <= rxbyterealign_int;
-  -- ila_data_rx(117 downto 116) <= rxcommadet_int;
-
-  mgt_sfp_ila_inst : ila_1
+  mgt_spy_ila_inst : ila_1
     port map(
       clk => gtwiz_userclk_rx_usrclk2_int,
       probe0 => ila_data_rx
       );
 
-
-  -- mgt_sfp_vio_inst : gtwiz_kcu_sfp_vio_0
-  --   port map (
-  --     clk => SYSCLK,
-  --     probe_in0 => '0',
-  --     probe_in1 => '0',
-  --     probe_in2 => '0',
-  --     probe_in3 => "0000",
-  --     probe_in4 => gtpowergood_vio_sync,
-  --     probe_in5 => txpmaresetdone_vio_sync,
-  --     probe_in6 => rxpmaresetdone_vio_sync,
-  --     probe_in7 => gtwiz_reset_tx_done_vio_sync,
-  --     probe_in8 => gtwiz_reset_rx_done_vio_sync,
-  --     probe_in9 => '0',
-  --     probe_out0 => open,
-  --     probe_out1 => hb0_gtwiz_reset_tx_pll_and_datapath_int,
-  --     probe_out2 => hb0_gtwiz_reset_tx_datapath_int,
-  --     probe_out3 => hb_gtwiz_reset_rx_pll_and_datapath_vio_int,
-  --     probe_out4 => hb_gtwiz_reset_rx_datapath_vio_int,
-  --     probe_out5 => open,
-  --     probe_out6 => open
-  --     );
-
-  -- -- Synchronize gtpowergood into the free-running clock domain for VIO usage
-  -- bit_synchronizer_vio_gtpowergood_0_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => gtpowergood_int(0),
-  --     o_out  => gtpowergood_vio_sync(0)
-  --     );
-
-  -- bit_synchronizer_vio_gtpowergood_1_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => gtpowergood_int(1),
-  --     o_out  => gtpowergood_vio_sync(1)
-  --     );
-
-  -- -- Synchronize txpmaresetdone into the free-running clock domain for VIO usage
-  -- bit_synchronizer_vio_txpmaresetdone_0_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => txpmaresetdone_int(0),
-  --     o_out  => txpmaresetdone_vio_sync(0)
-  --     );
-
-  -- bit_synchronizer_vio_txpmaresetdone_1_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => txpmaresetdone_int(1),
-  --     o_out  => txpmaresetdone_vio_sync(1)
-  --     );
-
-  -- -- Synchronize rxpmaresetdone into the free-running clock domain for VIO usage
-  -- bit_synchronizer_vio_rxpmaresetdone_0_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => rxpmaresetdone_int(0),
-  --     o_out  => rxpmaresetdone_vio_sync(0)
-  --     );
-
-  -- bit_synchronizer_vio_rxpmaresetdone_1_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => rxpmaresetdone_int(1),
-  --     o_out  => rxpmaresetdone_vio_sync(1)
-  --     );
-
-  -- -- Synchronize gtwiz_reset_tx_done into the free-running clock domain for VIO usage
-  -- bit_synchronizer_vio_gtwiz_reset_tx_done_0_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => gtwiz_reset_tx_done_int,
-  --     o_out  => gtwiz_reset_tx_done_vio_sync
-  --     );
-
-  -- -- Synchronize gtwiz_reset_rx_done into the free-running clock domain for VIO usage
-  -- bit_synchronizer_vio_gtwiz_reset_rx_done_0_inst: gtwiz_example_bit_synchronizer
-  --   port map (
-  --     clk_in => SYSCLK,
-  --     i_in   => gtwiz_reset_rx_done_int,
-  --     o_out  => gtwiz_reset_rx_done_vio_sync
-  --     );
 
 
 end Behavioral;
