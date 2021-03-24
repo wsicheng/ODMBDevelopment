@@ -58,11 +58,11 @@ use ieee.std_logic_misc.all;
 
 entity gtwiz_kcu_test_top is
   generic (
-    DATA_PATTERN : integer range 0 to 3 := 0 -- 0: PRBS pattern, 1: counter pattern
+    g_SFP_PATTERN : integer range 0 to 3 := 0 -- 0: PRBS pattern, 1: counter pattern
   );
   port (
 
-    -- reference clk from si750
+    -- reference clk from si570
     mgtrefclk0_x0y3_p : in std_logic;
     mgtrefclk0_x0y3_n : in std_logic;
 
@@ -88,6 +88,14 @@ entity gtwiz_kcu_test_top is
     -- fmc_cfg2_rx_p      : in  std_logic_vector(3 downto 0);
     -- fmc_cfg2_tx_n      : out std_logic_vector(3 downto 0);
     -- fmc_cfg2_tx_p      : out std_logic_vector(3 downto 0);
+
+    -- Ports in quad 228, mimicking ODMB7 ones
+    DAQ_TX_P     : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
+    DAQ_TX_N     : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
+    B04_RX_P     : in std_logic_vector(4 downto 2); -- B04 RX, no use yet
+    B04_RX_N     : in std_logic_vector(4 downto 2); -- B04 RX, no use yet
+    BCK_PRS_P    : in std_logic; -- B04_RX1_P
+    BCK_PRS_N    : in std_logic; -- B04_RX1_N
 
     -- synthesis translate_off
     hb_gtwiz_reset_all_in : in std_logic; --simonly
@@ -152,6 +160,46 @@ architecture Behavioral of gtwiz_kcu_test_top is
   );
   end component;
 
+  component mgt_ddu is
+    generic (
+      NCHANNL     : integer range 1 to 4 := 4;  -- number of (firmware) channels (max of TX/RX links)
+      NRXLINK     : integer range 1 to 4 := 4;  -- number of (physical) RX links
+      NTXLINK     : integer range 1 to 4 := 4;  -- number of (physical) TX links
+      TXDATAWIDTH : integer := 16;              -- transmitter user data width
+      RXDATAWIDTH  : integer := 16               -- receiver user data width
+      );
+    port (
+      mgtrefclk    : in  std_logic; -- buffer'ed reference clock signal
+      txusrclk     : out std_logic; -- USRCLK for TX data readout
+      rxusrclk     : out std_logic; -- USRCLK for RX data readout
+      sysclk       : in  std_logic; -- clock for the helper block, 80 MHz
+      daq_tx_n     : out std_logic_vector(NTXLINK-1 downto 0);
+      daq_tx_p     : out std_logic_vector(NTXLINK-1 downto 0);
+      bck_rx_n     : in  std_logic; -- for back pressure / loopback
+      bck_rx_p     : in  std_logic; -- for back pressure / loopback
+      b04_rx_n     : in  std_logic_vector(3 downto 1); -- for back pressure / loopback
+      b04_rx_p     : in  std_logic_vector(3 downto 1); -- for back pressure / loopback
+      txdata_ch0   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
+      txdata_ch1   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
+      txdata_ch2   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
+      txdata_ch3   : in std_logic_vector(TXDATAWIDTH-1 downto 0);  -- Data received
+      txd_valid    : in std_logic_vector(NTXLINK downto 1);   -- Flag for valid data;
+      rxdata_ch0   : out std_logic_vector(RXDATAWIDTH-1 downto 0);  -- Data received
+      rxdata_ch1   : out std_logic_vector(RXDATAWIDTH-1 downto 0);  -- Data received
+      rxdata_ch2   : out std_logic_vector(RXDATAWIDTH-1 downto 0);  -- Data received
+      rxdata_ch3   : out std_logic_vector(RXDATAWIDTH-1 downto 0);  -- Data received
+      rxd_valid    : out std_logic_vector(NRXLINK downto 1);   -- Flag for valid data;
+      bad_rx       : out std_logic_vector(NRXLINK downto 1);   -- Flag for fiber errors;
+      rxready      : out std_logic; -- Flag for rx reset done
+      txready      : out std_logic; -- Flag for tx reset done
+      prbs_type    : in  std_logic_vector(3 downto 0);
+      prbs_rx_en   : in  std_logic_vector(NRXLINK downto 1);
+      prbs_tst_cnt : in  std_logic_vector(15 downto 0);
+      prbs_err_cnt : out std_logic_vector(15 downto 0);
+      reset        : in  std_logic
+      );
+  end component;
+
   component gtwiz_example_init is
   port (
     clk_freerun_in : in std_logic := '0';
@@ -177,9 +225,9 @@ architecture Behavioral of gtwiz_kcu_test_top is
   port (
     rst : in std_logic := '0';
     clk : in std_logic := '0';
-    data_in : in std_logic_vector(31 downto 0) := (others=> '0');
+    data_in : in std_logic_vector(NBITS-1 downto 0) := (others=> '0');
     en : in std_logic := '0';
-    data_out : out std_logic_vector(31 downto 0) := (others=> '0')
+    data_out : out std_logic_vector(NBITS-1 downto 0) := (others=> '0')
   );
   end component;
 
@@ -354,10 +402,10 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal mgtrefclk0_x0y3_int: std_logic := '0';
 
   -- System clocks
-  signal clk160 : std_logic := '0';
-  signal clk80  : std_logic := '0';
-  signal clk40  : std_logic := '0';
-  signal clk10  : std_logic := '0';
+  signal sysclk160 : std_logic := '0';
+  signal sysclk80  : std_logic := '0';
+  signal sysclk40  : std_logic := '0';
+  signal sysclk10  : std_logic := '0';
   signal inclk_buf : std_logic := '0';
 
   -- ila
@@ -409,6 +457,56 @@ architecture Behavioral of gtwiz_kcu_test_top is
   signal ch1_rxdata_err_ctr : unsigned(16 downto 0) := (others=> '0');
   signal hb0_rxdata_nml_ctr : unsigned(63 downto 0) := (others=> '0');
 
+  --===============================--
+  -- MGT signals for DDU channels
+  --===============================--
+  constant DDU_NTXLINK : integer := 4;
+  constant DDU_NRXLINK : integer := 4;
+  constant DDUTXDWIDTH : integer := 16;
+  constant DDURXDWIDTH : integer := 16;
+
+  signal usrclk_ddu_tx : std_logic; -- USRCLK for TX data preparation
+  signal usrclk_ddu_rx : std_logic; -- USRCLK for RX data readout
+  signal ddu_txdata1 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txdata2 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txdata3 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txdata4 : std_logic_vector(DDUTXDWIDTH-1 downto 0);   -- Data to be transmitted
+  signal ddu_txd_valid : std_logic_vector(DDU_NTXLINK downto 1);   -- Flag for tx valid data;
+  signal ddu_rxdata1 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxdata2 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxdata3 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxdata4 : std_logic_vector(DDURXDWIDTH-1 downto 0);   -- Data received
+  signal ddu_rxd_valid : std_logic_vector(DDU_NRXLINK downto 1);   -- Flag for rx valid data;
+  signal ddu_bad_rx : std_logic_vector(DDU_NRXLINK downto 1);   -- Flag for fiber errors;
+  signal ddu_rxready : std_logic; -- Flag for rx reset done
+  signal ddu_txready : std_logic; -- Flag for rx reset done
+  signal ddu_reset : std_logic;
+
+  signal ddu_prbs_type : std_logic_vector(3 downto 0) := (others => '0');
+  signal ddu_prbs_tx_en : std_logic_vector(DDU_NTXLINK downto 1) := (others => '0');
+  signal ddu_prbs_rx_en : std_logic_vector(DDU_NRXLINK downto 1) := (others => '0');
+  signal ddu_prbs_tst_cnt : std_logic_vector(15 downto 0) := (others => '0');
+  signal ddu_prbs_err_cnt : std_logic_vector(15 downto 0) := (others => '0');
+
+  signal txdata_ddu_prbs_int : std_logic_vector(DDUTXDWIDTH-1 downto 0) := (others => '0');
+  signal txdata_ddu_cntr_int : std_logic_vector(DDUTXDWIDTH-1 downto 0) := (others => '0');
+  signal txd_valid_ddu_int : std_logic_vector(4 downto 1) := (others => '0');
+
+  signal txd_ddu_init_ctr : unsigned(15 downto 0) := (others => '0');
+  signal txd_ddu_gen_ctr  : unsigned(15 downto 0) := (others => '0');
+
+  signal txd_valid_vio_int : std_logic := '0';
+  signal prbsgen_reset_vio_int : std_logic := '0';
+
+  type t_mgt_misc_cntr is record
+    errcntr : unsigned(16 downto 0);
+    nmlcntr : unsigned(63 downto 0);
+  end record;
+
+  type t_mgt_misc_cntr_arr is array (integer range <>) of t_mgt_misc_cntr;
+  signal ddu_rxdata_cntr : t_mgt_misc_cntr_arr(1 to 4);
+  signal prbs_match_ddu : std_logic_vector(4 downto 1) := (others => '0');
+
   -- prbs signals <-- not used yet
   signal prbs_type_int : std_logic_vector(3 downto 0) := (others=> '0');
   signal prbs_tx_en_int : std_logic_vector(1 downto 0) := (others=> '0');
@@ -455,16 +553,16 @@ begin
   clk_mgr_i : clkwiz
   port map(
     clk_in1    => inclk_buf,
-    -- clk_out160 => clk160,
-    clk_out80  => clk80,
-    clk_out40  => clk40
-    -- clk_out10  => clk10
+    -- clk_out160 => sysclk160,
+    clk_out80  => sysclk80,
+    clk_out40  => sysclk40
+    -- clk_out10  => sysclk10
   );
 
   -- reset signals
-  -- hb_gtwiz_reset_clk_freerun_in <= clk80;
+  -- hb_gtwiz_reset_clk_freerun_in <= sysclk80;
   -- bufg_clk_freerun_inst: BUFG port map(I => hb_gtwiz_reset_clk_freerun_in, O => hb_gtwiz_reset_clk_freerun_buf_int );
-  hb_gtwiz_reset_clk_freerun_buf_int <= clk80;
+  hb_gtwiz_reset_clk_freerun_buf_int <= sysclk80;
 
   hb_gtwiz_reset_all_int <= hb_gtwiz_reset_all_init_int or hb_gtwiz_reset_all_vio_int
                             -- synthesis translate_off
@@ -518,7 +616,7 @@ begin
   hb_gtwiz_reset_rx_datapath_int <= hb_gtwiz_reset_rx_datapath_init_int or hb_gtwiz_reset_rx_datapath_vio_int;
 
   -- reference clk
-  IBUFDS_GTE3_inst : IBUFDS_GTE3
+  IBUFDS_GTE3_q227_inst : IBUFDS_GTE3
     generic map (
      REFCLK_EN_TX_PATH => '0',
      REFCLK_HROW_CK_SEL => "00",
@@ -585,7 +683,7 @@ begin
   ---------------------------------------------------------------------------------------------------------------------
   -- PRBS stimulus and checking
   ---------------------------------------------------------------------------------------------------------------------
-  userdata_gen_prbs : if DATA_PATTERN = 0 generate
+  userdata_gen_prbs : if g_SFP_PATTERN = 0 generate
 
     -- TX PRBS pattern generation
     prbs_stimulus_inst : gtwiz_prbs_any
@@ -663,7 +761,7 @@ begin
   ---------------------------------------------------------------------------------------------------------------------
   -- User-data generate, checking
   ---------------------------------------------------------------------------------------------------------------------
-  userdata_gen_counter : if DATA_PATTERN = 1 generate
+  userdata_gen_counter : if g_SFP_PATTERN = 1 generate
     txctrl0_int <= (others => '0'); -- unused in 8b10b
     txctrl1_int <= (others => '0'); -- unused in 8b10b
     txctrl2_int <= ch1_txctrl2_int & ch0_txctrl2_int;
@@ -849,105 +947,168 @@ begin
   );
 
   mgt_sfp_inst : mgt_sfp
-  port map (
-    mgtrefclk       => gtrefclk00_int,
-    txusrclk        => gtwiz_userclk_tx_usrclk2_int,
-    rxusrclk        => gtwiz_userclk_rx_usrclk2_int,
-    sysclk          => hb_gtwiz_reset_clk_freerun_buf_int,
-    sfp_ch0_rx_n    => sfp_ch0_rx_n,
-    sfp_ch0_rx_p    => sfp_ch0_rx_p,
-    sfp_ch0_tx_n    => sfp_ch0_tx_n,
-    sfp_ch0_tx_p    => sfp_ch0_tx_p,
-    sfp_ch1_rx_n    => sfp_ch1_rx_n,
-    sfp_ch1_rx_p    => sfp_ch1_rx_p,
-    sfp_ch1_tx_n    => sfp_ch1_tx_n,
-    sfp_ch1_tx_p    => sfp_ch1_tx_p,
-    txready         => txready_int,
-    rxready         => rxready_int,
-    txdata_ch0      => hb0_gtwiz_userdata_tx_int,
-    txdata_ch1      => hb1_gtwiz_userdata_tx_int,
-    txdata_valid    => txdata_valid_int,
-    txdiffctrl_ch0  => "1100",          -- fix value
-    txdiffctrl_ch1  => "1100",          -- fix value
-    loopback        => loopback_int,
-    rxdata_ch0      => hb0_gtwiz_userdata_rx_int,
-    rxdata_ch1      => hb1_gtwiz_userdata_rx_int,
-    rxdata_valid    => rxdata_valid_int,
-    bad_rx          => bad_rx_int,
-    prbs_type       => prbs_type_int,
-    prbs_tx_en      => prbs_tx_en_int,
-    prbs_rx_en      => prbs_rx_en_int,
-    prbs_en_tst_cnt => prbs_en_tst_cnt_int,
-    prbs_err_cnt    => prbs_err_cnt_int,
-    reset           => hb_gtwiz_reset_all_int
-);
+    port map (
+      mgtrefclk       => gtrefclk00_int,
+      txusrclk        => gtwiz_userclk_tx_usrclk2_int,
+      rxusrclk        => gtwiz_userclk_rx_usrclk2_int,
+      sysclk          => hb_gtwiz_reset_clk_freerun_buf_int,
+      sfp_ch0_rx_n    => sfp_ch0_rx_n,
+      sfp_ch0_rx_p    => sfp_ch0_rx_p,
+      sfp_ch0_tx_n    => sfp_ch0_tx_n,
+      sfp_ch0_tx_p    => sfp_ch0_tx_p,
+      sfp_ch1_rx_n    => sfp_ch1_rx_n,
+      sfp_ch1_rx_p    => sfp_ch1_rx_p,
+      sfp_ch1_tx_n    => sfp_ch1_tx_n,
+      sfp_ch1_tx_p    => sfp_ch1_tx_p,
+      txready         => txready_int,
+      rxready         => rxready_int,
+      txdata_ch0      => hb0_gtwiz_userdata_tx_int,
+      txdata_ch1      => hb1_gtwiz_userdata_tx_int,
+      txdata_valid    => txdata_valid_int,
+      txdiffctrl_ch0  => "1100",          -- fix value
+      txdiffctrl_ch1  => "1100",          -- fix value
+      loopback        => loopback_int,
+      rxdata_ch0      => hb0_gtwiz_userdata_rx_int,
+      rxdata_ch1      => hb1_gtwiz_userdata_rx_int,
+      rxdata_valid    => rxdata_valid_int,
+      bad_rx          => bad_rx_int,
+      prbs_type       => prbs_type_int,
+      prbs_tx_en      => prbs_tx_en_int,
+      prbs_rx_en      => prbs_rx_en_int,
+      prbs_en_tst_cnt => prbs_en_tst_cnt_int,
+      prbs_err_cnt    => prbs_err_cnt_int,
+      reset           => hb_gtwiz_reset_all_int
+      );
 
+  --================================--
+  -- Mimicking test for DDU links
+  --================================--
 
-  -- -- ===================================================================================================================
-  -- -- EXAMPLE WRAPPER INSTANCE
-  -- -- ===================================================================================================================
-  -- gtwiz_kcu_sfp_inst : gtwiz_kcu_sfp_example_wrapper 
-  -- port map (
-  --    gthrxn_in                          => gthrxn_int
-  --   ,gthrxp_in                          => gthrxp_int
-  --   ,gthtxn_out                         => gthtxn_int
-  --   ,gthtxp_out                         => gthtxp_int
-  --   ,gtwiz_userclk_tx_reset_in          => gtwiz_userclk_tx_reset_int
-  --   ,gtwiz_userclk_tx_srcclk_out        => gtwiz_userclk_tx_srcclk_int
-  --   ,gtwiz_userclk_tx_usrclk_out        => gtwiz_userclk_tx_usrclk_int
-  --   ,gtwiz_userclk_tx_usrclk2_out       => gtwiz_userclk_tx_usrclk2_int
-  --   ,gtwiz_userclk_tx_active_out        => gtwiz_userclk_tx_active_int
-  --   ,gtwiz_userclk_rx_reset_in          => gtwiz_userclk_rx_reset_int
-  --   ,gtwiz_userclk_rx_srcclk_out        => gtwiz_userclk_rx_srcclk_int
-  --   ,gtwiz_userclk_rx_usrclk_out        => gtwiz_userclk_rx_usrclk_int
-  --   ,gtwiz_userclk_rx_usrclk2_out       => gtwiz_userclk_rx_usrclk2_int
-  --   ,gtwiz_userclk_rx_active_out        => gtwiz_userclk_rx_active_int
-  --   ,gtwiz_reset_clk_freerun_in         => hb_gtwiz_reset_clk_freerun_buf_int
-  --   ,gtwiz_reset_all_in                 => hb_gtwiz_reset_all_int
-  --   ,gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_int
-  --   ,gtwiz_reset_tx_datapath_in         => gtwiz_reset_tx_datapath_int
-  --   ,gtwiz_reset_rx_pll_and_datapath_in => hb_gtwiz_reset_rx_pll_and_datapath_int
-  --   ,gtwiz_reset_rx_datapath_in         => hb_gtwiz_reset_rx_datapath_int
-  --   ,gtwiz_reset_rx_cdr_stable_out      => gtwiz_reset_rx_cdr_stable_int
-  --   ,gtwiz_reset_tx_done_out            => gtwiz_reset_tx_done_int
-  --   ,gtwiz_reset_rx_done_out            => gtwiz_reset_rx_done_int
-  --   ,gtwiz_userdata_tx_in               => gtwiz_userdata_tx_int
-  --   ,gtwiz_userdata_rx_out              => gtwiz_userdata_rx_int
-  --   ,gtrefclk00_in                      => gtrefclk00_int
-  --   ,qpll0outclk_out                    => qpll0outclk_int
-  --   ,qpll0outrefclk_out                 => qpll0outrefclk_int
-  --   ,drpaddr_in                         => drpaddr_int
-  --   ,drpclk_in                          => drpclk_int
-  --   ,drpdi_in                           => drpdi_int
-  --   ,drpen_in                           => drpen_int
-  --   ,drpwe_in                           => drpwe_int
-  --   ,eyescanreset_in                    => eyescanreset_int
-  --   ,rx8b10ben_in                       => rx8b10ben_int
-  --   ,rxcommadeten_in                    => rxcommadeten_int
-  --   ,rxlpmen_in                         => rxlpmen_int
-  --   ,rxmcommaalignen_in                 => rxmcommaalignen_int
-  --   ,rxpcommaalignen_in                 => rxpcommaalignen_int
-  --   ,rxrate_in                          => rxrate_int
-  --   ,tx8b10ben_in                       => tx8b10ben_int
-  --   ,txctrl0_in                         => txctrl0_int
-  --   ,txctrl1_in                         => txctrl1_int
-  --   ,txctrl2_in                         => txctrl2_int
-  --   ,txdiffctrl_in                      => txdiffctrl_int
-  --   ,txpostcursor_in                    => txpostcursor_int
-  --   ,txprecursor_in                     => txprecursor_int
-  --   ,drpdo_out                          => drpdo_int
-  --   ,drprdy_out                         => drprdy_int
-  --   ,gtpowergood_out                    => gtpowergood_int
-  --   ,rxbyteisaligned_out                => rxbyteisaligned_int
-  --   ,rxbyterealign_out                  => rxbyterealign_int
-  --   ,rxcommadet_out                     => rxcommadet_int
-  --   ,rxctrl0_out                        => rxctrl0_int
-  --   ,rxctrl1_out                        => rxctrl1_int
-  --   ,rxctrl2_out                        => rxctrl2_int
-  --   ,rxctrl3_out                        => rxctrl3_int
-  --   ,rxpmaresetdone_out                 => rxpmaresetdone_int
-  --   ,txpmaresetdone_out                 => txpmaresetdone_int
-  --    );
+  ddu_txdata1 <= txdata_ddu_prbs_int;
+  ddu_txdata2 <= txdata_ddu_prbs_int;
+  ddu_txdata3 <= txdata_ddu_cntr_int;
+  ddu_txdata4 <= txdata_ddu_cntr_int;
+  ddu_txd_valid <= txd_valid_ddu_int;
+
+  -- PRBS generation
+  prbs_stimulus_ddu_inst : gtwiz_prbs_any
+    generic map (
+      CHK_MODE    => 0,
+      INV_PATTERN => 1,
+      POLY_LENGHT => 31,
+      POLY_TAP    => 28,
+      NBITS       => DDUTXDWIDTH
+      )
+    port map (
+      RST      => prbsgen_reset_vio_int,
+      CLK      => usrclk_ddu_tx,
+      DATA_IN  => (others => '0'),
+      EN       => '1',
+      DATA_OUT => txdata_ddu_prbs_int
+      );
+
+  txdata_ddu_gen_inst : process (usrclk_ddu_tx)
+  begin
+    if (rising_edge(usrclk_ddu_tx)) then
+      if (prbsgen_reset_vio_int = '1') then
+        txd_valid_ddu_int <= x"0";
+        txdata_ddu_cntr_int <= (others => '0');
+        txd_ddu_init_ctr <= x"0000";
+      else
+        if (txd_ddu_init_ctr < 100 or ddu_rxready = '0') then
+          txdata_ddu_cntr_int <= (others => '0');
+          txd_valid_ddu_int <= x"0";
+          txd_ddu_init_ctr <= txd_ddu_init_ctr + 1;
+        else
+          -- txdata_ddu_cntr_int <= x"503C" & std_logic_vector(txd_ddu_gen_ctr);
+          txdata_ddu_cntr_int(15 downto 0) <= std_logic_vector(txd_ddu_gen_ctr);
+          txd_valid_ddu_int <= (others => txd_valid_vio_int);
+        end if;
+        txd_ddu_gen_ctr <= txd_ddu_gen_ctr + 1;
+      end if;
+    end if;
+  end process;
+
+  rxdata_errcounting_ddu : process (usrclk_ddu_rx)
+  begin
+    if (rising_edge(usrclk_ddu_rx)) then
+      if (rxdata_errctr_reset_vio_int = '1') then
+        for I in 1 to DDU_NRXLINK loop
+          ddu_rxdata_cntr(I).nmlcntr <= (others => '0');
+          ddu_rxdata_cntr(I).errcntr <= (others => '0');
+        end loop;
+      elsif (ddu_rxready = '1') then
+        for I in 1 to DDU_NRXLINK loop
+          ddu_rxdata_cntr(I).nmlcntr <= ddu_rxdata_cntr(I).nmlcntr + 1;
+          if (prbs_match_ddu(I) = '0') then
+            ddu_rxdata_cntr(I).errcntr <= ddu_rxdata_cntr(I).errcntr + 1;
+          end if;
+        end loop;
+      end if;
+    end if;
+  end process;
+
+  u_ddu_gth : mgt_ddu
+    generic map (
+      NCHANNL     => 4,            -- number of (firmware) channels (max of TX/RX links)
+      NRXLINK     => DDU_NRXLINK,  -- number of (physical) RX links
+      NTXLINK     => DDU_NTXLINK,  -- number of (physical) TX links
+      TXDATAWIDTH => DDUTXDWIDTH,  -- transmitter user data width
+      RXDATAWIDTH => DDURXDWIDTH   -- receiver user data width
+      )
+    port map (
+      mgtrefclk    => mgtrefclk0_x0y3_int,
+      txusrclk     => usrclk_ddu_tx,
+      rxusrclk     => usrclk_ddu_rx,
+      sysclk       => sysclk80,
+      daq_tx_n     => DAQ_TX_N,
+      daq_tx_p     => DAQ_TX_P,
+      bck_rx_n     => BCK_PRS_N,
+      bck_rx_p     => BCK_PRS_P,
+      b04_rx_n     => B04_RX_N,
+      b04_rx_p     => B04_RX_P,
+      txdata_ch0   => ddu_txdata1,
+      txdata_ch1   => ddu_txdata2,
+      txdata_ch2   => ddu_txdata3,
+      txdata_ch3   => ddu_txdata4,
+      txd_valid    => ddu_txd_valid,
+      rxdata_ch0   => ddu_rxdata1,
+      rxdata_ch1   => ddu_rxdata2,
+      rxdata_ch2   => ddu_rxdata3,
+      rxdata_ch3   => ddu_rxdata4,
+      rxd_valid    => ddu_rxd_valid,
+      bad_rx       => ddu_bad_rx,
+      rxready      => ddu_rxready,
+      txready      => ddu_txready,
+      prbs_type    => ddu_prbs_type,
+      prbs_rx_en   => ddu_prbs_rx_en,
+      prbs_tst_cnt => ddu_prbs_tst_cnt,
+      prbs_err_cnt => ddu_prbs_err_cnt,
+      reset        => ddu_reset
+      );
+
+  -- ILA and VIO for debugging
+  mgt_ddu_vio_inst : gtwiz_kcu_sfp_vio_0
+    port map (
+      clk => sysclk80,
+      probe_in0 => ddu_rxready,
+      probe_in1 => ddu_txready,
+      probe_in2 => '0',
+      probe_in3 => prbs_match_ddu,
+      probe_in4 => ddu_rxd_valid(2 downto 1),
+      probe_in5 => ddu_bad_rx(2 downto 1),
+      probe_in6 => "00",
+      probe_in7 => '0',
+      probe_in8 => '0',
+      probe_in9 => '0',
+      probe_out0 => open,
+      probe_out1 => open,
+      probe_out2 => open,
+      probe_out3 => ddu_reset,
+      probe_out4 => txd_valid_vio_int,
+      probe_out5 => prbsgen_reset_vio_int,
+      probe_out6 => open
+      );
 
 
 end Behavioral;

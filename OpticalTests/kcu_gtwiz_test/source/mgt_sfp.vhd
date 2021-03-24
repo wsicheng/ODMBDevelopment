@@ -14,55 +14,55 @@ use UNISIM.VComponents.all;
 use ieee.std_logic_misc.all;
 
 entity mgt_sfp is
-generic (
-  NLINK : integer range 1 to 20 := 2  -- number of links
-);
-port (
-  -- Clocks
-  mgtrefclk       : in  std_logic; -- buffer'ed reference clock signal
-  txusrclk        : out std_logic; -- USRCLK for TX data preparation
-  rxusrclk        : out std_logic; -- USRCLK for RX data readout
-  sysclk          : in  std_logic; -- clock for the helper block, 80 MHz
+  generic (
+    NLINK : integer range 1 to 20 := 2  -- number of links
+    );
+  port (
+    -- Clocks
+    mgtrefclk       : in  std_logic; -- buffer'ed reference clock signal
+    txusrclk        : out std_logic; -- USRCLK for TX data preparation
+    rxusrclk        : out std_logic; -- USRCLK for RX data readout
+    sysclk          : in  std_logic; -- clock for the helper block, 80 MHz
 
-  -- Serial data ports for transceiver at bank 226
-  sfp_ch0_rx_n    : in  std_logic;
-  sfp_ch0_rx_p    : in  std_logic;
-  sfp_ch0_tx_n    : out std_logic;
-  sfp_ch0_tx_p    : out std_logic;
+    -- Serial data ports for transceiver at bank 226
+    sfp_ch0_rx_n    : in  std_logic;
+    sfp_ch0_rx_p    : in  std_logic;
+    sfp_ch0_tx_n    : out std_logic;
+    sfp_ch0_tx_p    : out std_logic;
 
-  sfp_ch1_rx_n    : in  std_logic;
-  sfp_ch1_rx_p    : in  std_logic;
-  sfp_ch1_tx_n    : out std_logic;
-  sfp_ch1_tx_p    : out std_logic;
+    sfp_ch1_rx_n    : in  std_logic;
+    sfp_ch1_rx_p    : in  std_logic;
+    sfp_ch1_tx_n    : out std_logic;
+    sfp_ch1_tx_p    : out std_logic;
 
-  -- Clock active signals
-  txready         : out std_logic; -- Flag for tx reset done
-  rxready         : out std_logic; -- Flag for rx reset done
+    -- Clock active signals
+    txready         : out std_logic; -- Flag for tx reset done
+    rxready         : out std_logic; -- Flag for rx reset done
 
-  -- Transmitter signals
-  txdata_ch0      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
-  txdata_ch1      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
-  txdata_valid    : in std_logic_vector(NLINK-1 downto 0);   -- Flag for valid data;
-  txdiffctrl_ch0  : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
-  txdiffctrl_ch1  : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
-  loopback        : in std_logic_vector(2 downto 0);   -- For internal loopback tests
+    -- Transmitter signals
+    txdata_ch0      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
+    txdata_ch1      : in std_logic_vector(31 downto 0);  -- Data to be transmitted
+    txdata_valid    : in std_logic_vector(NLINK-1 downto 0);   -- Flag for valid data;
+    txdiffctrl_ch0  : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
+    txdiffctrl_ch1  : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
+    loopback        : in std_logic_vector(2 downto 0);   -- For internal loopback tests
 
-  -- Receiver signals
-  rxdata_ch0      : out std_logic_vector(31 downto 0);  -- Data received
-  rxdata_ch1      : out std_logic_vector(31 downto 0);  -- Data received
-  rxdata_valid    : out std_logic_vector(1 downto 0);   -- Flag for valid data;
-  bad_rx          : out std_logic_vector(1 downto 0);   -- Flag for fiber errors;
+    -- Receiver signals
+    rxdata_ch0      : out std_logic_vector(31 downto 0);  -- Data received
+    rxdata_ch1      : out std_logic_vector(31 downto 0);  -- Data received
+    rxdata_valid    : out std_logic_vector(1 downto 0);   -- Flag for valid data;
+    bad_rx          : out std_logic_vector(1 downto 0);   -- Flag for fiber errors;
 
-  -- PRBS signals
-  prbs_type       : in  std_logic_vector(3 downto 0);
-  prbs_tx_en      : in  std_logic_vector(1 downto 0);
-  prbs_rx_en      : in  std_logic_vector(1 downto 0);
-  prbs_en_tst_cnt : in  std_logic_vector(15 downto 0);
-  prbs_err_cnt    : out std_logic_vector(15 downto 0);
+    -- PRBS signals
+    prbs_type       : in  std_logic_vector(3 downto 0);
+    prbs_tx_en      : in  std_logic_vector(1 downto 0);
+    prbs_rx_en      : in  std_logic_vector(1 downto 0);
+    prbs_en_tst_cnt : in  std_logic_vector(15 downto 0);
+    prbs_err_cnt    : out std_logic_vector(15 downto 0);
 
-  -- Clock for the gtwizard system
-  reset           : in  std_logic
-  );
+    -- Clock for the gtwizard system
+    reset           : in  std_logic
+    );
 end mgt_sfp;
 
 architecture Behavioral of mgt_sfp is
@@ -72,176 +72,177 @@ architecture Behavioral of mgt_sfp is
   --------------------------------------------------------------------------
 
   component gtwiz_kcu_sfp_example_wrapper is
-  port (
-    gthrxn_in : in std_logic_vector(1 downto 0);
-    gthrxp_in : in std_logic_vector(1 downto 0);
-    gthtxn_out : out std_logic_vector(1 downto 0);
-    gthtxp_out : out std_logic_vector(1 downto 0);
-    gtwiz_userclk_tx_reset_in : in std_logic;
-    gtwiz_userclk_tx_srcclk_out : out std_logic;
-    gtwiz_userclk_tx_usrclk_out : out std_logic;
-    gtwiz_userclk_tx_usrclk2_out : out std_logic;
-    gtwiz_userclk_tx_active_out : out std_logic;
-    gtwiz_userclk_rx_reset_in : in std_logic;
-    gtwiz_userclk_rx_srcclk_out : out std_logic;
-    gtwiz_userclk_rx_usrclk_out : out std_logic;
-    gtwiz_userclk_rx_usrclk2_out : out std_logic;
-    gtwiz_userclk_rx_active_out : out std_logic;
-    gtwiz_reset_clk_freerun_in : in std_logic;
-    gtwiz_reset_all_in : in std_logic;
-    gtwiz_reset_tx_pll_and_datapath_in : in std_logic;
-    gtwiz_reset_tx_datapath_in : in std_logic;
-    gtwiz_reset_rx_pll_and_datapath_in : in std_logic;
-    gtwiz_reset_rx_datapath_in : in std_logic;
-    gtwiz_reset_rx_cdr_stable_out : out std_logic;
-    gtwiz_reset_tx_done_out : out std_logic;
-    gtwiz_reset_rx_done_out : out std_logic;
-    gtwiz_userdata_tx_in : in std_logic_vector(63 downto 0);
-    gtwiz_userdata_rx_out : out std_logic_vector(63 downto 0);
-    gtrefclk00_in : in std_logic;
-    qpll0outclk_out : out std_logic;
-    qpll0outrefclk_out : out std_logic;
-    drpaddr_in : in std_logic_vector(17 downto 0);
-    drpclk_in : in std_logic_vector(1 downto 0);
-    drpdi_in : in std_logic_vector(31 downto 0);
-    drpen_in : in std_logic_vector(1 downto 0);
-    drpwe_in : in std_logic_vector(1 downto 0);
-    eyescanreset_in : in std_logic_vector(1 downto 0);
-    loopback_in : in std_logic_vector(5 downto 0);
-    rx8b10ben_in : in std_logic_vector(1 downto 0);
-    rxcommadeten_in : in std_logic_vector(1 downto 0);
-    rxmcommaalignen_in : in std_logic_vector(1 downto 0);
-    rxpcommaalignen_in : in std_logic_vector(1 downto 0);
-    rxlpmen_in : in std_logic_vector(1 downto 0);
-    rxrate_in : in std_logic_vector(5 downto 0);
-    tx8b10ben_in : in std_logic_vector(1 downto 0);
-    txctrl0_in : in std_logic_vector(31 downto 0);
-    txctrl1_in : in std_logic_vector(31 downto 0);
-    txctrl2_in : in std_logic_vector(15 downto 0);
-    txdiffctrl_in : in std_logic_vector(7 downto 0);
-    txpostcursor_in : in std_logic_vector(9 downto 0);
-    txprecursor_in : in std_logic_vector(9 downto 0);
-    drpdo_out : out std_logic_vector(31 downto 0);
-    drprdy_out : out std_logic_vector(1 downto 0);
-    gtpowergood_out : out std_logic_vector(1 downto 0);
-    rxbyteisaligned_out : out std_logic_vector(1 downto 0);
-    rxbyterealign_out : out std_logic_vector(1 downto 0);
-    rxcommadet_out : out std_logic_vector(1 downto 0);
-    rxctrl0_out : out std_logic_vector(31 downto 0);
-    rxctrl1_out : out std_logic_vector(31 downto 0);
-    rxctrl2_out : out std_logic_vector(15 downto 0);
-    rxctrl3_out : out std_logic_vector(15 downto 0);
-    rxpmaresetdone_out : out std_logic_vector(1 downto 0);
-    txpmaresetdone_out : out std_logic_vector(1 downto 0);
-    rxprbscntreset_in : in std_logic_vector(1 downto 0);
-    rxprbssel_in : in std_logic_vector(7 downto 0);
-    rxprbserr_out : out std_logic_vector(1 downto 0);
-    rxprbslocked_out : out std_logic_vector(1 downto 0);
-    txprbsforceerr_in : in std_logic_vector(1 downto 0);
-    txprbssel_in : in std_logic_vector(7 downto 0)
-  );
+    port (
+      gthrxn_in : in std_logic_vector(1 downto 0);
+      gthrxp_in : in std_logic_vector(1 downto 0);
+      gthtxn_out : out std_logic_vector(1 downto 0);
+      gthtxp_out : out std_logic_vector(1 downto 0);
+      gtwiz_userclk_tx_reset_in : in std_logic;
+      gtwiz_userclk_tx_srcclk_out : out std_logic;
+      gtwiz_userclk_tx_usrclk_out : out std_logic;
+      gtwiz_userclk_tx_usrclk2_out : out std_logic;
+      gtwiz_userclk_tx_active_out : out std_logic;
+      gtwiz_userclk_rx_reset_in : in std_logic;
+      gtwiz_userclk_rx_srcclk_out : out std_logic;
+      gtwiz_userclk_rx_usrclk_out : out std_logic;
+      gtwiz_userclk_rx_usrclk2_out : out std_logic;
+      gtwiz_userclk_rx_active_out : out std_logic;
+      gtwiz_reset_clk_freerun_in : in std_logic;
+      gtwiz_reset_all_in : in std_logic;
+      gtwiz_reset_tx_pll_and_datapath_in : in std_logic;
+      gtwiz_reset_tx_datapath_in : in std_logic;
+      gtwiz_reset_rx_pll_and_datapath_in : in std_logic;
+      gtwiz_reset_rx_datapath_in : in std_logic;
+      gtwiz_reset_rx_cdr_stable_out : out std_logic;
+      gtwiz_reset_tx_done_out : out std_logic;
+      gtwiz_reset_rx_done_out : out std_logic;
+      gtwiz_userdata_tx_in : in std_logic_vector(63 downto 0);
+      gtwiz_userdata_rx_out : out std_logic_vector(63 downto 0);
+      gtrefclk00_in : in std_logic;
+      qpll0outclk_out : out std_logic;
+      qpll0outrefclk_out : out std_logic;
+      drpaddr_in : in std_logic_vector(17 downto 0);
+      drpclk_in : in std_logic_vector(1 downto 0);
+      drpdi_in : in std_logic_vector(31 downto 0);
+      drpen_in : in std_logic_vector(1 downto 0);
+      drpwe_in : in std_logic_vector(1 downto 0);
+      eyescanreset_in : in std_logic_vector(1 downto 0);
+      loopback_in : in std_logic_vector(5 downto 0);
+      rx8b10ben_in : in std_logic_vector(1 downto 0);
+      rxcommadeten_in : in std_logic_vector(1 downto 0);
+      rxmcommaalignen_in : in std_logic_vector(1 downto 0);
+      rxpcommaalignen_in : in std_logic_vector(1 downto 0);
+      rxlpmen_in : in std_logic_vector(1 downto 0);
+      rxrate_in : in std_logic_vector(5 downto 0);
+      tx8b10ben_in : in std_logic_vector(1 downto 0);
+      txctrl0_in : in std_logic_vector(31 downto 0);
+      txctrl1_in : in std_logic_vector(31 downto 0);
+      txctrl2_in : in std_logic_vector(15 downto 0);
+      txdiffctrl_in : in std_logic_vector(7 downto 0);
+      txpd_in : in std_logic_vector(3 downto 0);
+      txpostcursor_in : in std_logic_vector(9 downto 0);
+      txprecursor_in : in std_logic_vector(9 downto 0);
+      drpdo_out : out std_logic_vector(31 downto 0);
+      drprdy_out : out std_logic_vector(1 downto 0);
+      gtpowergood_out : out std_logic_vector(1 downto 0);
+      rxbyteisaligned_out : out std_logic_vector(1 downto 0);
+      rxbyterealign_out : out std_logic_vector(1 downto 0);
+      rxcommadet_out : out std_logic_vector(1 downto 0);
+      rxctrl0_out : out std_logic_vector(31 downto 0);
+      rxctrl1_out : out std_logic_vector(31 downto 0);
+      rxctrl2_out : out std_logic_vector(15 downto 0);
+      rxctrl3_out : out std_logic_vector(15 downto 0);
+      rxpmaresetdone_out : out std_logic_vector(1 downto 0);
+      txpmaresetdone_out : out std_logic_vector(1 downto 0);
+      rxprbscntreset_in : in std_logic_vector(1 downto 0);
+      rxprbssel_in : in std_logic_vector(7 downto 0);
+      rxprbserr_out : out std_logic_vector(1 downto 0);
+      rxprbslocked_out : out std_logic_vector(1 downto 0);
+      txprbsforceerr_in : in std_logic_vector(1 downto 0);
+      txprbssel_in : in std_logic_vector(7 downto 0)
+      );
   end component;
 
   component gtwiz_kcu_sfp_in_system_ibert is
-  port (
-    drpclk_o : out std_logic_vector (1 downto 0);
-    gt0_drpen_o : out std_logic_vector (0 to 0);
-    gt0_drpwe_o : out std_logic_vector (0 to 0);
-    gt0_drpaddr_o : out std_logic_vector (8 downto 0);
-    gt0_drpdi_o : out std_logic_vector (15 downto 0);
-    gt0_drprdy_i : in std_logic_vector (0 to 0);
-    gt0_drpdo_i : in std_logic_vector (15 downto 0);
-    gt1_drpen_o : out std_logic_vector (0 to 0);
-    gt1_drpwe_o : out std_logic_vector (0 to 0);
-    gt1_drpaddr_o : out std_logic_vector (8 downto 0);
-    gt1_drpdi_o : out std_logic_vector (15 downto 0);
-    gt1_drprdy_i : in std_logic_vector (0 to 0);
-    gt1_drpdo_i : in std_logic_vector (15 downto 0);
-    eyescanreset_o : out std_logic_vector (1 downto 0);
-    rxrate_o : out std_logic_vector (5 downto 0);
-    txdiffctrl_o : out std_logic_vector (7 downto 0);
-    txprecursor_o : out std_logic_vector (9 downto 0);
-    txpostcursor_o : out std_logic_vector (9 downto 0);
-    rxlpmen_o : out std_logic_vector (1 downto 0);
-    rxrate_i : in std_logic_vector (5 downto 0);
-    txdiffctrl_i : in std_logic_vector (7 downto 0);
-    txprecursor_i : in std_logic_vector (9 downto 0);
-    txpostcursor_i : in std_logic_vector (9 downto 0);
-    rxlpmen_i : in std_logic_vector (1 downto 0);
-    drpclk_i : in std_logic_vector (1 downto 0);
-    rxoutclk_i : in std_logic_vector (1 downto 0);
-    clk : in std_logic
-  );
+    port (
+      drpclk_o : out std_logic_vector (1 downto 0);
+      gt0_drpen_o : out std_logic_vector (0 to 0);
+      gt0_drpwe_o : out std_logic_vector (0 to 0);
+      gt0_drpaddr_o : out std_logic_vector (8 downto 0);
+      gt0_drpdi_o : out std_logic_vector (15 downto 0);
+      gt0_drprdy_i : in std_logic_vector (0 to 0);
+      gt0_drpdo_i : in std_logic_vector (15 downto 0);
+      gt1_drpen_o : out std_logic_vector (0 to 0);
+      gt1_drpwe_o : out std_logic_vector (0 to 0);
+      gt1_drpaddr_o : out std_logic_vector (8 downto 0);
+      gt1_drpdi_o : out std_logic_vector (15 downto 0);
+      gt1_drprdy_i : in std_logic_vector (0 to 0);
+      gt1_drpdo_i : in std_logic_vector (15 downto 0);
+      eyescanreset_o : out std_logic_vector (1 downto 0);
+      rxrate_o : out std_logic_vector (5 downto 0);
+      txdiffctrl_o : out std_logic_vector (7 downto 0);
+      txprecursor_o : out std_logic_vector (9 downto 0);
+      txpostcursor_o : out std_logic_vector (9 downto 0);
+      rxlpmen_o : out std_logic_vector (1 downto 0);
+      rxrate_i : in std_logic_vector (5 downto 0);
+      txdiffctrl_i : in std_logic_vector (7 downto 0);
+      txprecursor_i : in std_logic_vector (9 downto 0);
+      txpostcursor_i : in std_logic_vector (9 downto 0);
+      rxlpmen_i : in std_logic_vector (1 downto 0);
+      drpclk_i : in std_logic_vector (1 downto 0);
+      rxoutclk_i : in std_logic_vector (1 downto 0);
+      clk : in std_logic
+      );
   end component;
 
   component gtwiz_example_init is
-  port (
-    clk_freerun_in : in std_logic := '0';
-    reset_all_in : in std_logic := '0';
-    tx_init_done_in : in std_logic := '0';
-    rx_init_done_in : in std_logic := '0';
-    rx_data_good_in : in std_logic := '0';
-    reset_all_out : out std_logic := '0';
-    reset_rx_out : out std_logic := '0';
-    init_done_out : out std_logic := '0';
-    retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
-  );
+    port (
+      clk_freerun_in : in std_logic := '0';
+      reset_all_in : in std_logic := '0';
+      tx_init_done_in : in std_logic := '0';
+      rx_init_done_in : in std_logic := '0';
+      rx_data_good_in : in std_logic := '0';
+      reset_all_out : out std_logic := '0';
+      reset_rx_out : out std_logic := '0';
+      init_done_out : out std_logic := '0';
+      retry_ctr_out : out std_logic_vector(3 downto 0) := (others=> '0')
+      );
   end component;
 
   component clkwiz is
-  port (
-    clk_in1    : in  std_logic := '0';
-    -- clk_out160 : out std_logic := '0';
-    clk_out80  : out std_logic := '0';
-    clk_out40  : out std_logic := '0'
-  );
+    port (
+      clk_in1    : in  std_logic := '0';
+      -- clk_out160 : out std_logic := '0';
+      clk_out80  : out std_logic := '0';
+      clk_out40  : out std_logic := '0'
+      );
   end component;
 
   component ila is
-  port (
-    clk : in std_logic := '0';
-    probe0 : in std_logic_vector(191 downto 0) := (others=> '0')
-    -- probe1 : in std_logic_vector(15 downto 0) := (others=> '0')
-  );
+    port (
+      clk : in std_logic := '0';
+      probe0 : in std_logic_vector(191 downto 0) := (others=> '0')
+     -- probe1 : in std_logic_vector(15 downto 0) := (others=> '0')
+      );
   end component;
 
   component gtwiz_kcu_sfp_vio_0
-  port (
-    clk : in std_logic;
-    probe_in0 : in std_logic;
-    probe_in1 : in std_logic;
-    probe_in2 : in std_logic;
-    probe_in3 : in std_logic_vector(3 downto 0);
-    probe_in4 : in std_logic_vector(1 downto 0);
-    probe_in5 : in std_logic_vector(1 downto 0);
-    probe_in6 : in std_logic_vector(1 downto 0);
-    probe_in7 : in std_logic;
-    probe_in8 : in std_logic;
-    probe_in9 : in std_logic;
-    probe_out0 : out std_logic;
-    probe_out1 : out std_logic;
-    probe_out2 : out std_logic;
-    probe_out3 : out std_logic;
-    probe_out4 : out std_logic;
-    probe_out5 : out std_logic;
-    probe_out6 : out std_logic
-  );
+    port (
+      clk : in std_logic;
+      probe_in0 : in std_logic;
+      probe_in1 : in std_logic;
+      probe_in2 : in std_logic;
+      probe_in3 : in std_logic_vector(3 downto 0);
+      probe_in4 : in std_logic_vector(1 downto 0);
+      probe_in5 : in std_logic_vector(1 downto 0);
+      probe_in6 : in std_logic_vector(1 downto 0);
+      probe_in7 : in std_logic;
+      probe_in8 : in std_logic;
+      probe_in9 : in std_logic;
+      probe_out0 : out std_logic;
+      probe_out1 : out std_logic;
+      probe_out2 : out std_logic;
+      probe_out3 : out std_logic;
+      probe_out4 : out std_logic;
+      probe_out5 : out std_logic;
+      probe_out6 : out std_logic
+      );
   end component;
 
   component gtwiz_example_bit_synchronizer
-  port (
-    clk_in: in std_logic := '0';
-    i_in: in std_logic := '0';
-    o_out: out std_logic := '0'
-  );
+    port (
+      clk_in: in std_logic := '0';
+      i_in: in std_logic := '0';
+      o_out: out std_logic := '0'
+      );
   end component;
 
   component gtwiz_example_reset_synchronizer
-  port (
-    clk_in: in std_logic := '0';
-    rst_in: in std_logic := '0';
-    rst_out: out std_logic := '0'
-  );
+    port (
+      clk_in: in std_logic := '0';
+      rst_in: in std_logic := '0';
+      rst_out: out std_logic := '0'
+      );
   end component;
 
   constant IDLE : std_logic_vector(31 downto 0) := x"50BC503C"; -- IDLE word for DDU is 50BC
@@ -458,8 +459,8 @@ begin
 
   -- RXDATA is valid only when it's been deemed aligned, recognized 8B/10B pattern and does not contain a K-character.
   -- The RXVALID port is not explained in UG576, so it's not used.
-  RXDATA_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and ch0_codevalid = x"F" and ch0_rxchariscomma = x"0") else '0';
-  RXDATA_VALID(1) <= '1' when (rxready_int = '1' and bad_rx_int(1) = '0' and ch1_codevalid = x"F" and ch1_rxchariscomma = x"0") else '0';
+  RXDATA_VALID(0) <= '1' when (rxready_int = '1' and bad_rx_int(0) = '0' and and_reduce(ch0_codevalid) = '1' and or_reduce(ch0_rxchariscomma) = '0') else '0';
+  RXDATA_VALID(1) <= '1' when (rxready_int = '1' and bad_rx_int(1) = '0' and and_reduce(ch1_codevalid) = '1' and or_reduce(ch1_rxchariscomma) = '0') else '0';
 
   -- MGT reference clk
   gtrefclk00_int <= MGTREFCLK;
@@ -495,38 +496,38 @@ begin
   ---------------------------------------------------------------------------------------------------------------------
 
   gtwiz_kcu_sfp_in_system_ibert_inst : gtwiz_kcu_sfp_in_system_ibert
-  port map (
-    drpclk_o       => drpclk_int,
-    gt0_drpen_o    => drpen_int(0 downto 0),
-    gt0_drpwe_o    => drpwe_int(0 downto 0),
-    gt0_drpaddr_o  => drpaddr_int(8 downto 0),
-    gt0_drpdi_o    => drpdi_int(15 downto 0),
-    gt0_drprdy_i   => drprdy_int(0 downto 0),
-    gt0_drpdo_i    => drpdo_int(15 downto 0),
-    gt1_drpen_o    => drpen_int(1 downto 1),
-    gt1_drpwe_o    => drpwe_int(1 downto 1),
-    gt1_drpaddr_o  => drpaddr_int(17 downto 9),
-    gt1_drpdi_o    => drpdi_int(31 downto 16),
-    gt1_drprdy_i   => drprdy_int(1 downto 1),
-    gt1_drpdo_i    => drpdo_int(31 downto 16),
-    eyescanreset_o => eyescanreset_int,
-    rxrate_o       => rxrate_int,
-    txdiffctrl_o   => txdiffctrl_int,
-    txprecursor_o  => txprecursor_int,
-    txpostcursor_o => txpostcursor_int,
-    rxlpmen_o      => rxlpmen_int,
-    rxrate_i       => "000000",
-    txdiffctrl_i(3 downto 0) => txdiffctrl_ch0,
-    txdiffctrl_i(7 downto 4) => txdiffctrl_ch1,
-    txprecursor_i  => "0000000000",
-    txpostcursor_i => "0000000000",
-    rxlpmen_i      => "11",
-    rxoutclk_i(0)  => gtwiz_userclk_rx_usrclk2_int,
-    rxoutclk_i(1)  => gtwiz_userclk_rx_usrclk2_int,
-    drpclk_i(0)    => SYSCLK,
-    drpclk_i(1)    => SYSCLK,
-    clk            => SYSCLK
-  );
+    port map (
+      drpclk_o       => drpclk_int,
+      gt0_drpen_o    => drpen_int(0 downto 0),
+      gt0_drpwe_o    => drpwe_int(0 downto 0),
+      gt0_drpaddr_o  => drpaddr_int(8 downto 0),
+      gt0_drpdi_o    => drpdi_int(15 downto 0),
+      gt0_drprdy_i   => drprdy_int(0 downto 0),
+      gt0_drpdo_i    => drpdo_int(15 downto 0),
+      gt1_drpen_o    => drpen_int(1 downto 1),
+      gt1_drpwe_o    => drpwe_int(1 downto 1),
+      gt1_drpaddr_o  => drpaddr_int(17 downto 9),
+      gt1_drpdi_o    => drpdi_int(31 downto 16),
+      gt1_drprdy_i   => drprdy_int(1 downto 1),
+      gt1_drpdo_i    => drpdo_int(31 downto 16),
+      eyescanreset_o => eyescanreset_int,
+      rxrate_o       => rxrate_int,
+      txdiffctrl_o   => txdiffctrl_int,
+      txprecursor_o  => txprecursor_int,
+      txpostcursor_o => txpostcursor_int,
+      rxlpmen_o      => rxlpmen_int,
+      rxrate_i       => "000000",
+      txdiffctrl_i(3 downto 0) => txdiffctrl_ch0,
+      txdiffctrl_i(7 downto 4) => txdiffctrl_ch1,
+      txprecursor_i  => "0000000000",
+      txpostcursor_i => "0000000000",
+      rxlpmen_i      => "11",
+      rxoutclk_i(0)  => gtwiz_userclk_rx_usrclk2_int,
+      rxoutclk_i(1)  => gtwiz_userclk_rx_usrclk2_int,
+      drpclk_i(0)    => SYSCLK,
+      drpclk_i(1)    => SYSCLK,
+      clk            => SYSCLK
+      );
 
 
   ---------------------------------------------------------------------------------------------------------------------
@@ -554,74 +555,75 @@ begin
   -- EXAMPLE WRAPPER INSTANCE
   ---------------------------------------------------------------------------------------------------------------------
   gtwiz_kcu_sfp_inst : gtwiz_kcu_sfp_example_wrapper 
-  port map (
-    gthrxn_in                          => gthrxn_int,
-    gthrxp_in                          => gthrxp_int,
-    gthtxn_out                         => gthtxn_int,
-    gthtxp_out                         => gthtxp_int,
-    gtwiz_userclk_tx_reset_in          => gtwiz_userclk_tx_reset_int,
-    gtwiz_userclk_tx_srcclk_out        => gtwiz_userclk_tx_srcclk_int,
-    gtwiz_userclk_tx_usrclk_out        => gtwiz_userclk_tx_usrclk_int,
-    gtwiz_userclk_tx_usrclk2_out       => gtwiz_userclk_tx_usrclk2_int,
-    gtwiz_userclk_tx_active_out        => gtwiz_userclk_tx_active_int,
-    gtwiz_userclk_rx_reset_in          => gtwiz_userclk_rx_reset_int,
-    gtwiz_userclk_rx_srcclk_out        => gtwiz_userclk_rx_srcclk_int,
-    gtwiz_userclk_rx_usrclk_out        => gtwiz_userclk_rx_usrclk_int,
-    gtwiz_userclk_rx_usrclk2_out       => gtwiz_userclk_rx_usrclk2_int,
-    gtwiz_userclk_rx_active_out        => gtwiz_userclk_rx_active_int,
-    gtwiz_reset_clk_freerun_in         => SYSCLK,
-    gtwiz_reset_all_in                 => hb_gtwiz_reset_all_int,
-    gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_int,
-    gtwiz_reset_tx_datapath_in         => gtwiz_reset_tx_datapath_int,
-    gtwiz_reset_rx_pll_and_datapath_in => hb_gtwiz_reset_rx_pll_and_datapath_int,
-    gtwiz_reset_rx_datapath_in         => hb_gtwiz_reset_rx_datapath_int,
-    gtwiz_reset_rx_cdr_stable_out      => gtwiz_reset_rx_cdr_stable_int,
-    gtwiz_reset_tx_done_out            => gtwiz_reset_tx_done_int,
-    gtwiz_reset_rx_done_out            => gtwiz_reset_rx_done_int,
-    gtwiz_userdata_tx_in               => gtwiz_userdata_tx_int,
-    gtwiz_userdata_rx_out              => gtwiz_userdata_rx_int,
-    gtrefclk00_in                      => gtrefclk00_int,
-    qpll0outclk_out                    => qpll0outclk_int,
-    qpll0outrefclk_out                 => qpll0outrefclk_int,
-    drpaddr_in                         => drpaddr_int,
-    drpclk_in                          => drpclk_int,
-    drpdi_in                           => drpdi_int,
-    drpen_in                           => drpen_int,
-    drpwe_in                           => drpwe_int,
-    eyescanreset_in                    => eyescanreset_int,
-    loopback_in                        => loopback_int,
-    rx8b10ben_in                       => "11",
-    rxcommadeten_in                    => "11",
-    rxlpmen_in                         => rxlpmen_int,
-    rxmcommaalignen_in                 => "11",
-    rxpcommaalignen_in                 => "11",
-    rxrate_in                          => rxrate_int,
-    tx8b10ben_in                       => "11",
-    txctrl0_in                         => x"0000_0000", -- not used in 8b10b
-    txctrl1_in                         => x"0000_0000", -- not used in 8b10b
-    txctrl2_in                         => txctrl2_int,  -- indicate K-character
-    txdiffctrl_in                      => txdiffctrl_int,
-    txpostcursor_in                    => txpostcursor_int,
-    txprecursor_in                     => txprecursor_int,
-    drpdo_out                          => drpdo_int,
-    drprdy_out                         => drprdy_int,
-    gtpowergood_out                    => gtpowergood_int,
-    rxbyteisaligned_out                => rxbyteisaligned_int,
-    rxbyterealign_out                  => rxbyterealign_int,
-    rxcommadet_out                     => rxcommadet_int,
-    rxctrl0_out                        => rxctrl0_int,
-    rxctrl1_out                        => rxctrl1_int,
-    rxctrl2_out                        => rxctrl2_int,
-    rxctrl3_out                        => rxctrl3_int,
-    rxpmaresetdone_out                 => rxpmaresetdone_int,
-    txpmaresetdone_out                 => txpmaresetdone_int,
-    rxprbscntreset_in                  => rxprbscntreset_int,
-    rxprbssel_in                       => rxprbssel_int,
-    rxprbserr_out                      => rxprbserr_int,
-    rxprbslocked_out                   => rxprbslocked_int,
-    txprbsforceerr_in                  => txprbsforceerr_int,
-    txprbssel_in                       => txprbssel_int
-  );
+    port map (
+      gthrxn_in                          => gthrxn_int,
+      gthrxp_in                          => gthrxp_int,
+      gthtxn_out                         => gthtxn_int,
+      gthtxp_out                         => gthtxp_int,
+      gtwiz_userclk_tx_reset_in          => gtwiz_userclk_tx_reset_int,
+      gtwiz_userclk_tx_srcclk_out        => gtwiz_userclk_tx_srcclk_int,
+      gtwiz_userclk_tx_usrclk_out        => gtwiz_userclk_tx_usrclk_int,
+      gtwiz_userclk_tx_usrclk2_out       => gtwiz_userclk_tx_usrclk2_int,
+      gtwiz_userclk_tx_active_out        => gtwiz_userclk_tx_active_int,
+      gtwiz_userclk_rx_reset_in          => gtwiz_userclk_rx_reset_int,
+      gtwiz_userclk_rx_srcclk_out        => gtwiz_userclk_rx_srcclk_int,
+      gtwiz_userclk_rx_usrclk_out        => gtwiz_userclk_rx_usrclk_int,
+      gtwiz_userclk_rx_usrclk2_out       => gtwiz_userclk_rx_usrclk2_int,
+      gtwiz_userclk_rx_active_out        => gtwiz_userclk_rx_active_int,
+      gtwiz_reset_clk_freerun_in         => SYSCLK,
+      gtwiz_reset_all_in                 => hb_gtwiz_reset_all_int,
+      gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_int,
+      gtwiz_reset_tx_datapath_in         => gtwiz_reset_tx_datapath_int,
+      gtwiz_reset_rx_pll_and_datapath_in => hb_gtwiz_reset_rx_pll_and_datapath_int,
+      gtwiz_reset_rx_datapath_in         => hb_gtwiz_reset_rx_datapath_int,
+      gtwiz_reset_rx_cdr_stable_out      => gtwiz_reset_rx_cdr_stable_int,
+      gtwiz_reset_tx_done_out            => gtwiz_reset_tx_done_int,
+      gtwiz_reset_rx_done_out            => gtwiz_reset_rx_done_int,
+      gtwiz_userdata_tx_in               => gtwiz_userdata_tx_int,
+      gtwiz_userdata_rx_out              => gtwiz_userdata_rx_int,
+      gtrefclk00_in                      => gtrefclk00_int,
+      qpll0outclk_out                    => qpll0outclk_int,
+      qpll0outrefclk_out                 => qpll0outrefclk_int,
+      drpaddr_in                         => drpaddr_int,
+      drpclk_in                          => drpclk_int,
+      drpdi_in                           => drpdi_int,
+      drpen_in                           => drpen_int,
+      drpwe_in                           => drpwe_int,
+      eyescanreset_in                    => eyescanreset_int,
+      loopback_in                        => loopback_int,
+      rx8b10ben_in                       => "11",
+      rxcommadeten_in                    => "11",
+      rxlpmen_in                         => rxlpmen_int,
+      rxmcommaalignen_in                 => "11",
+      rxpcommaalignen_in                 => "11",
+      rxrate_in                          => rxrate_int,
+      tx8b10ben_in                       => "11",
+      txctrl0_in                         => x"0000_0000", -- not used in 8b10b
+      txctrl1_in                         => x"0000_0000", -- not used in 8b10b
+      txctrl2_in                         => txctrl2_int,  -- indicate K-character
+      txdiffctrl_in                      => txdiffctrl_int,
+      txpd_in                            => x"0",
+      txpostcursor_in                    => txpostcursor_int,
+      txprecursor_in                     => txprecursor_int,
+      drpdo_out                          => drpdo_int,
+      drprdy_out                         => drprdy_int,
+      gtpowergood_out                    => gtpowergood_int,
+      rxbyteisaligned_out                => rxbyteisaligned_int,
+      rxbyterealign_out                  => rxbyterealign_int,
+      rxcommadet_out                     => rxcommadet_int,
+      rxctrl0_out                        => rxctrl0_int,
+      rxctrl1_out                        => rxctrl1_int,
+      rxctrl2_out                        => rxctrl2_int,
+      rxctrl3_out                        => rxctrl3_int,
+      rxpmaresetdone_out                 => rxpmaresetdone_int,
+      txpmaresetdone_out                 => txpmaresetdone_int,
+      rxprbscntreset_in                  => rxprbscntreset_int,
+      rxprbssel_in                       => rxprbssel_int,
+      rxprbserr_out                      => rxprbserr_int,
+      rxprbslocked_out                   => rxprbslocked_int,
+      txprbsforceerr_in                  => txprbsforceerr_int,
+      txprbssel_in                       => txprbssel_int
+      );
 
 
   ---------------------------------------------------------------------------------------------------------------------
@@ -641,94 +643,94 @@ begin
   ila_data_rx(117 downto 116) <= rxcommadet_int;
 
   mgt_sfp_ila_inst : ila
-  port map(
-    clk => gtwiz_userclk_rx_usrclk2_int,
-    probe0 => ila_data_rx
-  );
+    port map(
+      clk => gtwiz_userclk_rx_usrclk2_int,
+      probe0 => ila_data_rx
+      );
 
 
   mgt_sfp_vio_inst : gtwiz_kcu_sfp_vio_0
-  port map (
-    clk => SYSCLK,
-    probe_in0 => '0',
-    probe_in1 => '0',
-    probe_in2 => '0',
-    probe_in3 => "0000",
-    probe_in4 => gtpowergood_vio_sync,
-    probe_in5 => txpmaresetdone_vio_sync,
-    probe_in6 => rxpmaresetdone_vio_sync,
-    probe_in7 => gtwiz_reset_tx_done_vio_sync,
-    probe_in8 => gtwiz_reset_rx_done_vio_sync,
-    probe_in9 => '0',
-    probe_out0 => open,
-    probe_out1 => hb0_gtwiz_reset_tx_pll_and_datapath_int,
-    probe_out2 => hb0_gtwiz_reset_tx_datapath_int,
-    probe_out3 => hb_gtwiz_reset_rx_pll_and_datapath_vio_int,
-    probe_out4 => hb_gtwiz_reset_rx_datapath_vio_int,
-    probe_out5 => open,
-    probe_out6 => open
-    );
+    port map (
+      clk => SYSCLK,
+      probe_in0 => '0',
+      probe_in1 => '0',
+      probe_in2 => '0',
+      probe_in3 => "0000",
+      probe_in4 => gtpowergood_vio_sync,
+      probe_in5 => txpmaresetdone_vio_sync,
+      probe_in6 => rxpmaresetdone_vio_sync,
+      probe_in7 => gtwiz_reset_tx_done_vio_sync,
+      probe_in8 => gtwiz_reset_rx_done_vio_sync,
+      probe_in9 => '0',
+      probe_out0 => open,
+      probe_out1 => hb0_gtwiz_reset_tx_pll_and_datapath_int,
+      probe_out2 => hb0_gtwiz_reset_tx_datapath_int,
+      probe_out3 => hb_gtwiz_reset_rx_pll_and_datapath_vio_int,
+      probe_out4 => hb_gtwiz_reset_rx_datapath_vio_int,
+      probe_out5 => open,
+      probe_out6 => open
+      );
 
   -- Synchronize gtpowergood into the free-running clock domain for VIO usage
   bit_synchronizer_vio_gtpowergood_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => gtpowergood_int(0),
-    o_out  => gtpowergood_vio_sync(0)
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => gtpowergood_int(0),
+      o_out  => gtpowergood_vio_sync(0)
+      );
 
   bit_synchronizer_vio_gtpowergood_1_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => gtpowergood_int(1),
-    o_out  => gtpowergood_vio_sync(1)
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => gtpowergood_int(1),
+      o_out  => gtpowergood_vio_sync(1)
+      );
 
   -- Synchronize txpmaresetdone into the free-running clock domain for VIO usage
   bit_synchronizer_vio_txpmaresetdone_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => txpmaresetdone_int(0),
-    o_out  => txpmaresetdone_vio_sync(0)
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => txpmaresetdone_int(0),
+      o_out  => txpmaresetdone_vio_sync(0)
+      );
 
   bit_synchronizer_vio_txpmaresetdone_1_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => txpmaresetdone_int(1),
-    o_out  => txpmaresetdone_vio_sync(1)
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => txpmaresetdone_int(1),
+      o_out  => txpmaresetdone_vio_sync(1)
+      );
 
   -- Synchronize rxpmaresetdone into the free-running clock domain for VIO usage
   bit_synchronizer_vio_rxpmaresetdone_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => rxpmaresetdone_int(0),
-    o_out  => rxpmaresetdone_vio_sync(0)
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => rxpmaresetdone_int(0),
+      o_out  => rxpmaresetdone_vio_sync(0)
+      );
 
   bit_synchronizer_vio_rxpmaresetdone_1_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => rxpmaresetdone_int(1),
-    o_out  => rxpmaresetdone_vio_sync(1)
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => rxpmaresetdone_int(1),
+      o_out  => rxpmaresetdone_vio_sync(1)
+      );
 
   -- Synchronize gtwiz_reset_tx_done into the free-running clock domain for VIO usage
   bit_synchronizer_vio_gtwiz_reset_tx_done_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => gtwiz_reset_tx_done_int,
-    o_out  => gtwiz_reset_tx_done_vio_sync
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => gtwiz_reset_tx_done_int,
+      o_out  => gtwiz_reset_tx_done_vio_sync
+      );
 
   -- Synchronize gtwiz_reset_rx_done into the free-running clock domain for VIO usage
   bit_synchronizer_vio_gtwiz_reset_rx_done_0_inst: gtwiz_example_bit_synchronizer
-  port map (
-    clk_in => SYSCLK,
-    i_in   => gtwiz_reset_rx_done_int,
-    o_out  => gtwiz_reset_rx_done_vio_sync
-  );
+    port map (
+      clk_in => SYSCLK,
+      i_in   => gtwiz_reset_rx_done_int,
+      o_out  => gtwiz_reset_rx_done_vio_sync
+      );
 
 
 end Behavioral;

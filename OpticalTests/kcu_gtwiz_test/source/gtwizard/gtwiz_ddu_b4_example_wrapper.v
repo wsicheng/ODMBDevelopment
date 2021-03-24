@@ -54,11 +54,11 @@
 // the core, connects them as appropriate, and maps enabled ports
 // =====================================================================================================================
 
-module gtwiz_kcu_sfp_example_wrapper (
-  input  wire [1:0] gthrxn_in
- ,input  wire [1:0] gthrxp_in
- ,output wire [1:0] gthtxn_out
- ,output wire [1:0] gthtxp_out
+module gtwiz_ddu_b4_example_wrapper (
+  input  wire [3:0] gthrxn_in
+ ,input  wire [3:0] gthrxp_in
+ ,output wire [3:0] gthtxn_out
+ ,output wire [3:0] gthtxp_out
  ,input  wire [0:0] gtwiz_userclk_tx_reset_in
  ,output wire [0:0] gtwiz_userclk_tx_srcclk_out
  ,output wire [0:0] gtwiz_userclk_tx_usrclk_out
@@ -81,47 +81,37 @@ module gtwiz_kcu_sfp_example_wrapper (
  ,input  wire [63:0] gtwiz_userdata_tx_in
  ,output wire [63:0] gtwiz_userdata_rx_out
  ,input  wire [0:0] gtrefclk00_in
+ ,input  wire [0:0] gtrefclk01_in
  ,output wire [0:0] qpll0outclk_out
  ,output wire [0:0] qpll0outrefclk_out
- ,input  wire [17:0] drpaddr_in
- ,input  wire [1:0] drpclk_in
- ,input  wire [31:0] drpdi_in
- ,input  wire [1:0] drpen_in
- ,input  wire [1:0] drpwe_in
- ,input  wire [1:0] eyescanreset_in
- ,input  wire [5:0] loopback_in
- ,input  wire [1:0] rx8b10ben_in
- ,input  wire [1:0] rxcommadeten_in
- ,input  wire [1:0] rxlpmen_in
- ,input  wire [1:0] rxmcommaalignen_in
- ,input  wire [1:0] rxpcommaalignen_in
- ,input  wire [1:0] rxprbscntreset_in
- ,input  wire [7:0] rxprbssel_in
- ,input  wire [5:0] rxrate_in
- ,input  wire [1:0] tx8b10ben_in
- ,input  wire [31:0] txctrl0_in
- ,input  wire [31:0] txctrl1_in
- ,input  wire [15:0] txctrl2_in
- ,input  wire [7:0] txdiffctrl_in
- ,input  wire [3:0] txpd_in
- ,input  wire [9:0] txpostcursor_in
- ,input  wire [1:0] txprbsforceerr_in
- ,input  wire [7:0] txprbssel_in
- ,input  wire [9:0] txprecursor_in
- ,output wire [31:0] drpdo_out
- ,output wire [1:0] drprdy_out
- ,output wire [1:0] gtpowergood_out
- ,output wire [1:0] rxbyteisaligned_out
- ,output wire [1:0] rxbyterealign_out
- ,output wire [1:0] rxcommadet_out
- ,output wire [31:0] rxctrl0_out
- ,output wire [31:0] rxctrl1_out
- ,output wire [15:0] rxctrl2_out
- ,output wire [15:0] rxctrl3_out
- ,output wire [1:0] rxpmaresetdone_out
- ,output wire [1:0] rxprbserr_out
- ,output wire [1:0] rxprbslocked_out
- ,output wire [1:0] txpmaresetdone_out
+ ,output wire [0:0] qpll1outclk_out
+ ,output wire [0:0] qpll1outrefclk_out
+ ,input  wire [3:0] rx8b10ben_in
+ ,input  wire [3:0] rxcommadeten_in
+ ,input  wire [3:0] rxmcommaalignen_in
+ ,input  wire [3:0] rxpcommaalignen_in
+ ,input  wire [7:0] rxpd_in
+ ,input  wire [3:0] rxprbscntreset_in
+ ,input  wire [15:0] rxprbssel_in
+ ,input  wire [3:0] tx8b10ben_in
+ ,input  wire [63:0] txctrl0_in
+ ,input  wire [63:0] txctrl1_in
+ ,input  wire [31:0] txctrl2_in
+ ,input  wire [7:0] txpd_in
+ ,input  wire [3:0] txprbsforceerr_in
+ ,input  wire [15:0] txprbssel_in
+ ,output wire [3:0] gtpowergood_out
+ ,output wire [3:0] rxbyteisaligned_out
+ ,output wire [3:0] rxbyterealign_out
+ ,output wire [3:0] rxcommadet_out
+ ,output wire [63:0] rxctrl0_out
+ ,output wire [63:0] rxctrl1_out
+ ,output wire [31:0] rxctrl2_out
+ ,output wire [31:0] rxctrl3_out
+ ,output wire [3:0] rxpmaresetdone_out
+ ,output wire [3:0] rxprbserr_out
+ ,output wire [3:0] rxprbslocked_out
+ ,output wire [3:0] txpmaresetdone_out
 );
 
 
@@ -130,10 +120,10 @@ module gtwiz_kcu_sfp_example_wrapper (
   // ===================================================================================================================
 
   // Declare and initialize local parameters and functions used for HDL generation
-  localparam [191:0] P_CHANNEL_ENABLE = 192'b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011000000000;
+  localparam [191:0] P_CHANNEL_ENABLE = 192'b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001111000000000000;
   `include "gtwiz_example_wrapper_functions.v"
-  localparam integer P_TX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(10);
-  localparam integer P_RX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(9);
+  localparam integer P_TX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(19);
+  localparam integer P_RX_MASTER_CH_PACKED_IDX = f_calc_pk_mc_idx(19);
 
 
   // ===================================================================================================================
@@ -147,9 +137,9 @@ module gtwiz_kcu_sfp_example_wrapper (
   // Transmitter user clocking network helper block
   // -------------------------------------------------------------------------------------------------------------------
 
-  wire [1:0] txusrclk_int;
-  wire [1:0] txusrclk2_int;
-  wire [1:0] txoutclk_int;
+  wire [3:0] txusrclk_int;
+  wire [3:0] txusrclk2_int;
+  wire [3:0] txoutclk_int;
 
   // Generate a single module instance which is driven by a clock source associated with the master transmitter channel,
   // and which drives TXUSRCLK and TXUSRCLK2 for all channels
@@ -158,7 +148,7 @@ module gtwiz_kcu_sfp_example_wrapper (
   assign gtwiz_userclk_tx_srcclk_out = txoutclk_int[P_TX_MASTER_CH_PACKED_IDX];
 
   // Instantiate a single instance of the transmitter user clocking network helper block
-  gtwiz_example_gtwiz_userclk_tx gtwiz_kcu_sfp_userclk_tx_inst (
+  gtwiz_example_gtwiz_userclk_tx gtwiz_userclk_tx_inst (
     .gtwiz_userclk_tx_srcclk_in   (gtwiz_userclk_tx_srcclk_out),
     .gtwiz_userclk_tx_reset_in    (gtwiz_userclk_tx_reset_in),
     .gtwiz_userclk_tx_usrclk_out  (gtwiz_userclk_tx_usrclk_out),
@@ -167,16 +157,16 @@ module gtwiz_kcu_sfp_example_wrapper (
   );
 
   // Drive TXUSRCLK and TXUSRCLK2 for all channels with the respective helper block outputs
-  assign txusrclk_int  = {2{gtwiz_userclk_tx_usrclk_out}};
-  assign txusrclk2_int = {2{gtwiz_userclk_tx_usrclk2_out}};
+  assign txusrclk_int  = {4{gtwiz_userclk_tx_usrclk_out}};
+  assign txusrclk2_int = {4{gtwiz_userclk_tx_usrclk2_out}};
 
   // -------------------------------------------------------------------------------------------------------------------
   // Receiver user clocking network helper block
   // -------------------------------------------------------------------------------------------------------------------
 
-  wire [1:0] rxusrclk_int;
-  wire [1:0] rxusrclk2_int;
-  wire [1:0] rxoutclk_int;
+  wire [3:0] rxusrclk_int;
+  wire [3:0] rxusrclk2_int;
+  wire [3:0] rxoutclk_int;
 
   // Generate a single module instance which is driven by a clock source associated with the master receiver channel,
   // and which drives RXUSRCLK and RXUSRCLK2 for all channels
@@ -185,7 +175,7 @@ module gtwiz_kcu_sfp_example_wrapper (
   assign gtwiz_userclk_rx_srcclk_out = rxoutclk_int[P_RX_MASTER_CH_PACKED_IDX];
 
   // Instantiate a single instance of the receiver user clocking network helper block
-  gtwiz_example_gtwiz_userclk_rx gtwiz_kcu_sfp_userclk_rx_inst (
+  gtwiz_example_gtwiz_userclk_rx gtwiz_userclk_rx_inst (
     .gtwiz_userclk_rx_srcclk_in   (gtwiz_userclk_rx_srcclk_out),
     .gtwiz_userclk_rx_reset_in    (gtwiz_userclk_rx_reset_in),
     .gtwiz_userclk_rx_usrclk_out  (gtwiz_userclk_rx_usrclk_out),
@@ -194,9 +184,9 @@ module gtwiz_kcu_sfp_example_wrapper (
   );
 
   // Drive RXUSRCLK and RXUSRCLK2 for all channels with the respective helper block outputs
-  assign rxusrclk_int  = {2{gtwiz_userclk_rx_usrclk_out}};
-  assign rxusrclk2_int = {2{gtwiz_userclk_rx_usrclk2_out}};
-  wire [1:0] gtpowergood_int;
+  assign rxusrclk_int  = {4{gtwiz_userclk_rx_usrclk_out}};
+  assign rxusrclk2_int = {4{gtwiz_userclk_rx_usrclk2_out}};
+  wire [3:0] gtpowergood_int;
 
   // Required assignment to expose the GTPOWERGOOD port per user request
   assign gtpowergood_out = gtpowergood_int;
@@ -205,19 +195,19 @@ module gtwiz_kcu_sfp_example_wrapper (
   // Assignments to expose data ports, or data control ports, per configuration requirement or user request
   // ----------------------------------------------------------------------------------------------------------------
 
-  wire [31:0] txctrl0_int;
+  wire [63:0] txctrl0_int;
 
   // Required assignment to expose the TXCTRL0 port per configuration requirement or user request
   assign txctrl0_int = txctrl0_in;
-  wire [31:0] txctrl1_int;
+  wire [63:0] txctrl1_int;
 
   // Required assignment to expose the TXCTRL1 port per configuration requirement or user request
   assign txctrl1_int = txctrl1_in;
-  wire [31:0] rxctrl0_int;
+  wire [63:0] rxctrl0_int;
 
   // Required assignment to expose the RXCTRL0 port per configuration requirement or user request
   assign rxctrl0_out = rxctrl0_int;
-  wire [31:0] rxctrl1_int;
+  wire [63:0] rxctrl1_int;
 
   // Required assignment to expose the RXCTRL1 port per configuration requirement or user request
   assign rxctrl1_out = rxctrl1_int;
@@ -228,7 +218,7 @@ module gtwiz_kcu_sfp_example_wrapper (
   // ===================================================================================================================
 
   // Instantiate the core, mapping its enabled ports to example design ports and helper blocks as appropriate
-  gtwiz_kcu_sfp gtwiz_kcu_sfp_inst (
+  mgt_kcu_b4 mgt_kcu_b4_inst (
     .gthrxn_in                               (gthrxn_in)
    ,.gthrxp_in                               (gthrxp_in)
    ,.gthtxn_out                              (gthtxn_out)
@@ -246,43 +236,30 @@ module gtwiz_kcu_sfp_example_wrapper (
    ,.gtwiz_reset_rx_done_out                 (gtwiz_reset_rx_done_out)
    ,.gtwiz_userdata_tx_in                    (gtwiz_userdata_tx_in)
    ,.gtwiz_userdata_rx_out                   (gtwiz_userdata_rx_out)
-   // ,.gtrefclk00_in                           (gtrefclk00_in)
-   // ,.qpll0outclk_out                         (qpll0outclk_out)
-   // ,.qpll0outrefclk_out                      (qpll0outrefclk_out)
-   ,.gtrefclk01_in                           (gtrefclk00_in)
-   ,.qpll1outclk_out                         (qpll0outclk_out)
-   ,.qpll1outrefclk_out                      (qpll0outrefclk_out)
-   ,.drpaddr_in                              (drpaddr_in)
-   ,.drpclk_in                               (drpclk_in)
-   ,.drpdi_in                                (drpdi_in)
-   ,.drpen_in                                (drpen_in)
-   ,.drpwe_in                                (drpwe_in)
-   ,.eyescanreset_in                         (eyescanreset_in)
-   ,.loopback_in                             (loopback_in)
+   ,.gtrefclk00_in                           (gtrefclk00_in)
+   ,.gtrefclk01_in                           (gtrefclk01_in)
+   ,.qpll0outclk_out                         (qpll0outclk_out)
+   ,.qpll0outrefclk_out                      (qpll0outrefclk_out)
+   ,.qpll1outclk_out                         (qpll1outclk_out)
+   ,.qpll1outrefclk_out                      (qpll1outrefclk_out)
    ,.rx8b10ben_in                            (rx8b10ben_in)
    ,.rxcommadeten_in                         (rxcommadeten_in)
-   ,.rxlpmen_in                              (rxlpmen_in)
    ,.rxmcommaalignen_in                      (rxmcommaalignen_in)
    ,.rxpcommaalignen_in                      (rxpcommaalignen_in)
+   ,.rxpd_in                                 (rxpd_in)
    ,.rxprbscntreset_in                       (rxprbscntreset_in)
    ,.rxprbssel_in                            (rxprbssel_in)
-   ,.rxrate_in                               (rxrate_in)
    ,.rxusrclk_in                             (rxusrclk_int)
    ,.rxusrclk2_in                            (rxusrclk2_int)
    ,.tx8b10ben_in                            (tx8b10ben_in)
    ,.txctrl0_in                              (txctrl0_int)
    ,.txctrl1_in                              (txctrl1_int)
    ,.txctrl2_in                              (txctrl2_in)
-   ,.txdiffctrl_in                           (txdiffctrl_in)
    ,.txpd_in                                 (txpd_in)
-   ,.txpostcursor_in                         (txpostcursor_in)
    ,.txprbsforceerr_in                       (txprbsforceerr_in)
    ,.txprbssel_in                            (txprbssel_in)
-   ,.txprecursor_in                          (txprecursor_in)
    ,.txusrclk_in                             (txusrclk_int)
    ,.txusrclk2_in                            (txusrclk2_int)
-   ,.drpdo_out                               (drpdo_out)
-   ,.drprdy_out                              (drprdy_out)
    ,.gtpowergood_out                         (gtpowergood_int)
    ,.rxbyteisaligned_out                     (rxbyteisaligned_out)
    ,.rxbyterealign_out                       (rxbyterealign_out)
