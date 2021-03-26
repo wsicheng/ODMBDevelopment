@@ -297,18 +297,21 @@ architecture odmb_inst of odmb7_dev_top is
       sysclk       : in  std_logic; -- clock for the helper block, 80 MHz
       daq_rx_n     : in  std_logic_vector(NLINK-1 downto 0);
       daq_rx_p     : in  std_logic_vector(NLINK-1 downto 0);
-      rxdata_ch1   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxdata_ch2   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxdata_ch3   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxdata_ch4   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxdata_ch5   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxdata_ch6   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxdata_ch7   : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxd_valid    : out std_logic_vector(NLINK-1 downto 0);   -- Flag for valid data;
-      bad_rx       : out std_logic_vector(NLINK-1 downto 0);   -- Flag for fiber errors;
-      rxready      : out std_logic; -- Flag for rx reset done
+      rxdata_feb1  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxdata_feb2  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxdata_feb3  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxdata_feb4  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxdata_feb5  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxdata_feb6  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxdata_feb7  : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
+      rxd_valid    : out std_logic_vector(NLINK downto 1);   -- Flag for valid data
+      crc_valid    : out std_logic_vector(NLINK downto 1);   -- Flag for valid CRC
+      bad_rx       : out std_logic_vector(NLINK downto 1);   -- Flag for fiber errors
+      rxready      : out std_logic;                          -- Flag for rx reset done
+      fifo_full    : in  std_logic_vector(NLINK downto 1);   -- Flag for FIFO full
+      fifo_afull   : in  std_logic_vector(NLINK downto 1);   -- Flag for FIFO almost full
       prbs_type    : in  std_logic_vector(3 downto 0);
-      prbs_rx_en   : in  std_logic_vector(NLINK-1 downto 0);
+      prbs_rx_en   : in  std_logic_vector(NLINK downto 1);
       prbs_tst_cnt : in  std_logic_vector(15 downto 0);
       prbs_err_cnt : out std_logic_vector(15 downto 0);
       reset        : in  std_logic
@@ -537,14 +540,19 @@ architecture odmb_inst of odmb7_dev_top is
   signal dcfeb5_data : std_logic_vector(15 downto 0);  -- Data received
   signal dcfeb6_data : std_logic_vector(15 downto 0);  -- Data received
   signal dcfeb7_data : std_logic_vector(15 downto 0);  -- Data received
-  signal mgtc_data_valid : std_logic_vector(7 downto 1);   -- Flag for valid data;
-  signal mgtc_bad_rx : std_logic_vector(7 downto 1);   -- Flag for fiber errors;
+  signal mgtc_rxd_valid : std_logic_vector(NCFEB downto 1);   -- Flag for valid data;
+  signal mgtc_crc_valid : std_logic_vector(NCFEB downto 1);   -- Flag for valid data;
+  signal mgtc_bad_rx : std_logic_vector(NCFEB downto 1);   -- Flag for fiber errors;
   signal mgtc_rxready : std_logic; -- Flag for rx reset done
   signal mgtc_prbs_type : std_logic_vector(3 downto 0);
-  signal mgtc_prbs_rx_en : std_logic_vector(7 downto 1);
+  signal mgtc_prbs_rx_en : std_logic_vector(NCFEB downto 1);
   signal mgtc_prbs_tst_cnt : std_logic_vector(15 downto 0);
   signal mgtc_prbs_err_cnt : std_logic_vector(15 downto 0);
   signal mgtc_reset : std_logic;
+
+  -- Place holder signals for dcfeb data FIFOs
+  signal dcfeb_data_fifo_full : std_logic_vector(NCFEB downto 1) := (others => '0');
+  signal dcfeb_data_fifo_afull : std_logic_vector(NCFEB downto 1) := (others => '0');
 
   --------------------------------------
   -- MGT signals for ALCT RX channels
@@ -704,16 +712,19 @@ begin
       sysclk       => clk_sysclk80,
       daq_rx_n     => DAQ_RX_N(6 downto 0),
       daq_rx_p     => DAQ_RX_P(6 downto 0),
-      rxdata_ch1   => dcfeb1_data,
-      rxdata_ch2   => dcfeb2_data,
-      rxdata_ch3   => dcfeb3_data,
-      rxdata_ch4   => dcfeb4_data,
-      rxdata_ch5   => dcfeb5_data,
-      rxdata_ch6   => dcfeb6_data,
-      rxdata_ch7   => dcfeb7_data,
-      rxd_valid    => mgtc_data_valid,
+      rxdata_feb1  => dcfeb1_data,
+      rxdata_feb2  => dcfeb2_data,
+      rxdata_feb3  => dcfeb3_data,
+      rxdata_feb4  => dcfeb4_data,
+      rxdata_feb5  => dcfeb5_data,
+      rxdata_feb6  => dcfeb6_data,
+      rxdata_feb7  => dcfeb7_data,
+      rxd_valid    => mgtc_rxd_valid,
+      crc_valid    => mgtc_crc_valid,
       bad_rx       => mgtc_bad_rx,
       rxready      => mgtc_rxready,
+      fifo_full    => dcfeb_data_fifo_full,
+      fifo_afull   => dcfeb_data_fifo_afull,
       prbs_type    => mgtc_prbs_type,
       prbs_rx_en   => mgtc_prbs_rx_en,
       prbs_tst_cnt => mgtc_prbs_tst_cnt,
@@ -822,7 +833,7 @@ begin
       rxdata_cfeb5   => dcfeb5_data,
       rxdata_cfeb6   => dcfeb6_data,
       rxdata_cfeb7   => dcfeb7_data,
-      rxd_valid_mgtc => mgtc_data_valid,
+      rxd_valid_mgtc => mgtc_rxd_valid,
       rxready_mgtc   => mgtc_rxready,
       usrclk_mgta    => usrclk_mgta,
       rxdata_alct    => alct_rxdata,

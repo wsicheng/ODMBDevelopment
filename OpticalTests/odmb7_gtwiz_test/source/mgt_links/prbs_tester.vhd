@@ -125,9 +125,6 @@ architecture Behavioral of prbs_tester is
       );
   end component;
 
-  signal txdata_ch : twobyte_array_ndev;
-  signal rxdata_ch : twobyte_array_ndev;
-
   signal txdata_spy_int : std_logic_vector(SPYDATAWIDTH-1 downto 0) := (others => '0');
   signal txd_valid_spy_int : std_logic;
   signal txdata_ddu_int : std_logic_vector(DDUTXDWIDTH-1 downto 0) := (others => '0');

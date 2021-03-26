@@ -17,7 +17,27 @@ package ucsb_types is
   type done_state_type is (DONE_IDLE, DONE_LOW, DONE_COUNTING);
   type done_state_array_type is array (NCFEB downto 1) of done_state_type;
 
-  -- For MGT data quality control
-  type twobyte_array_ndev is array (1 to NDEVICE) of std_logic_vector(15 downto 0);
+  -- type twobyte_array_ndev is array (1 to NDEVICE) of std_logic_vector(15 downto 0);
+
+  type t_mgt_16b_rxdata is record
+    rxdata          : std_logic_vector(15 downto 0);
+    rxd_valid       : std_logic;
+    crc_valid       : std_logic;
+    bad_rx          : std_logic;
+  end record;
+
+  type t_mgt_16b_rxconfig is record
+    fifo_full       : std_logic;
+    fifo_afull      : std_logic;
+    prbs_en         : std_logic;
+  end record;
+
+  type t_mgt_16b_rxdata_arr is array(integer range <>) of t_mgt_16b_rxdata;
+
+  type t_twobyte_arr is array (integer range <>) of std_logic_vector(15 downto 0);
+  type t_fourbyte_arr is array (integer range <>) of std_logic_vector(31 downto 0);
+  type t_eightbyte_arr is array (integer range <>) of std_logic_vector(63 downto 0);
+
+
 
 end ucsb_types;
