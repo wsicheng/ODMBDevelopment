@@ -47,7 +47,6 @@ entity gbt_bank is
     MGT_TXWORDCLK_o          : out std_logic_vector(1 to NUM_LINKS);    --! Tx Wordclock from the transceiver (could be used to clock the core with Clocking enable)
     MGT_RXWORDCLK_o          : out std_logic_vector(1 to NUM_LINKS);    --! Rx Wordclock from the transceiver (could be used to clock the core with Clocking enable)
     
-    ILACLK_i                 : in  std_logic;
     --================--
     -- GBT TX Control --
     --================--
@@ -90,6 +89,8 @@ entity gbt_bank is
     MGT_HEADERLOCKED_o       : out std_logic_vector(1 to NUM_LINKS);    --! Asserted when the header is locked
     MGT_RSTCNT_o             : out gbt_reg8_A(1 to NUM_LINKS);          --! Number of resets because of a wrong bitslip parity
     
+    ILA_DATA_o               : out std_logic_vector(83 downto 0);       --! Debug data for ILA pass on to higher level structures
+
     --========--
     -- Data   --
     --========--
@@ -98,7 +99,6 @@ entity gbt_bank is
     
     WB_TXDATA_i              : in  gbt_reg32_A(1 to NUM_LINKS);         --! (tx) Extra data (32bit) to replace the FEC when the WideBus encoding scheme is selected
     WB_RXDATA_o              : out gbt_reg32_A(1 to NUM_LINKS)          --! (rx) Extra data (32bit) replacing the FEC when the WideBus encoding scheme is selected
-    
     );
 end gbt_bank;
 
@@ -131,6 +131,8 @@ architecture structural of gbt_bank is
   signal gbt_rxgearboxready_s             : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxclkengearbox_s             : std_logic_vector(1 to NUM_LINKS);
   
+  -- Debug --
+  signal ila_data_mgt_s                   : std_logic_vector(71 downto 0);
   --=====================================================================================--
   
 --=================================================================================================--
@@ -187,7 +189,6 @@ begin                 --========####   Architecture Body   ####========--
       )
     port map (            
       MGT_REFCLK_i                 => MGT_CLK_i,
-      ILACLK_i                     => ILACLK_i,
       
       MGT_RXUSRCLK_o               => mgt_rxwordclk_s,
       MGT_TXUSRCLK_o               => mgt_txwordclk_s,
@@ -220,6 +221,8 @@ begin                 --========####   Architecture Body   ####========--
       MGT_USRWORD_i                => mgt_txword_s,
       MGT_USRWORD_o                => mgt_rxword_s,
       
+      ILA_DATA_o                   => ila_data_mgt_s,
+
       --=============================--
       -- Device specific connections --
       --=============================--
@@ -231,6 +234,8 @@ begin                 --========####   Architecture Body   ####========--
   MGT_TXWORDCLK_o  <= mgt_txwordclk_s;
   MGT_RXWORDCLK_o  <= mgt_rxwordclk_s;
   
+  ILA_DATA_o(71 downto 0) <= ila_data_mgt_s;
+
   --! Multi instantiation of the GBT Rx gearbox (from MGT word [20/40bit] to GBT word [120bit]) for each link of the bank
   gbt_rxgearbox_multilink_gen: for i in 1 to NUM_LINKS generate
     gbt_rxgearbox_inst: entity work.gbt_rx_gearbox

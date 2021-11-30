@@ -24,14 +24,13 @@ use work.vendor_specific_gbt_bank_package.all;
 --! high speed links (@4.8Gbps)
 entity mgt is
   generic (
-    NUM_LINKS                                      : integer := 1
+    NUM_LINKS                    : integer := 1
     );
   port (
     --=============--
     -- Clocks      --
     --=============--
     MGT_REFCLK_i                 : in  std_logic;
-    ILACLK_i                     : in  std_logic;
 
     MGT_RXUSRCLK_o               : out std_logic_vector(1 to NUM_LINKS);
     MGT_TXUSRCLK_o               : out std_logic_vector(1 to NUM_LINKS);
@@ -64,6 +63,8 @@ entity mgt is
     MGT_USRWORD_i                : in  word_mxnbit_A(1 to NUM_LINKS);
     MGT_USRWORD_o                : out word_mxnbit_A(1 to NUM_LINKS);
 
+    ILA_DATA_o                   : out std_logic_vector(71 downto 0);
+
     --=============================--
     -- Device specific connections --
     --=============================--
@@ -94,11 +95,11 @@ architecture structural of mgt is
   signal rx_reset_done                          : std_logic_vector(1 to NUM_LINKS);
   signal tx_reset_done                          : std_logic_vector(1 to NUM_LINKS);
 
-  signal rxResetDone_r3                         : std_logic_vector         (1 to NUM_LINKS);
-  signal txResetDone_r2                         : std_logic_vector         (1 to NUM_LINKS);
-  signal rxResetDone_r2                         : std_logic_vector         (1 to NUM_LINKS);
-  signal txResetDone_r                          : std_logic_vector         (1 to NUM_LINKS);
-  signal rxResetDone_r                          : std_logic_vector         (1 to NUM_LINKS);
+  signal rxResetDone_r3                         : std_logic_vector(1 to NUM_LINKS);
+  signal txResetDone_r2                         : std_logic_vector(1 to NUM_LINKS);
+  signal rxResetDone_r2                         : std_logic_vector(1 to NUM_LINKS);
+  signal txResetDone_r                          : std_logic_vector(1 to NUM_LINKS);
+  signal rxResetDone_r                          : std_logic_vector(1 to NUM_LINKS);
 
   signal rxfsm_reset_done                       : std_logic_vector(1 to NUM_LINKS);
   signal txfsm_reset_done                       : std_logic_vector(1 to NUM_LINKS);
@@ -198,19 +199,8 @@ architecture structural of mgt is
     );
   end component;
 
-  component ila_gbt_exde is
-    port (
-      clk: in std_logic;
-      probe0: in std_logic_vector(83 downto 0);
-      probe1: in std_logic_vector(115 downto 0);
-      probe2: in std_logic_vector(0 downto 0);
-      probe3: in std_logic_vector(0 downto 0)
-      );
-  end component;
-
   signal ila_data1 : std_logic_vector(83 downto 0);
-  signal ila_data2 : std_logic_vector(115 downto 0);
-  signal diag_bitslipctrl : std_logic_vector(31 downto 0);
+  signal ila_data_patser : std_logic_vector(7 downto 0);
 
 --=================================================================================================--
 begin                 --========####   Architecture Body   ####========--
@@ -454,6 +444,7 @@ begin                 --========####   Architecture Body   ####========--
         RX_HEADER_LOCKED_O  => rx_headerlocked_s(i),
         RX_HEADER_FLAG_O    => RX_HEADERFLAG_o(i),
         RX_BITSLIPISEVEN_o  => rx_bitslipIsEven_s(i),
+        ILA_DATA_o          => ila_data_patser,
 
         RX_WORD_I           => MGT_USRWORD_s(i)
         );
@@ -462,40 +453,31 @@ begin                 --========####   Architecture Body   ####========--
 
   end generate;
 
-  -- Temporary for debugging the rxclk problem
-  
-  ila_data1(0)  <= tx_reset_done(1);
-  ila_data1(1)  <= txfsm_reset_done(1);
-  ila_data1(2)  <= gtwiz_userclk_tx_active_int(1);
-  ila_data1(3)  <= gtwiz_buffbypass_tx_reset_in_s(1);
-  ila_data1(4)  <= MGT_TXRESET_i(1); 
-  ila_data1(5)  <= gtwiz_userclk_tx_reset_int(1);
-  ila_data1(6)  <= resetGtxTx_from_rxBitSlipControl(1);
-  ila_data1(7)  <= rx_reset_done(1);
-  ila_data1(8)  <= rxfsm_reset_done(1);
-  ila_data1(9)  <= gtwiz_userclk_rx_active_int(1);
-  ila_data1(10) <= gtwiz_buffbypass_rx_reset_in_s(1);
-  ila_data1(11) <= MGT_RXRESET_i(1); 
-  ila_data1(12) <= gtwiz_userclk_rx_reset_int(1);
-  ila_data1(13) <= resetGtxRx_from_rxBitSlipControl(1);
-  ila_data1(14) <= done_from_rxBitSlipControl(1);
-  ila_data1(15) <= ready_from_bitSlipCtrller(1);
-  ila_data1(16) <= rxBitSlip_to_gtx(1);
-  ila_data1(17) <= mgtRst_from_bitslipCtrl(1);
-  ila_data1(18) <= MGT_AUTORSTEn_i(1);
-  ila_data1(19) <= MGT_AUTORSTONEVEN_i(1);
-  ila_data1(20) <= rx_headerlocked_s(1);
-  ila_data1(21) <= rx_bitslipIsEven_s(1);
-
-  ila_mgt_inst : ila_gbt_exde
-    port map (
-      clk => ILACLK_i,         -- use tx clock that is known to be good.
-      probe0 => ila_data1,
-      probe1 => ila_data2,
-      probe2(0) => '0',
-      probe3(0) => '0'
-      );
-
+  -- For debugging the rxclk problem
+  ILA_DATA_o(0)  <= tx_reset_done(1);
+  ILA_DATA_o(1)  <= txfsm_reset_done(1);
+  ILA_DATA_o(2)  <= gtwiz_userclk_tx_active_int(1);
+  ILA_DATA_o(3)  <= gtwiz_buffbypass_tx_reset_in_s(1);
+  ILA_DATA_o(4)  <= MGT_TXRESET_i(1); 
+  ILA_DATA_o(5)  <= gtwiz_userclk_tx_reset_int(1);
+  ILA_DATA_o(6)  <= resetGtxTx_from_rxBitSlipControl(1);
+  ILA_DATA_o(7)  <= rx_reset_done(1);
+  ILA_DATA_o(8)  <= rxfsm_reset_done(1);
+  ILA_DATA_o(9)  <= gtwiz_userclk_rx_active_int(1);
+  ILA_DATA_o(10) <= gtwiz_buffbypass_rx_reset_in_s(1);
+  ILA_DATA_o(11) <= MGT_RXRESET_i(1); 
+  ILA_DATA_o(12) <= gtwiz_userclk_rx_reset_int(1);
+  ILA_DATA_o(13) <= resetGtxRx_from_rxBitSlipControl(1);
+  ILA_DATA_o(14) <= done_from_rxBitSlipControl(1);
+  ILA_DATA_o(15) <= ready_from_bitSlipCtrller(1);
+  ILA_DATA_o(16) <= rxBitSlip_to_gtx(1);
+  ILA_DATA_o(17) <= mgtRst_from_bitslipCtrl(1);
+  ILA_DATA_o(18) <= MGT_AUTORSTEn_i(1);
+  ILA_DATA_o(19) <= MGT_AUTORSTONEVEN_i(1);
+  ILA_DATA_o(20) <= rx_headerlocked_s(1);
+  ILA_DATA_o(21) <= rx_bitslipIsEven_s(1);
+  ILA_DATA_o(61 downto 22) <= MGT_USRWORD_s(1);
+  ILA_DATA_o(69 downto 62) <= ila_data_patser;
 
 end structural;
 --=================================================================================================--

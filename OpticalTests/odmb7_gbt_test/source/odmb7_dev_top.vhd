@@ -191,96 +191,11 @@ architecture odmb_inst of odmb7_dev_top is
 
   constant NCFEB : integer := 7;
 
-  component odmb_clocking is
-    port (
-      -- Input ports
-      CMS_CLK_FPGA_P : in std_logic;    -- system clock: 40.07897 MHz
-      CMS_CLK_FPGA_N : in std_logic;    -- system clock: 40.07897 MHz
-      GP_CLK_6_P     : in std_logic;    -- clock synthesizer ODIV6: 80 MHz
-      GP_CLK_6_N     : in std_logic;    -- clock synthesizer ODIV6: 80 MHz
-      GP_CLK_7_P     : in std_logic;    -- clock synthesizer ODIV7: 80 MHz
-      GP_CLK_7_N     : in std_logic;    -- clock synthesizer ODIV7: 80 MHz
-      REF_CLK_1_P    : in std_logic;    -- refclk0 to 224
-      REF_CLK_1_N    : in std_logic;    -- refclk0 to 224
-      REF_CLK_2_P    : in std_logic;    -- refclk0 to 227
-      REF_CLK_2_N    : in std_logic;    -- refclk0 to 227
-      REF_CLK_3_P    : in std_logic;    -- refclk0 to 226
-      REF_CLK_3_N    : in std_logic;    -- refclk0 to 226
-      REF_CLK_4_P    : in std_logic;    -- refclk0 to 225
-      REF_CLK_4_N    : in std_logic;    -- refclk0 to 225
-      REF_CLK_5_P    : in std_logic;    -- refclk1 to 227
-      REF_CLK_5_N    : in std_logic;    -- refclk1 to 227
-      CLK_125_REF_P  : in std_logic;    -- refclk1 to 226
-      CLK_125_REF_N  : in std_logic;    -- refclk1 to 226
-      EMCCLK         : in std_logic;    -- Low frequency, 133 MHz for SPI programing clock
-      LF_CLK         : in std_logic;    -- Low frequency, 10 kHz
-
-      -- Output clocks
-      mgtrefclk0_224 : out std_logic;   -- MGT refclk for R12 link from DCFEBs, 160.316 MHz
-      mgtrefclk0_225 : out std_logic;   -- MGT refclk for R12 link from ALCT,   120.237 MHz
-      mgtrefclk0_226 : out std_logic;   -- MGT refclk for SPY link to DDU,      160.000 MHz
-      mgtrefclk1_226 : out std_logic;   -- MGT refclk for SPY link to PC,       125.000 MHz
-      mgtrefclk0_227 : out std_logic;   -- MGT refclk for B04 links to FED,     160.316 MHz
-      mgtrefclk1_227 : out std_logic;   -- MGT refclk for B04 links from FED,   ??? MHz
-      clk_sysclk625k : out std_logic;
-      clk_sysclk1p25 : out std_logic;
-      clk_sysclk2p5  : out std_logic;
-      clk_sysclk10   : out std_logic;   -- derived clock from MMCM
-      clk_sysclk20   : out std_logic;   -- derived clock from MMCM
-      clk_sysclk40   : out std_logic;   -- derived clock from MMCM
-      clk_sysclk80   : out std_logic;   -- derived clock from MMCM
-      clk_cmsclk     : out std_logic;   -- buffed CMS clock, 40.07897 MHz
-      clk_emcclk     : out std_logic;   -- buffed EMC clock
-      clk_lfclk      : out std_logic;   -- buffed LF clock
-      clk_gp6        : out std_logic;
-      clk_gp7        : out std_logic;
-      clk_mgtclk1    : out std_logic;   -- buffed ODIV2 port of the refclks, 160.3 MHz
-      clk_mgtclk2    : out std_logic;   -- buffed ODIV2 port of the refclks, 160.3 MHz
-      clk_mgtclk3    : out std_logic;   -- buffed ODIV2 port of the refclks, 160.0 MHz
-      clk_mgtclk4    : out std_logic;   -- buffed ODIV2 port of the refclks, 120.2 MHz
-      clk_mgtclk5    : out std_logic;   -- buffed ODIV2 port of the refclks, 160.3 MHz
-      clk_mgtclk125  : out std_logic;   -- buffed ODIV2 port of the refclks, 125.0 MHz
-      led_clkfreqs   : out std_logic_vector(7 downto 0) 
-      );
-  end component;
-
-  component mgt_spy is
-    generic (
-      DATAWIDTH : integer := 16    --! User data width
-      );
-    port (
-      mgtrefclk       : in  std_logic; -- buffer'ed reference clock signal
-      txusrclk        : out std_logic; -- USRCLK for TX data preparation
-      rxusrclk        : out std_logic; -- USRCLK for RX data readout
-      sysclk          : in  std_logic; -- clock for the helper block, 80 MHz
-      spy_rx_n        : in  std_logic;
-      spy_rx_p        : in  std_logic;
-      spy_tx_n        : out std_logic;
-      spy_tx_p        : out std_logic;
-      txready         : out std_logic; -- Flag for tx reset done
-      rxready         : out std_logic; -- Flag for rx reset done
-      txdata          : in std_logic_vector(DATAWIDTH-1 downto 0);  -- Data to be transmitted
-      txd_valid       : in std_logic;   -- Flag for tx data valid
-      txdiffctrl      : in std_logic_vector(3 downto 0);   -- Controls the TX voltage swing
-      loopback        : in std_logic_vector(2 downto 0);   -- For internal loopback tests
-      rxdata          : out std_logic_vector(DATAWIDTH-1 downto 0);  -- Data received
-      rxd_valid       : out std_logic;   -- Flag for valid data;
-      bad_rx          : out std_logic;   -- Flag for fiber errors;
-      prbs_type       : in  std_logic_vector(3 downto 0);
-      prbs_tx_en      : in  std_logic;
-      prbs_rx_en      : in  std_logic;
-      prbs_tst_cnt    : in  std_logic_vector(15 downto 0);
-      prbs_err_cnt    : out std_logic_vector(15 downto 0);
-      diagout         : out std_logic_vector(15 downto 0);
-      reset           : in  std_logic
-      );
-  end component;
-
   component ila_gbt_exde is
     port (
       clk: in std_logic;
       probe0: in std_logic_vector(83 downto 0);
-      probe1: in std_logic_vector(115 downto 0);
+      probe1: in std_logic_vector(31 downto 0);
       probe2: in std_logic_vector(0 downto 0);
       probe3: in std_logic_vector(0 downto 0)
       );
@@ -461,6 +376,14 @@ architecture odmb_inst of odmb7_dev_top is
   --=========================--
   -- GBT Bank example design --
   --=========================--
+
+  constant NUM_LINKS             : integer := 1;
+  constant TX_OPTIMIZATION       : integer := 0;   -- 0: STANDARD, 1: LATENCY_OPTIMZED
+  constant RX_OPTIMIZATION       : integer := 0;   -- 0: STANDARD, 1: LATENCY_OPTIMZED
+  constant TX_ENCODING           : integer := 0;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
+  constant RX_ENCODING           : integer := 0;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
+  constant CLOCKING_SCHEME       : integer := 1;   -- 0: BC_CLOCK, 1: FULL_MGTFREQ
+
   signal txFrameClk_from_txPll                      : std_logic;
   --------------------------------------------------
   signal reset_from_genRst                          : std_logic;
@@ -522,11 +445,54 @@ architecture odmb_inst of odmb7_dev_top is
   signal sync_from_vio                              : std_logic_vector(11 downto 0);
   signal async_to_vio                               : std_logic_vector(17 downto 0);
 
-  signal mgt_rxready_s                              : std_logic;
-  signal mgt_rxreset_s                              : std_logic;
-
   signal txEncoding_from_vio              : std_logic;
   signal rxEncoding_from_vio              : std_logic;
+
+
+  --======================= Signal Declarations =========================--
+  --==========--
+  -- GBT Tx   --
+  --==========--
+  signal gbt_txframeclk_s                : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_txreset_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_txready_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_txdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
+  signal wb_txdata_s                     : gbt_reg32_A(1 to NUM_LINKS);
+  signal gbt_txclken_s                   : std_logic_vector(1 to NUM_LINKS);
+
+  --==========--
+  -- NGT      --
+  --==========--
+  signal mgt_txwordclk_s                 : std_logic_vector(1 to NUM_LINKS);
+  signal mgt_rxwordclk_s                 : std_logic_vector(1 to NUM_LINKS);
+  signal mgt_txreset_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal mgt_rxreset_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal mgt_txready_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal mgt_rxready_s                   : std_logic_vector(1 to NUM_LINKS);
+
+  signal mgt_headerflag_s                : std_logic_vector(1 to NUM_LINKS);
+  signal mgt_devspecific_to_s            : mgtDeviceSpecific_i_R;
+  signal mgt_devspecific_from_s          : mgtDeviceSpecific_o_R;
+  signal resetOnBitslip_s                : std_logic_vector(1 to NUM_LINKS);
+
+  --==========--
+  -- GBT Rx   --
+  --==========--
+  signal gbt_rxframeclk_s                : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_rxreset_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_rxready_s                   : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_rxdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
+  signal wb_rxdata_s                     : gbt_reg32_A(1 to NUM_LINKS);
+  signal gbt_rxclkenLogic_s              : std_logic_vector(1 to NUM_LiNKS);
+
+  --================================--
+  -- Data pattern generator/checker --
+  --================================--
+  signal gbtBank_txEncodingSel           : std_logic_vector(1 downto 0);
+  signal gbtBank_rxEncodingSel           : std_logic_vector(1 downto 0);
+  signal txData_from_gbtBank_pattGen     : gbt_reg84_A(1 to NUM_LINKS);
+  signal txwBData_from_gbtBank_pattGen   : gbt_reg32_A(1 to NUM_LINKS);
+
 
 begin
 
@@ -555,7 +521,7 @@ begin
   -------------------------------------------------------------------------------------------
   -- Handle ODMB7 clocks
   -------------------------------------------------------------------------------------------
-  u_clocking : odmb_clocking
+  MBK : entity work.odmb_clocking
     port map (
       CMS_CLK_FPGA_P => CMS_CLK_FPGA_P,
       CMS_CLK_FPGA_N => CMS_CLK_FPGA_N,
@@ -638,7 +604,6 @@ begin
   spy_rx_n <= DAQ_SPY_RX_N when SPY_SEL = '1' else '0';
   spy_rx_p <= DAQ_SPY_RX_P when SPY_SEL = '1' else '0';
 
-  -- General reset -- 
   genRst: entity work.xlx_ku_reset
     generic map (
       CLK_FREQ             => 125e6)
@@ -646,8 +611,8 @@ begin
       CLK_I                => mgtclk125,
       RESET1_B_I           => '1',
       RESET2_B_I           => not generalReset_from_user,
-      RESET_O              => reset_from_genRst 
-      ); 
+      RESET_O              => reset_from_genRst
+      );
 
   generalReset_from_user  <= resetgbtfpga_from_vio or not(txFrameClkPllLocked_from_gbtExmplDsgn);
 
@@ -666,123 +631,170 @@ begin
       LOCKED_OUT            => txFrameClkPllLocked_from_gbtExmplDsgn
       );
 
-  gbtExmplDsgn_inst : entity work.xlx_ku_gbt_example_design
-    generic map(
-      NUM_LINKS             => 1,
-      TX_OPTIMIZATION       => 0,   -- 0: STANDARD, 1: LATENCY_OPTIMZED
-      RX_OPTIMIZATION       => 0,   -- 0: STANDARD, 1: LATENCY_OPTIMZED
-      TX_ENCODING           => 0,   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
-      RX_ENCODING           => 0,   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
+  --========================--
+  -- Data pattern generator --
+  --========================--
 
-      DATA_GENERATOR_ENABLE => 1,   -- ENABLED
-      DATA_CHECKER_ENABLE   => 1,   -- ENABLED
-      MATCH_FLAG_ENABLE     => 1,   -- ENABLED
-      CLOCKING_SCHEME       => 1    -- 0: BC_CLOCK, 1: FULL_MGTFREQ
+  gbtBank_txEncodingSel <= "00"; -- when TX_ENCODING = GBT_FRAME else '0' & not(TX_ENCODING_SEL_i);
+
+  dataGenEn_output_gen: for i in 1 to NUM_LINKS generate
+    gbtBank2_pattGen: entity work.gbt_pattern_generator
+      generic map(
+        CLOCKING_SCHEME                                => CLOCKING_SCHEME
+        )
+      port map (
+        GENERAL_RST_I                                  => reset_from_genRst,
+        RESET_I                                        => gbt_txreset_s(i),
+        TX_FRAMECLK_I                                  => txFrameClk_from_txPll,
+        TX_WORDCLK_I                                   => mgt_txwordclk_s(i),
+
+        TX_FRAMECLK_O                                  => gbt_txframeclk_s(i),
+        TX_CLKEN_o                                     => gbt_txclken_s(i),
+
+        -----------------------------------------------
+        TX_ENCODING_SEL_I                              => gbtBank_txEncodingSel,
+        TEST_PATTERN_SEL_I                             => testPatterSel_from_user,
+        STATIC_PATTERN_SCEC_I                          => "00",
+        STATIC_PATTERN_DATA_I                          => x"000BABEAC1DACDCFFFFF",
+        STATIC_PATTERN_EXTRADATA_WIDEBUS_I             => x"BEEFCAFE",
+        -----------------------------------------------
+        TX_DATA_O                                      => txData_from_gbtBank_pattGen(i),
+        TX_EXTRA_DATA_WIDEBUS_O                        => txwBData_from_gbtBank_pattGen(i)
+        );
+
+    gbt_txdata_s(i) <= txData_from_gbtBank_pattGen(i);
+    wb_txdata_s(i)  <= txwBData_from_gbtBank_pattGen(i);
+
+    gbt_txreset_s(i) <= not gbt_txready_s(i);
+  end generate;
+
+  --==========================--
+  -- Data pattern checker         --
+  --==========================--
+  gbtBank_rxEncodingSel <= "00"; -- when RX_ENCODING = GBT_FRAME else '0' & not(RX_ENCODING_SEL_i);
+
+  gbtBank_patCheck_gen: for i in 1 to NUM_LINKS generate
+    gbtBank_pattCheck: entity work.gbt_pattern_checker
+      port map (
+        RESET_I                                        => reset_from_genRst,
+        RX_FRAMECLK_I                                  => gbt_rxframeclk_s(i),
+        RX_CLKEN_I                                     => gbt_rxclkenLogic_s(i),
+        -----------------------------------------------
+        RX_DATA_I                                      => gbt_rxdata_s(i),
+        RX_EXTRA_DATA_WIDEBUS_I                        => wb_rxdata_s(i),
+        -----------------------------------------------
+        GBT_RX_READY_I                                 => gbt_rxready_s(i),
+        RX_ENCODING_SEL_I                              => gbtBank_rxEncodingSel,
+        TEST_PATTERN_SEL_I                             => testPatterSel_from_user,
+        STATIC_PATTERN_SCEC_I                          => "00",
+        STATIC_PATTERN_DATA_I                          => x"000BABEAC1DACDCFFFFF",
+        STATIC_PATTERN_EXTRADATA_WIDEBUS_I             => x"BEEFCAFE",
+        RESET_GBTRXREADY_LOST_FLAG_I                   => resetGbtRxReadyLostFlag_from_user,
+        RESET_DATA_ERRORSEEN_FLAG_I                    => resetDataErrorSeenFlag_from_user,
+        -----------------------------------------------
+        GBTRXREADY_LOST_FLAG_O                         => gbtRxReadyLostFlag_from_gbtExmplDsgn,
+        RXDATA_ERRORSEEN_FLAG_O                        => rxDataErrorSeen_from_gbtExmplDsgn,
+        RXEXTRADATA_WIDEBUS_ERRORSEEN_FLAG_O           => rxExtrDataWidebusErSeen_from_gbtExmplDsgn
+        );
+  end generate;
+
+  --============--
+  -- Match flag --
+  --============--
+  gbtBank_txFlag: entity work.gbt_pattern_matchflag
+    PORT MAP (
+      RESET_I                                           => gbt_txreset_s(1),
+      CLK_I                                             => gbt_txframeclk_s(1),
+      CLKEN_I                                           => gbt_txclken_s(1),
+      DATA_I                                            => gbt_txdata_s(1),
+      MATCHFLAG_O                                       => txMatchFlag_from_gbtExmplDsgn
+      );
+
+  gbtBank_rxFlag_gen: for i in 1 to NUM_LINKS generate
+    gbtBank_rxFlag: entity work.gbt_pattern_matchflag
+      PORT MAP (
+        RESET_I                                           => gbt_rxreset_s(i),
+        CLK_I                                             => gbt_rxframeclk_s(i),
+        CLKEN_I                                           => gbt_rxclkenLogic_s(i),
+        DATA_I                                            => gbt_rxdata_s(i),
+        MATCHFLAG_O                                       => rxMatchFlag_from_gbtExmplDsgn
+        );
+  end generate;
+
+
+  gbtExmplDsgn_inst : entity work.mgt_gbt
+    generic map(
+      NUM_LINKS                => 1
       )
     port map (
 
       --==============--
       -- Clocks       --
       --==============--
-      FRAMECLK_40MHZ            => txFrameClk_from_txPll, -- derived from mgtrefclk0_225
-      XCVRCLK                   => mgtrefclk0_225,
-      TX_FRAMECLK_O(1)          => txFrameClk_from_gbtExmplDsgn, -- not connected
-      TX_WORDCLK_O(1)           => txWordClk_from_gbtExmplDsgn,  -- not connected
-      RX_FRAMECLK_O(1)          => rxFrameClk_from_gbtExmplDsgn,
-      RX_WORDCLK_O(1)           => rxWordClk_from_gbtExmplDsgn,       -- not connected
-      RX_FRAMECLK_RDY_O(1)      => rxFrameClkReady_from_gbtExmplDsgn, -- to VIO
+      MGT_REFCLK                => mgtrefclk0_225,
+      GBT_FRAMECLK              => txFrameClk_from_txPll, -- 40 MHz derived from mgtrefclk0_225
+      MGT_DRP_CLK               => mgtclk4,
 
-      ILACLK                    => mgtclk4,
-      --==============--
-      -- Reset        --
-      --==============--
-      GBTBANK_GENERAL_RESET_I   => reset_from_genRst,
-      GBTBANK_MANUAL_RESET_TX_I => manualResetTx_from_user, -- from VIO
-      GBTBANK_MANUAL_RESET_RX_I => manualResetRx_from_user, -- from VIO
+      TX_WORDCLK_o              => mgt_txwordclk_s,
+      RX_WORDCLK_o              => mgt_rxwordclk_s,
+      TX_FRAMECLK_i             => gbt_txframeclk_s,
+      RX_FRAMECLK_o             => gbt_rxframeclk_s,
 
       --==============--
       -- Serial lanes --
       --==============--
-      -- GBTBANK_MGT_RX_P(1)       => spy_rx_p,
-      -- GBTBANK_MGT_RX_N(1)       => spy_rx_n,
-      -- GBTBANK_MGT_TX_P(1)       => SPY_TX_P,
-      -- GBTBANK_MGT_TX_N(1)       => SPY_TX_N,
-      GBTBANK_MGT_RX_P(1)       => B04_RX_P(4),
-      GBTBANK_MGT_RX_N(1)       => B04_RX_N(4),
-      GBTBANK_MGT_TX_P(1)       => DAQ_TX_P(4),
-      GBTBANK_MGT_TX_N(1)       => DAQ_TX_N(4),
+      MGT_RX_P(1)               => B04_RX_P(4),
+      MGT_RX_N(1)               => B04_RX_N(4),
+      MGT_TX_P(1)               => DAQ_TX_P(4),
+      MGT_TX_N(1)               => DAQ_TX_N(4),
 
       --==============--
       -- Data         --
       --==============--
-      GBTBANK_GBT_DATA_I(1)     => (others => '0'),
-      GBTBANK_WB_DATA_I(1)      => (others => '0'),
+      GBT_TXDATA_i(1)           => gbt_txdata_s(1),
+      GBT_RXDATA_o(1)           => gbt_rxdata_s(1), -- rxData_from_gbtExmplDsgn, -- to ILA
+      WB_TXDATA_i(1)            => wb_txdata_s(1),
+      WB_RXDATA_o(1)            => wb_rxdata_s(1),  -- rxExtraDataWidebus_from_gbtExmplDsgn, -- to ILA
 
-      TX_DATA_O(1)              => txData_from_gbtExmplDsgn, -- to ILA
-      WB_DATA_O(1)              => txExtraDataWidebus_from_gbtExmplDsgn, -- to ILA
-
-      GBTBANK_GBT_DATA_O(1)     => rxData_from_gbtExmplDsgn, -- to ILA
-      GBTBANK_WB_DATA_O(1)      => rxExtraDataWidebus_from_gbtExmplDsgn, -- to ILA
-
-      --==============--
-      -- Reconf.         --
-      --==============--
-      GBTBANK_MGT_DRP_RST       => '0',
-      GBTBANK_MGT_DRP_CLK       => mgtclk125,
+      TXD_VALID_i(1)            => txIsDataSel_from_user,   -- from VIO
+      RXD_VALID_o(1)            => rxIsData_from_gbtExmplDsgn, -- to VIO
 
       --==============--
-      -- TX ctrl      --
+      -- TX/RX Status --
       --==============--
-      TX_ENCODING_SEL_i(1)                            => txEncoding_from_vio,     -- from VIO
-      GBTBANK_TX_ISDATA_SEL_I(1)                      => txIsDataSel_from_user,   -- from VIO
-      GBTBANK_TEST_PATTERN_SEL_I                      => testPatterSel_from_user, -- from VIO
+      MGT_TXREADY_o             => mgt_txready_s,
+      MGT_RXREADY_o             => mgt_rxready_s,
+      GBT_TXREADY_o             => gbt_txready_s,
+      GBT_RXREADY_o             => gbt_rxready_s,
+      GBT_BAD_RX_o(1)           => gbtErrorDetected,           -- count BER
 
       --==============--
-      -- RX ctrl, all from VIO
+      -- Keep for now --
       --==============--
-      RX_ENCODING_SEL_i(1)                            => rxEncoding_from_vio, -- from VIO
-      GBTBANK_RESET_GBTRXREADY_LOST_FLAG_I(1)         => resetGbtRxReadyLostFlag_from_user, -- from VIO
-      GBTBANK_RESET_DATA_ERRORSEEN_FLAG_I(1)          => resetDataErrorSeenFlag_from_user,  -- from VIO
-      GBTBANK_RXFRAMECLK_ALIGNPATTER_I                => debug_clk_alignment_debug,         -- from VIO
-      GBTBANK_RXBITSLIT_RSTONEVEN_I(1)                => rxBitSlipRstOnEven_from_user,     -- from VIO
+      GBTBANK_RXFRAMECLK_ALIGNPATTER_I  => debug_clk_alignment_debug,         -- from VIO
+      GBTBANK_TX_ALIGNED_O(1)           => txAligned_from_gbtbank, -- latched to VIO
+      GBTBANK_TX_ALIGNCOMPUTED_O(1)     => txAlignComputed_from_gbtbank, -- to VIO
+      GBTBANK_RX_BITMODIFIED_FLAG_O(1)  => gbtModifiedBitFlag,         -- to count BER
+      GBTBANK_LOOPBACK_I                => loopBack_from_user, -- from VIO
+      RESET_TX_i                        => manualResetTx_from_user, -- from VIO
+      RESET_RX_i                        => manualResetRx_from_user, -- from VIO
+      GBT_TXCLKEN_i                     => gbt_txclken_s,           -- from pattern generator, to be evaluated
+      GBT_RXCLKENLOGIC_o                => gbt_rxclkenLogic_s,      -- to pattern checker, to be evaluated
+      RX_FRAMECLK_RDY_o(1)              => rxFrameClkReady_from_gbtExmplDsgn, -- to VIO
 
       --==============--
-      -- TX Status    --
+      -- Reset        --
       --==============--
-      GBTBANK_LINK_READY_O(1)                         => mgtReady_from_gbtExmplDsgn, -- to VIO
-      GBTBANK_TX_MATCHFLAG_O                          => txMatchFlag_from_gbtExmplDsgn, --> to GPIO
-      GBTBANK_TX_ALIGNED_O(1)                         => txAligned_from_gbtbank, -- latched to VIO
-      GBTBANK_TX_ALIGNCOMPUTED_O(1)                   => txAlignComputed_from_gbtbank, -- to VIO
-
-      --==============--
-      -- RX Status    --
-      --==============--
-      GBTBANK_GBTRX_READY_O(1)                        => gbtRxReady_from_gbtExmplDsgn,              -- to VIO
-      GBTBANK_GBTRXREADY_LOST_FLAG_O(1)               => gbtRxReadyLostFlag_from_gbtExmplDsgn,      -- to VIO
-      GBTBANK_RXDATA_ERRORSEEN_FLAG_O(1)              => rxDataErrorSeen_from_gbtExmplDsgn,         -- to VIO
-      GBTBANK_RXEXTRADATA_WIDEBUS_ERRORSEEN_FLAG_O(1) => rxExtrDataWidebusErSeen_from_gbtExmplDsgn, -- to VIO
-      GBTBANK_RX_MATCHFLAG_O(1)                       => rxMatchFlag_from_gbtExmplDsgn, -- to GPIO
-      GBTBANK_RX_ISDATA_SEL_O(1)                      => rxIsData_from_gbtExmplDsgn, -- to VIO
-      GBTBANK_RX_ERRORDETECTED_O(1)                   => gbtErrorDetected,           -- count BER
-      GBTBANK_RX_BITMODIFIED_FLAG_O(1)                => gbtModifiedBitFlag,         -- to count BER
-      GBTBANK_RXBITSLIP_RST_CNT_O(1)                  => rxBitSlipRstCount_from_gbtExmplDsgn, -- to VIO
-
-      GBTBANK_MGTRX_READY_O(1)                        => mgt_rxready_s,  -- to VIO
-      GBTBANK_MGTRX_RESET_O(1)                        => mgt_rxreset_s,  -- to VIO
-
-      --==============--
-      -- XCVR ctrl    --
-      --==============--
-      GBTBANK_LOOPBACK_I                              => loopBack_from_user, -- from VIO
-
-      GBTBANK_TX_POL(1)                               => '0',
-      GBTBANK_RX_POL(1)                               => '0'
+      RESET_i           => reset_from_genRst
       );
+
+  mgtReady_from_gbtExmplDsgn <= mgt_txready_s(1) and mgt_rxready_s(1);
+  gbtRxReady_from_gbtExmplDsgn <= mgt_rxready_s(1) and gbt_rxready_s(1);
 
   --=====================================--
   -- BER                                 --
   --=====================================--
-  countWordReceivedProc: PROCESS(reset_from_genRst, rxframeclk_from_gbtExmplDsgn)
+  countWordReceivedProc: PROCESS(reset_from_genRst, gbt_rxframeclk_s(1))
   begin
 
     if reset_from_genRst = '1' then
@@ -790,7 +802,7 @@ begin
       countBitsModified <= (others => '0');
       countWordErrors    <= (others => '0');
 
-    elsif rising_edge(rxframeclk_from_gbtExmplDsgn) then
+    elsif rising_edge(gbt_rxframeclk_s(1)) then
       if gbtRxReady_from_gbtExmplDsgn = '1' then
 
         if gbtErrorDetected = '1' then
@@ -814,7 +826,7 @@ begin
       MAXOUTWIDTH    => 8
       )
     Port map(
-      Clock    => rxframeclk_from_gbtExmplDsgn, -- Warning: Because the enable signal (1 over 3 or 6 clock cycle) is not used, the number of error is multiplied by 3 or 6.
+      Clock    => gbt_rxframeclk_s(1), -- Warning: Because the enable signal (1 over 3 or 6 clock cycle) is not used, the number of error is multiplied by 3 or 6.
       I        => gbtModifiedBitFlagFiltered,
       O        => modifiedBitsCnt
       );
@@ -825,9 +837,9 @@ begin
 
       probe_in0(0) => rxIsData_from_gbtExmplDsgn,
       probe_in1(0) => txFrameClkPllLocked_from_gbtExmplDsgn,
-      probe_in2(0) => mgt_rxready_s,
+      probe_in2(0) => mgt_rxready_s(1),
       probe_in3(0) => mgtReady_from_gbtExmplDsgn,
-      probe_in4(0) => mgt_rxreset_s,
+      probe_in4(0) => gbt_rxready_s(1),
       probe_in5    => spy_diagout(5 downto 0),
       probe_in6(0) => rxFrameClkReady_from_gbtExmplDsgn,
       probe_in7(0) => gbtRxReady_from_gbtExmplDsgn,
@@ -840,7 +852,7 @@ begin
       probe_in14    => countWordReceived,
       probe_in15(0)    => txAligned_from_gbtbank_latched,
       probe_in16(0)    => txAlignComputed_from_gbtbank,
-      probe_in17       => rxBitSlipRstCount_from_gbtExmplDsgn,
+      probe_in17       => x"00",
       probe_out0(0) => resetgbtfpga_from_vio,
       probe_out1(0) => clkMuxSel_from_user,
       probe_out2 => testPatterSel_from_user,
@@ -863,8 +875,8 @@ begin
   ila_tx_inst : ila_gbt_exde
     port map (
       clk => sysclk80,                  -- original 300 MHz
-      probe0 => txData_from_gbtExmplDsgn,
-      probe1 => txExtraDataWidebus_from_gbtExmplDsgn,
+      probe0 => gbt_txdata_s(1),
+      probe1 => wb_txdata_s(1),
       probe2(0) => txIsDataSel_from_user,
       probe3(0) => '0'
       );
@@ -872,8 +884,8 @@ begin
   ila_rx_inst : ila_gbt_exde
     port map (
       clk => sysclk80,                  -- original 300 MHz
-      probe0 => rxData_from_gbtExmplDsgn,
-      probe1 => rxExtraDataWidebus_from_gbtExmplDsgn,
+      probe0 => gbt_rxdata_s(1),
+      probe1 => wb_rxdata_s(1),
       probe2(0) => rxIsData_from_gbtExmplDsgn,
       probe3(0) => gbtErrorDetected
       );
@@ -894,7 +906,7 @@ begin
   end process;
 
 
-  GTH_spy : mgt_spy
+  GTH_spy : entity work.mgt_spy
     generic map (
       DATAWIDTH       => 40
       )
