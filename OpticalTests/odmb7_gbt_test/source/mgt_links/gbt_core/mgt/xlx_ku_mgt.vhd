@@ -86,8 +86,8 @@ architecture structural of mgt is
   --==============================--
 
 
-  signal rx_wordclk_sig                         : std_logic_vector(1 to NUM_LINKS);
-  signal tx_wordclk_sig                         : std_logic_vector(1 to NUM_LINKS);
+  signal rx_usrclk_sig                          : std_logic_vector(1 to NUM_LINKS);
+  signal tx_usrclk_sig                          : std_logic_vector(1 to NUM_LINKS);
 
   signal rxoutclk_sig                           : std_logic_vector(1 to NUM_LINKS);
   signal txoutclk_sig                           : std_logic_vector(1 to NUM_LINKS);
@@ -215,8 +215,8 @@ begin                 --========####   Architecture Body   ####========--
     MGT_TXREADY_o(i)          <= tx_reset_done(i) and txfsm_reset_done(i);
     MGT_RXREADY_o(i)          <= rx_reset_done(i) and rxfsm_reset_done(i) and done_from_rxBitSlipControl(i);
 
-    MGT_RXUSRCLK_o(i)         <= rx_wordclk_sig(i);
-    MGT_TXUSRCLK_o(i)         <= tx_wordclk_sig(i);
+    MGT_RXUSRCLK_o(i)         <= rx_usrclk_sig(i);
+    MGT_TXUSRCLK_o(i)         <= tx_usrclk_sig(i);
 
     MGT_USRWORD_o(i)          <= MGT_USRWORD_s(i);
 
@@ -227,17 +227,17 @@ begin                 --========####   Architecture Body   ####========--
 
     resetDoneSynch_rx: entity work.xlx_ku_mgt_ip_reset_synchronizer
       PORT MAP(
-        clk_in                                   => rx_wordClk_sig(i),
-        rst_in                                   => rxBuffBypassRst(i),
-        rst_out                                  => gtwiz_buffbypass_rx_reset_in_s(i)
+        clk_in                => rx_usrclk_sig(i),
+        rst_in                => rxBuffBypassRst(i),
+        rst_out               => gtwiz_buffbypass_rx_reset_in_s(i)
         );
 
 
     resetSynch_tx: entity work.xlx_ku_mgt_ip_reset_synchronizer
       PORT MAP(
-        clk_in                                   => tx_wordclk_sig(i),
-        rst_in                                   => not(gtwiz_userclk_tx_active_int(i)),
-        rst_out                                  => gtwiz_buffbypass_tx_reset_in_s(i)
+        clk_in                => tx_usrclk_sig(i),
+        rst_in                => not(gtwiz_userclk_tx_active_int(i)),
+        rst_out               => gtwiz_buffbypass_tx_reset_in_s(i)
         );
 
     gtwiz_userclk_tx_reset_int(i) <= not(txpmaresetdone(i));
@@ -245,42 +245,42 @@ begin                 --========####   Architecture Body   ####========--
 
     rxWordClkBuf_inst: bufg_gt
       port map (
-        O                                        => rx_wordclk_sig(i),
-        I                                        => rxoutclk_sig(i),
-        CE                                       => not(gtwiz_userclk_rx_reset_int(i)),
-        DIV                                      => "000",
-        CLR                                      => '0',
-        CLRMASK                                  => '0',
-        CEMASK                                   => '0'
+        O                     => rx_usrclk_sig(i),
+        I                     => rxoutclk_sig(i),
+        CE                    => not(gtwiz_userclk_rx_reset_int(i)),
+        DIV                   => "000",
+        CLR                   => '0',
+        CLRMASK               => '0',
+        CEMASK                => '0'
         );
 
     txWordClkBuf_inst: bufg_gt
       port map (
-        O                                        => tx_wordclk_sig(i),
-        I                                        => txoutclk_sig(i),
-        CE                                       => not(gtwiz_userclk_tx_reset_int(i)),
-        DIV                                      => "000",
-        CLR                                      => '0',
-        CLRMASK                                  => '0',
-        CEMASK                                   => '0'
+        O                     => tx_usrclk_sig(i),
+        I                     => txoutclk_sig(i),
+        CE                    => not(gtwiz_userclk_tx_reset_int(i)),
+        DIV                   => "000",
+        CLR                   => '0',
+        CLRMASK               => '0',
+        CEMASK                => '0'
         );
 
-    activetxUsrClk_proc: process(gtwiz_userclk_tx_reset_int(i), tx_wordclk_sig(i))
+    activetxUsrClk_proc: process(gtwiz_userclk_tx_reset_int(i), tx_usrclk_sig(i))
     begin
       if gtwiz_userclk_tx_reset_int(i) = '1' then
         gtwiz_userclk_tx_active_int(i) <= '0';
-      elsif rising_edge(tx_wordclk_sig(i)) then
+      elsif rising_edge(tx_usrclk_sig(i)) then
         gtwiz_userclk_tx_active_int(i) <= '1';
       end if;
 
     end process;
 
 
-    activerxUsrClk_proc: process(gtwiz_userclk_rx_reset_int(i), rx_wordclk_sig(i))
+    activerxUsrClk_proc: process(gtwiz_userclk_rx_reset_int(i), rx_usrclk_sig(i))
     begin
       if gtwiz_userclk_rx_reset_int(i) = '1' then
         gtwiz_userclk_rx_active_int(i) <= '0';
-      elsif rising_edge(rx_wordclk_sig(i)) then
+      elsif rising_edge(rx_usrclk_sig(i)) then
         gtwiz_userclk_rx_active_int(i) <= '1';
       end if;
 
@@ -288,10 +288,10 @@ begin                 --========####   Architecture Body   ####========--
 
     xlx_ku_mgt_std_i : gtwiz_gbt_d1
       PORT MAP (
-        rxusrclk_in(0)                         => rx_wordclk_sig(i),
-        rxusrclk2_in(0)                        => rx_wordclk_sig(i),
-        txusrclk_in(0)                         => tx_wordclk_sig(i),
-        txusrclk2_in(0)                        => tx_wordclk_sig(i),
+        rxusrclk_in(0)                         => rx_usrclk_sig(i),
+        rxusrclk2_in(0)                        => rx_usrclk_sig(i),
+        txusrclk_in(0)                         => tx_usrclk_sig(i),
+        txusrclk2_in(0)                        => tx_usrclk_sig(i),
         rxoutclk_out(0)                        => rxoutclk_sig(i),
         txoutclk_out(0)                        => txoutclk_sig(i),
 
@@ -417,7 +417,7 @@ begin                 --========####   Architecture Body   ####========--
     rxBitSlipControl: entity work.mgt_bitslipctrl
       port map (
         RX_RESET_I          => not(rx_reset_done(i) and rxfsm_reset_done(i)),
-        RX_WORDCLK_I        => rx_wordclk_sig(i),
+        RX_WORDCLK_I        => rx_usrclk_sig(i),
         MGT_CLK_I           => MGT_DEVSPEC_i.reset_freeRunningClock(i),
 
         RX_BITSLIPCMD_i     => bitSlipCmd_to_bitSlipCtrller(i),
@@ -436,7 +436,7 @@ begin                 --========####   Architecture Body   ####========--
     patternSearch: entity work.mgt_framealigner_pattsearch
       port map (
         RX_RESET_I          => not(rx_reset_done(i) and rxfsm_reset_done(i)),
-        RX_WORDCLK_I        => rx_wordclk_sig(i),
+        RX_WORDCLK_I        => rx_usrclk_sig(i),
 
         RX_BITSLIP_CMD_O    => bitSlipCmd_to_bitSlipCtrller(i),
         MGT_BITSLIPDONE_i   => ready_from_bitSlipCtrller(i),

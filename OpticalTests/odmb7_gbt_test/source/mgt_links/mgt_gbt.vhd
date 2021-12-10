@@ -18,7 +18,9 @@ use work.vendor_specific_gbt_bank_package.all;
 
 entity mgt_gbt is
   generic (
-    NUM_LINKS                                    : integer := 1
+    NUM_LINKS                                    : integer := 1;
+    TX_ENCODING                                  : integer range 0 to 2 := GBT_FRAME;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
+    RX_ENCODING                                  : integer range 0 to 2 := GBT_FRAME    -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
     );
   port (
 
@@ -29,10 +31,10 @@ entity mgt_gbt is
     GBT_FRAMECLK                                 : in  std_logic; -- 40 MHz
     MGT_DRP_CLK                                  : in  std_logic;
 
-    TX_WORDCLK_o                                 : out std_logic_vector(1 to NUM_LINKS);
-    RX_WORDCLK_o                                 : out std_logic_vector(1 to NUM_LINKS);
-    TX_FRAMECLK_i                                : in  std_logic_vector(1 to NUM_LINKS); -- take input for now
-    RX_FRAMECLK_o                                : out std_logic_vector(1 to NUM_LINKS);
+    GBT_TXUSRCLK_o                               : out std_logic_vector(1 to NUM_LINKS);
+    GBT_RXUSRCLK_o                               : out std_logic_vector(1 to NUM_LINKS);
+    GBT_TXCLKEN_o                                : out std_logic_vector(1 to NUM_LINKS);
+    GBT_RXCLKEN_o                                : out std_logic_vector(1 to NUM_LINKS);
 
     --==============--
     -- Serial lanes --
@@ -65,7 +67,6 @@ entity mgt_gbt is
     --==============--
     -- Temporary    --
     --==============--
-    GBTBANK_RXFRAMECLK_ALIGNPATTER_I             : in  std_logic_vector(2 downto 0);
     GBTBANK_TX_ALIGNED_O                         : out std_logic_vector(1 to NUM_LINKS);
     GBTBANK_TX_ALIGNCOMPUTED_O                   : out std_logic_vector(1 to NUM_LINKS);
     GBTBANK_RX_BITMODIFIED_FLAG_O                : out gbt_reg84_A(1 to NUM_LINKS);
@@ -73,9 +74,6 @@ entity mgt_gbt is
     GBTBANK_LOOPBACK_I                           : in  std_logic_vector(2 downto 0);
     RESET_TX_i                                   : in  std_logic;
     RESET_RX_i                                   : in  std_logic;
-    GBT_TXCLKEN_i                                : in  std_logic_vector(1 to NUM_LINKS);
-    GBT_RXCLKENLOGIC_o                           : out std_logic_vector(1 to NUM_LINKS);
-    RX_FRAMECLK_RDY_o                            : out std_logic_vector(1 to NUM_LINKS);
 
     --==============--
     -- Reset        --
@@ -95,9 +93,7 @@ architecture mgt_gbt_inst of mgt_gbt is
   --===========--
   constant TX_OPTIMIZATION               : integer range 0 to 1 := STANDARD;
   constant RX_OPTIMIZATION               : integer range 0 to 1 := STANDARD;
-  constant TX_ENCODING                   : integer range 0 to 2 := GBT_FRAME;
-  constant RX_ENCODING                   : integer range 0 to 2 := GBT_FRAME;
-  constant CLOCKING_SCHEME               : integer range 0 to 1 := 0; -- 0: BC_CLOCK, 1: FULL_MGTFREQ
+  constant CLOCKING_SCHEME               : integer range 0 to 1 := 1; -- 0: BC_CLOCK, 1: FULL_MGTFREQ
 
   --==========--
   -- GBT Tx   --
@@ -135,6 +131,8 @@ architecture mgt_gbt_inst of mgt_gbt is
   signal gbt_rxclken_s                   : std_logic_vector(1 to NUM_LiNKS);
   signal gbt_rxclkenLogic_s              : std_logic_vector(1 to NUM_LiNKS);
   signal gbt_rxencoding_s                : std_logic_vector(1 to NUM_LINKS);
+  --===== GBT Rx Phase Aligner =====--
+  signal rx_syncShiftReg                 : gbt_devspec_reg3_A(1 to NUM_LINKS);
 
   --=====================================================================================--
 
@@ -161,42 +159,59 @@ begin                 --========####   Architecture Body   ####========--
   --============--
   -- Clocks     --
   --============--
+
+  GBT_TXUSRCLK_o     <= mgt_txwordclk_s; -- for FULL_MGTFREQ clocking scheme
+  GBT_RXUSRCLK_o     <= mgt_rxwordclk_s; -- for FULL_MGTFREQ clocking scheme
+
+  GBT_TXCLKEN_o      <= gbt_txclken_s;
+  GBT_RXCLKEN_o      <= gbt_rxclkenLogic_s; -- necessity to be evaluated
+  gbt_rxclken_s      <= mgt_headerflag_s;
+
   gbtBank_Clk_gen: for i in 1 to NUM_LINKS generate
 
-    gbtBank_rxFrmClkPhAlgnr: entity work.gbt_rx_frameclk_phalgnr
-      generic map(
-        TX_OPTIMIZATION                           => TX_OPTIMIZATION,
-        RX_OPTIMIZATION                           => RX_OPTIMIZATION,
-        DIV_SIZE_CONFIG                           => 3,
-        METHOD                                    => 0, -- 0: GATED_CLOCK, 1: PLL
-        CLOCKING_SCHEME                           => CLOCKING_SCHEME
-        )
-      port map (
-        RESET_I                                   => not(mgt_rxready_s(i)),
+    -- Generate the TX Clock Enable signal every thrid clock --
+    txclken_gen: process(RESET_i, mgt_txwordclk_s(i))
+      variable flagCnterV : integer range 0 to GBT_WORD_RATIO;
+    begin
+      if RESET_i = '1' then
+        gbt_txclken_s(i) <= '0';
+        flagCnterV := 0;
 
-        RX_WORDCLK_I                              => mgt_rxwordclk_s(i),
-        FRAMECLK_I                                => GBT_FRAMECLK,
-        RX_FRAMECLK_o                             => gbt_rxframeclk_s(i),
-        RX_CLKEn_o                                => gbt_rxclkenLogic_s(i),
+      elsif rising_edge(mgt_txwordclk_s(i)) then
 
-        SYNC_I                                    => mgt_headerflag_s(i),
-        CLK_ALIGN_CONFIG                          => GBTBANK_RXFRAMECLK_ALIGNPATTER_I,
-        DEBUG_CLK_ALIGNMENT                       => open,
+        flagCnterV := flagCnterV + 1;
+        if flagCnterV = GBT_WORD_RATIO then
+          flagCnterV := 0;
+        end if;
 
-        PLL_LOCKED_O                              => open,
-        DONE_O                                    => RX_FRAMECLK_RDY_O(i)
-        );
+        gbt_txclken_s(i) <= '0';
+        if flagCnterV = 0 then
+          gbt_txclken_s(i) <= '1';
+        end if;
 
-    RX_FRAMECLK_o(i)    <= gbt_rxframeclk_s(i);
-    gbt_txframeclk_s(i) <= TX_FRAMECLK_i(i);
+      end if;
+    end process;
 
-    TX_WORDCLK_o(i)     <= mgt_txwordclk_s(i);
-    RX_WORDCLK_o(i)     <= mgt_rxwordclk_s(i);
+    -- Generate the RX Clock Enable signal from headerflag --
+    rx_syncShiftReg(i)(0) <= mgt_headerflag_s(i);
+    gbt_rxclkenLogic_s(i) <= rx_syncShiftReg(i)(2);
 
-    gbt_rxclken_s(i)    <= mgt_headerflag_s(i) when CLOCKING_SCHEME = 1 else '1';
+    -- Timing issue: flip-flop stages (configurable)
+    rxSyncShiftReg_gen: for j in 1 to 2 generate
+      ssr_flipflop_proc: process(mgt_rxready_s(i), mgt_rxwordclk_s(i))
+      begin
+        if mgt_rxready_s(i) = '0' then
+          rx_syncShiftReg(i)(j) <= '0';
+
+        elsif rising_edge(mgt_rxwordclk_s(i)) then
+          rx_syncShiftReg(i)(j) <= rx_syncShiftReg(i)(j-1);
+
+        end if;
+      end process;
+
+    end generate;
+
   end generate;
-
-  GBT_RXCLKENLOGIC_o <= gbt_rxclkenLogic_s; -- to be evaluated
 
   --============--
   -- Resets     --
@@ -209,9 +224,9 @@ begin                 --========####   Architecture Body   ####========--
         )
       port map (
         GBT_CLK_I                              => GBT_FRAMECLK,
-        TX_FRAMECLK_I                          => gbt_txframeclk_s(i),
-        TX_CLKEN_I                             => GBT_TXCLKEN_i(i),
-        RX_FRAMECLK_I                          => gbt_rxframeclk_s(i),
+        TX_FRAMECLK_I                          => mgt_txwordclk_s(i),
+        TX_CLKEN_I                             => gbt_txclken_s(i),
+        RX_FRAMECLK_I                          => mgt_rxwordclk_s(i),
         RX_CLKEN_I                             => gbt_rxclkenLogic_s(i),
         MGTCLK_I                               => MGT_DRP_CLK,
 
@@ -272,8 +287,8 @@ begin                 --========####   Architecture Body   ####========--
 
     resetOnBitslip_s(i)                            <= '1' when RX_OPTIMIZATION = LATENCY_OPTIMIZED else '0';
 
-    gbt_txencoding_s(i)                            <= '1'; -- Not used. Select encoding in dynamic mode ('1': GBT / '0': WideBus)
-    gbt_rxencoding_s(i)                            <= '1'; -- Not used. Select encoding in dynamic mode ('1': GBT / '0': WideBus)
+  -- gbt_txencoding_s(i)                            <= '1'; -- Not used. Select encoding in dynamic mode ('1': GBT / '0': WideBus)
+  -- gbt_rxencoding_s(i)                            <= '1'; -- Not used. Select encoding in dynamic mode ('1': GBT / '0': WideBus)
   end generate;
 
   --============--
@@ -301,9 +316,9 @@ begin                 --========####   Architecture Body   ####========--
       -- Clocks --
       --========--
       MGT_CLK_i                => MGT_REFCLK,
-      GBT_TXFRAMECLK_i         => gbt_txframeclk_s,
-      GBT_TXCLKEn_i            => GBT_TXCLKEN_i,
-      GBT_RXFRAMECLK_i         => gbt_rxframeclk_s,
+      GBT_TXFRAMECLK_i         => mgt_txwordclk_s,
+      GBT_TXCLKEn_i            => gbt_txclken_s,
+      GBT_RXFRAMECLK_i         => mgt_rxwordclk_s,
       GBT_RXCLKEn_i            => gbt_rxclken_s,
       MGT_TXWORDCLK_o          => mgt_txwordclk_s,
       MGT_RXWORDCLK_o          => mgt_rxwordclk_s,
@@ -368,8 +383,8 @@ begin                 --========####   Architecture Body   ####========--
       clk => MGT_DRP_CLK,        -- original 300 MHz
       probe0 => ila_data_mgt,
       probe1 => (others => '0'),
-      probe2(0) => '0',
-      probe3(0) => '0'
+      probe2(0) => gbt_txclken_s(1),
+      probe3(0) => gbt_rxclkenLogic_s(1)
       );
 
 --=====================================================================================--

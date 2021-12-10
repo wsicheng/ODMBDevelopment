@@ -36,4 +36,3 @@ set_clock_groups -group [get_clocks gth_refclk0_q226 -include_generated_clocks] 
 set_clock_groups -group [get_clocks gth_refclk1_q226 -include_generated_clocks] -asynchronous
 set_clock_groups -group [get_clocks gth_refclk0_q227 -include_generated_clocks] -asynchronous
 set_clock_groups -group [get_clocks gth_refclk1_q227 -include_generated_clocks] -asynchronous
-

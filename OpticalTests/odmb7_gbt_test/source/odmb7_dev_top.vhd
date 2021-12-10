@@ -24,26 +24,26 @@ entity odmb7_dev_top is
     --------------------
     -- Clock
     --------------------
-    CMS_CLK_FPGA_P : in std_logic;      -- system clock: 40.07897 MHz
-    CMS_CLK_FPGA_N : in std_logic;      -- system clock: 40.07897 MHz
-    GP_CLK_6_P : in std_logic;          -- clock synthesizer ODIV6: 80 MHz
-    GP_CLK_6_N : in std_logic;          -- clock synthesizer ODIV6: 80 MHz
-    GP_CLK_7_P : in std_logic;          -- clock synthesizer ODIV7: 80 MHz
-    GP_CLK_7_N : in std_logic;          -- clock synthesizer ODIV7: 80 MHz
-    REF_CLK_1_P : in std_logic;         -- refclk0 to 224
-    REF_CLK_1_N : in std_logic;         -- refclk0 to 224
-    REF_CLK_2_P : in std_logic;         -- refclk0 to 227
-    REF_CLK_2_N : in std_logic;         -- refclk0 to 227
-    REF_CLK_3_P : in std_logic;         -- refclk0 to 226
-    REF_CLK_3_N : in std_logic;         -- refclk0 to 226
-    REF_CLK_4_P : in std_logic;         -- refclk0 to 225
-    REF_CLK_4_N : in std_logic;         -- refclk0 to 225
-    REF_CLK_5_P : in std_logic;         -- refclk1 to 227
-    REF_CLK_5_N : in std_logic;         -- refclk1 to 227
-    CLK_125_REF_P : in std_logic;       -- refclk1 to 226
-    CLK_125_REF_N : in std_logic;       -- refclk1 to 226
-    EMCCLK : in std_logic;              -- Low frequency, 133 MHz for SPI programing clock
-    LF_CLK : in std_logic;              -- Low frequency, 10 kHz
+    CMS_CLK_FPGA_P  : in std_logic;    -- system clock: 40.07897 MHz
+    CMS_CLK_FPGA_N  : in std_logic;    -- system clock: 40.07897 MHz
+    GP_CLK_6_P      : in std_logic;    -- clock synthesizer ODIV6: 80 MHz
+    GP_CLK_6_N      : in std_logic;    -- clock synthesizer ODIV6: 80 MHz
+    GP_CLK_7_P      : in std_logic;    -- clock synthesizer ODIV7: 80 MHz
+    GP_CLK_7_N      : in std_logic;    -- clock synthesizer ODIV7: 80 MHz
+    REF_CLK_1_P     : in std_logic;    -- refclk0 to 224
+    REF_CLK_1_N     : in std_logic;    -- refclk0 to 224
+    REF_CLK_2_P     : in std_logic;    -- refclk0 to 227
+    REF_CLK_2_N     : in std_logic;    -- refclk0 to 227
+    REF_CLK_3_P     : in std_logic;    -- refclk0 to 226
+    REF_CLK_3_N     : in std_logic;    -- refclk0 to 226
+    REF_CLK_4_P     : in std_logic;    -- refclk0 to 225
+    REF_CLK_4_N     : in std_logic;    -- refclk0 to 225
+    REF_CLK_5_P     : in std_logic;    -- refclk1 to 227
+    REF_CLK_5_N     : in std_logic;    -- refclk1 to 227
+    CLK_125_REF_P   : in std_logic;    -- refclk1 to 226
+    CLK_125_REF_N   : in std_logic;    -- refclk1 to 226
+    EMCCLK          : in std_logic;    -- Low frequency, 133 MHz for SPI programing clock
+    LF_CLK          : in std_logic;    -- Low frequency, 10 kHz
 
     --------------------
     -- Signals controlled by ODMB_VME
@@ -66,104 +66,104 @@ entity odmb7_dev_top is
     KUS_VME_DIR     : out std_logic;                       -- Bank 44
     VME_DTACK_KUS_B : out std_logic;                       -- Bank 44
 
-    DCFEB_TCK_P    : out std_logic_vector(7 downto 1);     -- Bank 68
-    DCFEB_TCK_N    : out std_logic_vector(7 downto 1);     -- Bank 68
-    DCFEB_TMS_P    : out std_logic;                        -- Bank 68
-    DCFEB_TMS_N    : out std_logic;                        -- Bank 68
-    DCFEB_TDI_P    : out std_logic;                        -- Bank 68
-    DCFEB_TDI_N    : out std_logic;                        -- Bank 68
-    DCFEB_TDO_P    : in  std_logic_vector(7 downto 1);     -- "C_TDO" in Bank 67-68
-    DCFEB_TDO_N    : in  std_logic_vector(7 downto 1);     -- "C_TDO" in Bank 67-68
-    DCFEB_DONE     : in  std_logic_vector(7 downto 1);     -- "DONE_?" in Bank 68
-    RESYNC_P       : out std_logic;                        -- Bank 66
-    RESYNC_N       : out std_logic;                        -- Bank 66
-    BC0_P          : out std_logic;                        -- Bank 68
-    BC0_N          : out std_logic;                        -- Bank 68
-    INJPLS_P       : out std_logic;                        -- Bank 66, ODMB CTRL
-    INJPLS_N       : out std_logic;                        -- Bank 66, ODMB CTRL
-    EXTPLS_P       : out std_logic;                        -- Bank 66, ODMB CTRL
-    EXTPLS_N       : out std_logic;                        -- Bank 66, ODMB CTRL
-    L1A_P          : out std_logic;                        -- Bank 66, ODMB CTRL
-    L1A_N          : out std_logic;                        -- Bank 66, ODMB CTRL
-    L1A_MATCH_P    : out std_logic_vector(7 downto 1);     -- Bank 66, ODMB CTRL
-    L1A_MATCH_N    : out std_logic_vector(7 downto 1);     -- Bank 66, ODMB CTRL
-    PPIB_OUT_EN_B  : out std_logic;                        -- Bank 68
+    DCFEB_TCK_P     : out std_logic_vector(7 downto 1);     -- Bank 68
+    DCFEB_TCK_N     : out std_logic_vector(7 downto 1);     -- Bank 68
+    DCFEB_TMS_P     : out std_logic;                        -- Bank 68
+    DCFEB_TMS_N     : out std_logic;                        -- Bank 68
+    DCFEB_TDI_P     : out std_logic;                        -- Bank 68
+    DCFEB_TDI_N     : out std_logic;                        -- Bank 68
+    DCFEB_TDO_P     : in  std_logic_vector(7 downto 1);     -- "C_TDO" in Bank 67-68
+    DCFEB_TDO_N     : in  std_logic_vector(7 downto 1);     -- "C_TDO" in Bank 67-68
+    DCFEB_DONE      : in  std_logic_vector(7 downto 1);     -- "DONE_?" in Bank 68
+    RESYNC_P        : out std_logic;                        -- Bank 66
+    RESYNC_N        : out std_logic;                        -- Bank 66
+    BC0_P           : out std_logic;                        -- Bank 68
+    BC0_N           : out std_logic;                        -- Bank 68
+    INJPLS_P        : out std_logic;                        -- Bank 66, ODMB CTRL
+    INJPLS_N        : out std_logic;                        -- Bank 66, ODMB CTRL
+    EXTPLS_P        : out std_logic;                        -- Bank 66, ODMB CTRL
+    EXTPLS_N        : out std_logic;                        -- Bank 66, ODMB CTRL
+    L1A_P           : out std_logic;                        -- Bank 66, ODMB CTRL
+    L1A_N           : out std_logic;                        -- Bank 66, ODMB CTRL
+    L1A_MATCH_P     : out std_logic_vector(7 downto 1);     -- Bank 66, ODMB CTRL
+    L1A_MATCH_N     : out std_logic_vector(7 downto 1);     -- Bank 66, ODMB CTRL
+    PPIB_OUT_EN_B   : out std_logic;                        -- Bank 68
 
     --------------------------------
     -- LVMB control/monitor signals
     --------------------------------
-    LVMB_PON     : out std_logic_vector(7 downto 0);
-    PON_LOAD     : out std_logic;
-    PON_OE_B     : out std_logic;
-    MON_LVMB_PON : in  std_logic_vector(7 downto 0);
-    LVMB_CSB     : out std_logic_vector(6 downto 0);
-    LVMB_SCLK    : out std_logic;
-    LVMB_SDIN    : out std_logic;
+    LVMB_PON        : out std_logic_vector(7 downto 0);
+    PON_LOAD        : out std_logic;
+    PON_OE_B        : out std_logic;
+    MON_LVMB_PON    : in  std_logic_vector(7 downto 0);
+    LVMB_CSB        : out std_logic_vector(6 downto 0);
+    LVMB_SCLK       : out std_logic;
+    LVMB_SDIN       : out std_logic;
 
     --------------------------------
     -- ODMB optical ports
     --------------------------------
     -- Acutally connected optical TX/RX signals
-    DAQ_RX_P     : in std_logic_vector(10 downto 0);
-    DAQ_RX_N     : in std_logic_vector(10 downto 0);
-    DAQ_SPY_RX_P : in std_logic;        -- DAQ_RX_P11 or SPY_RX_P
-    DAQ_SPY_RX_N : in std_logic;        -- DAQ_RX_N11 or SPY_RX_N
-    B04_RX_P     : in std_logic_vector(4 downto 2); -- B04 RX, no use yet
-    B04_RX_N     : in std_logic_vector(4 downto 2); -- B04 RX, no use yet
-    BCK_PRS_P    : in std_logic; -- B04_RX1_P
-    BCK_PRS_N    : in std_logic; -- B04_RX1_N
+    DAQ_RX_P        : in std_logic_vector(10 downto 0);
+    DAQ_RX_N        : in std_logic_vector(10 downto 0);
+    DAQ_SPY_RX_P    : in std_logic;        -- DAQ_RX_P11 or SPY_RX_P
+    DAQ_SPY_RX_N    : in std_logic;        -- DAQ_RX_N11 or SPY_RX_N
+    B04_RX_P        : in std_logic_vector(4 downto 2); -- B04 RX, no use yet
+    B04_RX_N        : in std_logic_vector(4 downto 2); -- B04 RX, no use yet
+    BCK_PRS_P       : in std_logic; -- B04_RX1_P
+    BCK_PRS_N       : in std_logic; -- B04_RX1_N
 
-    SPY_TX_P     : out std_logic;        -- output to PC
-    SPY_TX_N     : out std_logic;        -- output to PC
+    SPY_TX_P        : out std_logic;        -- output to PC
+    SPY_TX_N        : out std_logic;        -- output to PC
     -- DAQ_TX_P     : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
     -- DAQ_TX_N     : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
-    DAQ_TX_P     : out std_logic_vector(4 downto 4); -- B04 TX, output to FED
-    DAQ_TX_N     : out std_logic_vector(4 downto 4); -- B04 TX, output to FED
+    DAQ_TX_P        : out std_logic_vector(4 downto 4); -- B04 TX, output to FED
+    DAQ_TX_N        : out std_logic_vector(4 downto 4); -- B04 TX, output to FED
 
     --------------------------------
     -- Optical control signals
     --------------------------------
-    DAQ_SPY_SEL    : out std_logic;      -- 0 for DAQ_RX_P/N11, 1 for SPY_RX_P/N
+    DAQ_SPY_SEL     : out std_logic;      -- 0 for DAQ_RX_P/N11, 1 for SPY_RX_P/N
 
-    RX12_I2C_ENA   : out std_logic;
-    RX12_SDA       : inout std_logic;
-    RX12_SCL       : inout std_logic;
-    RX12_CS_B      : out std_logic;
-    RX12_RST_B    : out std_logic;
-    RX12_INT_B     : in std_logic;
-    RX12_PRESENT_B : in std_logic;
+    RX12_I2C_ENA    : out std_logic;
+    RX12_SDA        : inout std_logic;
+    RX12_SCL        : inout std_logic;
+    RX12_CS_B       : out std_logic;
+    RX12_RST_B      : out std_logic;
+    RX12_INT_B      : in std_logic;
+    RX12_PRESENT_B  : in std_logic;
 
-    TX12_I2C_ENA   : out std_logic;
-    TX12_SDA       : inout std_logic;
-    TX12_SCL       : inout std_logic;
-    TX12_CS_B      : out std_logic;
-    TX12_RST_B     : out std_logic;
-    TX12_INT_B     : in std_logic;
-    TX12_PRESENT_B : in std_logic;
+    TX12_I2C_ENA    : out std_logic;
+    TX12_SDA        : inout std_logic;
+    TX12_SCL        : inout std_logic;
+    TX12_CS_B       : out std_logic;
+    TX12_RST_B      : out std_logic;
+    TX12_INT_B      : in std_logic;
+    TX12_PRESENT_B  : in std_logic;
 
-    B04_I2C_ENA   : out std_logic;
-    B04_SDA       : inout std_logic;
-    B04_SCL       : inout std_logic;
-    B04_CS_B      : out std_logic;
-    B04_RST_B     : out std_logic;
-    B04_INT_B     : in std_logic;
-    B04_PRESENT_B : in std_logic;
+    B04_I2C_ENA     : out std_logic;
+    B04_SDA         : inout std_logic;
+    B04_SCL         : inout std_logic;
+    B04_CS_B        : out std_logic;
+    B04_RST_B       : out std_logic;
+    B04_INT_B       : in std_logic;
+    B04_PRESENT_B   : in std_logic;
 
-    SPY_I2C_ENA   : out std_logic;
-    SPY_SDA       : inout std_logic;
-    SPY_SCL       : inout std_logic;
-    SPY_SD        : in std_logic;   -- Signal Detect
-    SPY_TDIS      : out std_logic;  -- Transmitter Disable
+    SPY_I2C_ENA     : out std_logic;
+    SPY_SDA         : inout std_logic;
+    SPY_SCL         : inout std_logic;
+    SPY_SD          : in std_logic;   -- Signal Detect
+    SPY_TDIS        : out std_logic;  -- Transmitter Disable
 
     --------------------------------
     -- Essential selector/reset signals not classified yet
     --------------------------------
-    KUS_DL_SEL    : out std_logic;  -- Bank 47, ODMB JTAG path select
-    FPGA_SEL      : out std_logic;  -- Bank 47, clock synthesizaer control input select
-    RST_CLKS_B    : out std_logic;  -- Bank 47, clock synthesizaer reset
-    CCB_HARDRST_B : in std_logic;   -- Bank 45
-    CCB_SOFT_RST  : in std_logic;   -- Bank 45
-    ODMB_DONE     : in std_logic;   -- "DONE" in bank 66, monitor of the DONE from Bank 0
+    KUS_DL_SEL      : out std_logic;  -- Bank 47, ODMB JTAG path select
+    FPGA_SEL        : out std_logic;  -- Bank 47, clock synthesizaer control input select
+    RST_CLKS_B      : out std_logic;  -- Bank 47, clock synthesizaer reset
+    CCB_HARDRST_B   : in std_logic;   -- Bank 45
+    CCB_SOFT_RST    : in std_logic;   -- Bank 45
+    ODMB_DONE       : in std_logic;   -- "DONE" in bank 66, monitor of the DONE from Bank 0
 
     --------------------------------
     -- Clock synthesizer I2C
@@ -172,17 +172,17 @@ entity odmb7_dev_top is
     --------------------------------
     -- SYSMON ports
     --------------------------------
-    SYSMON_P      : in std_logic_vector(15 downto 0);
-    SYSMON_N      : in std_logic_vector(15 downto 0);
-    ADC_CS_B      : out std_logic_vector(4 downto 0);
-    ADC_SCK       : out std_logic;
-    ADC_DIN       : out std_logic;
-    ADC_DOUT      : in std_logic;
+    SYSMON_P        : in std_logic_vector(15 downto 0);
+    SYSMON_N        : in std_logic_vector(15 downto 0);
+    ADC_CS_B        : out std_logic_vector(4 downto 0);
+    ADC_SCK         : out std_logic;
+    ADC_DIN         : out std_logic;
+    ADC_DOUT        : in std_logic;
 
     --------------------------------
     -- Others
     --------------------------------
-    LEDS_CFV      : out std_logic_vector(11 downto 0)
+    LEDS_CFV        : out std_logic_vector(11 downto 0)
 
     );
 end odmb7_dev_top;
@@ -438,9 +438,9 @@ architecture odmb_inst of odmb7_dev_top is
   --------------------------------------------------
   signal shiftTxClock_from_vio                      : std_logic;
   signal txShiftCount_from_vio                      : std_logic_vector(7 downto 0);
-  signal txAligned_from_gbtbank                     : std_logic;
-  signal txAlignComputed_from_gbtbank               : std_logic;
-  signal txAligned_from_gbtbank_latched             : std_logic;
+  signal txAligned_from_gbtbank                     : std_logic := '0';
+  signal txAlignComputed_from_gbtbank               : std_logic := '0';
+  signal txAligned_from_gbtbank_latched             : std_logic := '0';
   --------------------------------------------------
   signal sync_from_vio                              : std_logic_vector(11 downto 0);
   signal async_to_vio                               : std_logic_vector(17 downto 0);
@@ -453,7 +453,7 @@ architecture odmb_inst of odmb7_dev_top is
   --==========--
   -- GBT Tx   --
   --==========--
-  signal gbt_txframeclk_s                : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_txusrclk_s                  : std_logic_vector(1 to NUM_LINKS);
   signal gbt_txreset_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_txready_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_txdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
@@ -478,7 +478,7 @@ architecture odmb_inst of odmb7_dev_top is
   --==========--
   -- GBT Rx   --
   --==========--
-  signal gbt_rxframeclk_s                : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_rxusrclk_s                  : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxreset_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxready_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
@@ -604,32 +604,8 @@ begin
   spy_rx_n <= DAQ_SPY_RX_N when SPY_SEL = '1' else '0';
   spy_rx_p <= DAQ_SPY_RX_P when SPY_SEL = '1' else '0';
 
-  genRst: entity work.xlx_ku_reset
-    generic map (
-      CLK_FREQ             => 125e6)
-    port map (
-      CLK_I                => mgtclk125,
-      RESET1_B_I           => '1',
-      RESET2_B_I           => not generalReset_from_user,
-      RESET_O              => reset_from_genRst
-      );
-
-  generalReset_from_user  <= resetgbtfpga_from_vio or not(txFrameClkPllLocked_from_gbtExmplDsgn);
-
-  -- Can this be optimized out?
-  txFrameclkGen_inst: entity work.xlx_ku_tx_phaligner
-    Port map(
-      -- Reset
-      RESET_IN              => txPllReset,
-      -- Clocks
-      CLK_IN                => mgtclk4,
-      CLK_OUT               => txFrameClk_from_txPll,
-      -- Control
-      SHIFT_IN              => shiftTxClock_from_vio,
-      SHIFT_COUNT_IN        => txShiftCount_from_vio,
-      -- Status
-      LOCKED_OUT            => txFrameClkPllLocked_from_gbtExmplDsgn
-      );
+  generalReset_from_user  <= resetgbtfpga_from_vio; -- or not(txFrameClkPllLocked_from_gbtExmplDsgn);
+  reset_from_genRst <= generalReset_from_user;      -- should be hold for 1s
 
   --========================--
   -- Data pattern generator --
@@ -645,11 +621,9 @@ begin
       port map (
         GENERAL_RST_I                                  => reset_from_genRst,
         RESET_I                                        => gbt_txreset_s(i),
-        TX_FRAMECLK_I                                  => txFrameClk_from_txPll,
-        TX_WORDCLK_I                                   => mgt_txwordclk_s(i),
-
-        TX_FRAMECLK_O                                  => gbt_txframeclk_s(i),
-        TX_CLKEN_o                                     => gbt_txclken_s(i),
+        TX_FRAMECLK_I                                  => cmsclk,
+        TX_WORDCLK_I                                   => gbt_txusrclk_s(i),
+        TX_CLKEN_i                                     => gbt_txclken_s(i),
 
         -----------------------------------------------
         TX_ENCODING_SEL_I                              => gbtBank_txEncodingSel,
@@ -677,7 +651,7 @@ begin
     gbtBank_pattCheck: entity work.gbt_pattern_checker
       port map (
         RESET_I                                        => reset_from_genRst,
-        RX_FRAMECLK_I                                  => gbt_rxframeclk_s(i),
+        RX_FRAMECLK_I                                  => gbt_rxusrclk_s(i),
         RX_CLKEN_I                                     => gbt_rxclkenLogic_s(i),
         -----------------------------------------------
         RX_DATA_I                                      => gbt_rxdata_s(i),
@@ -701,30 +675,32 @@ begin
   --============--
   -- Match flag --
   --============--
-  gbtBank_txFlag: entity work.gbt_pattern_matchflag
-    PORT MAP (
-      RESET_I                                           => gbt_txreset_s(1),
-      CLK_I                                             => gbt_txframeclk_s(1),
-      CLKEN_I                                           => gbt_txclken_s(1),
-      DATA_I                                            => gbt_txdata_s(1),
-      MATCHFLAG_O                                       => txMatchFlag_from_gbtExmplDsgn
-      );
+  -- gbtBank_txFlag: entity work.gbt_pattern_matchflag
+  --   PORT MAP (
+  --     RESET_I                                           => gbt_txreset_s(1),
+  --     CLK_I                                             => gbt_txusrclk_s(1),
+  --     CLKEN_I                                           => gbt_txclken_s(1),
+  --     DATA_I                                            => gbt_txdata_s(1),
+  --     MATCHFLAG_O                                       => txMatchFlag_from_gbtExmplDsgn
+  --     );
 
-  gbtBank_rxFlag_gen: for i in 1 to NUM_LINKS generate
-    gbtBank_rxFlag: entity work.gbt_pattern_matchflag
-      PORT MAP (
-        RESET_I                                           => gbt_rxreset_s(i),
-        CLK_I                                             => gbt_rxframeclk_s(i),
-        CLKEN_I                                           => gbt_rxclkenLogic_s(i),
-        DATA_I                                            => gbt_rxdata_s(i),
-        MATCHFLAG_O                                       => rxMatchFlag_from_gbtExmplDsgn
-        );
-  end generate;
+  -- gbtBank_rxFlag_gen: for i in 1 to NUM_LINKS generate
+  --   gbtBank_rxFlag: entity work.gbt_pattern_matchflag
+  --     PORT MAP (
+  --       RESET_I                                         => gbt_rxreset_s(i),
+  --       CLK_I                                           => gbt_rxusrclk_s(i),
+  --       CLKEN_I                                         => gbt_rxclkenLogic_s(i),
+  --       DATA_I                                          => gbt_rxdata_s(i),
+  --       MATCHFLAG_O                                     => rxMatchFlag_from_gbtExmplDsgn
+  --       );
+  -- end generate;
 
 
   gbtExmplDsgn_inst : entity work.mgt_gbt
     generic map(
-      NUM_LINKS                => 1
+      NUM_LINKS                => 1,
+      TX_ENCODING              => TX_ENCODING,
+      RX_ENCODING              => RX_ENCODING
       )
     port map (
 
@@ -732,13 +708,13 @@ begin
       -- Clocks       --
       --==============--
       MGT_REFCLK                => mgtrefclk0_225,
-      GBT_FRAMECLK              => txFrameClk_from_txPll, -- 40 MHz derived from mgtrefclk0_225
-      MGT_DRP_CLK               => mgtclk4,
+      GBT_FRAMECLK              => cmsclk,  -- 40.079 MHz
+      MGT_DRP_CLK               => mgtclk4, -- 120.24 MHz from mgtrefclk0_225
 
-      TX_WORDCLK_o              => mgt_txwordclk_s,
-      RX_WORDCLK_o              => mgt_rxwordclk_s,
-      TX_FRAMECLK_i             => gbt_txframeclk_s,
-      RX_FRAMECLK_o             => gbt_rxframeclk_s,
+      GBT_TXUSRCLK_o            => gbt_txusrclk_s,
+      GBT_RXUSRCLK_o            => gbt_rxusrclk_s,
+      GBT_TXCLKEN_o             => gbt_txclken_s,           -- from pattern generator, to be evaluated
+      GBT_RXCLKEN_o             => gbt_rxclkenLogic_s,      -- to pattern checker, to be evaluated
 
       --==============--
       -- Serial lanes --
@@ -771,16 +747,12 @@ begin
       --==============--
       -- Keep for now --
       --==============--
-      GBTBANK_RXFRAMECLK_ALIGNPATTER_I  => debug_clk_alignment_debug,         -- from VIO
-      GBTBANK_TX_ALIGNED_O(1)           => txAligned_from_gbtbank, -- latched to VIO
-      GBTBANK_TX_ALIGNCOMPUTED_O(1)     => txAlignComputed_from_gbtbank, -- to VIO
+      -- GBTBANK_TX_ALIGNED_O(1)           => txAligned_from_gbtbank, -- latched to VIO
+      -- GBTBANK_TX_ALIGNCOMPUTED_O(1)     => txAlignComputed_from_gbtbank, -- to VIO
       GBTBANK_RX_BITMODIFIED_FLAG_O(1)  => gbtModifiedBitFlag,         -- to count BER
       GBTBANK_LOOPBACK_I                => loopBack_from_user, -- from VIO
       RESET_TX_i                        => manualResetTx_from_user, -- from VIO
       RESET_RX_i                        => manualResetRx_from_user, -- from VIO
-      GBT_TXCLKEN_i                     => gbt_txclken_s,           -- from pattern generator, to be evaluated
-      GBT_RXCLKENLOGIC_o                => gbt_rxclkenLogic_s,      -- to pattern checker, to be evaluated
-      RX_FRAMECLK_RDY_o(1)              => rxFrameClkReady_from_gbtExmplDsgn, -- to VIO
 
       --==============--
       -- Reset        --
@@ -790,11 +762,12 @@ begin
 
   mgtReady_from_gbtExmplDsgn <= mgt_txready_s(1) and mgt_rxready_s(1);
   gbtRxReady_from_gbtExmplDsgn <= mgt_rxready_s(1) and gbt_rxready_s(1);
+  rxFrameClkReady_from_gbtExmplDsgn <= mgt_rxready_s(1);
 
   --=====================================--
   -- BER                                 --
   --=====================================--
-  countWordReceivedProc: PROCESS(reset_from_genRst, gbt_rxframeclk_s(1))
+  countWordReceivedProc: PROCESS(reset_from_genRst, gbt_rxusrclk_s(1))
   begin
 
     if reset_from_genRst = '1' then
@@ -802,7 +775,7 @@ begin
       countBitsModified <= (others => '0');
       countWordErrors    <= (others => '0');
 
-    elsif rising_edge(gbt_rxframeclk_s(1)) then
+    elsif rising_edge(gbt_rxusrclk_s(1)) then
       if gbtRxReady_from_gbtExmplDsgn = '1' then
 
         if gbtErrorDetected = '1' then
@@ -826,7 +799,7 @@ begin
       MAXOUTWIDTH    => 8
       )
     Port map(
-      Clock    => gbt_rxframeclk_s(1), -- Warning: Because the enable signal (1 over 3 or 6 clock cycle) is not used, the number of error is multiplied by 3 or 6.
+      Clock    => gbt_rxusrclk_s(1), -- Warning: Because the enable signal (1 over 3 or 6 clock cycle) is not used, the number of error is multiplied by 3 or 6.
       I        => gbtModifiedBitFlagFiltered,
       O        => modifiedBitsCnt
       );
@@ -874,36 +847,36 @@ begin
 
   ila_tx_inst : ila_gbt_exde
     port map (
-      clk => sysclk80,                  -- original 300 MHz
+      clk => gbt_txusrclk_s(1),
       probe0 => gbt_txdata_s(1),
       probe1 => wb_txdata_s(1),
       probe2(0) => txIsDataSel_from_user,
-      probe3(0) => '0'
+      probe3(0) => gbt_txclken_s(1)
       );
 
   ila_rx_inst : ila_gbt_exde
     port map (
-      clk => sysclk80,                  -- original 300 MHz
+      clk => gbt_rxusrclk_s(1),
       probe0 => gbt_rxdata_s(1),
       probe1 => wb_rxdata_s(1),
       probe2(0) => rxIsData_from_gbtExmplDsgn,
       probe3(0) => gbtErrorDetected
       );
 
-  alignmenetLatchProc: process(txFrameClk_from_txPll)
-  begin
+  -- alignmenetLatchProc: process(cmsclk)
+  -- begin
 
-    if reset_from_genRst = '1' then
-      txAligned_from_gbtbank_latched <= '0';
+  --   if reset_from_genRst = '1' then
+  --     txAligned_from_gbtbank_latched <= '0';
 
-    elsif rising_edge(txFrameClk_from_txPll) then
+  --   elsif rising_edge(cmsclk) then
 
-      if txAlignComputed_from_gbtbank = '1' then
-        txAligned_from_gbtbank_latched <= txAligned_from_gbtbank;
-      end if;
+  --     if txAlignComputed_from_gbtbank = '1' then
+  --       txAligned_from_gbtbank_latched <= txAligned_from_gbtbank;
+  --     end if;
 
-    end if;
-  end process;
+  --   end if;
+  -- end process;
 
 
   GTH_spy : entity work.mgt_spy
