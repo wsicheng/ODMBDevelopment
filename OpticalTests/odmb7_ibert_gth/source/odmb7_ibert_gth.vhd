@@ -179,12 +179,12 @@ architecture odmb_inst of odmb7_ibert_gth is
       );
   end component;
 
-  component ila_1 is
-    port (
-      clk : in std_logic;
-      probe0 : in std_logic_vector(255 downto 0)
-      );
-  end component;
+  -- component ila_1 is
+  --   port (
+  --     clk : in std_logic;
+  --     probe0 : in std_logic_vector(255 downto 0)
+  --     );
+  -- end component;
 
   component clock_counting is
     port (
@@ -444,9 +444,9 @@ begin
       clk_out80 => clk_sysclk80    -- output 80 MHz
       );
 
-  gth_sysclk_i <= clk_sysclk80;
+  -- gth_sysclk_i <= clk_sysclk80;
   -- gth_sysclk_i <= clk_mgtclk0;
-  -- gth_sysclk_i <= clk_gp7;
+  gth_sysclk_i <= clk_gp7;
   -- gth_sysclk_i <= clk_gp6_buf;
 
   -- DAQ_SPY_SEL <= '1';   -- Priority to test the SPY TX
@@ -624,10 +624,10 @@ begin
   ila_data_1(200) <= B04_INT_B;
   ila_data_1(201) <= B04_PRESENT_B;
 
-  ila_inst_1 : ila_1
-    port map (
-      clk => clk_mgtclk1,
-      probe0 => ila_data_1
-      );
+  -- ila_inst_1 : ila_1
+  --   port map (
+  --     clk => clk_mgtclk1,
+  --     probe0 => ila_data_1
+  --     );
 
 end odmb_inst;
