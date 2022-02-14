@@ -19,8 +19,8 @@ use work.vendor_specific_gbt_bank_package.all;
 entity mgt_gbt is
   generic (
     NUM_LINKS                                    : integer := 1;
-    TX_ENCODING                                  : integer range 0 to 2 := GBT_FRAME;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
-    RX_ENCODING                                  : integer range 0 to 2 := GBT_FRAME    -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
+    LINK_TYPE                                    : integer := 0; --! LINK_TYPE: select the proper gtwizard IP, with 0: ALCT, 1: BCK_PRS
+    GBT_ENCODING                                 : integer range 0 to 2 := GBT_FRAME --! 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
     );
   port (
 
@@ -96,16 +96,6 @@ architecture mgt_gbt_inst of mgt_gbt is
   constant CLOCKING_SCHEME               : integer range 0 to 1 := 1; -- 0: BC_CLOCK, 1: FULL_MGTFREQ
 
   --==========--
-  -- GBT Tx   --
-  --==========--
-  signal gbt_txframeclk_s                : std_logic_vector(1 to NUM_LINKS);
-  signal gbt_txreset_s                   : std_logic_vector(1 to NUM_LINKS);
-  signal gbt_txdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
-  signal wb_txdata_s                     : gbt_reg32_A(1 to NUM_LINKS);
-  signal gbt_txclken_s                   : std_logic_vector(1 to NUM_LINKS);
-  signal gbt_txencoding_s                : std_logic_vector(1 to NUM_LINKS);
-
-  --==========--
   -- NGT      --
   --==========--
   signal mgt_txwordclk_s                 : std_logic_vector(1 to NUM_LINKS);
@@ -120,17 +110,17 @@ architecture mgt_gbt_inst of mgt_gbt is
   signal mgt_devspecific_from_s          : mgtDeviceSpecific_o_R;
   signal resetOnBitslip_s                : std_logic_vector(1 to NUM_LINKS);
 
-  --==========--
-  -- GBT Rx   --
-  --==========--
-  signal gbt_rxframeclk_s                : std_logic_vector(1 to NUM_LINKS);
+  --===========--
+  -- GBT Tx/Rx --
+  --===========--
+  signal gbt_txreset_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxreset_s                   : std_logic_vector(1 to NUM_LINKS);
-  signal gbt_rxready_s                   : std_logic_vector(1 to NUM_LINKS);
-  signal gbt_rxdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
-  signal wb_rxdata_s                     : gbt_reg32_A(1 to NUM_LINKS);
+  signal gbt_txclken_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxclken_s                   : std_logic_vector(1 to NUM_LiNKS);
   signal gbt_rxclkenLogic_s              : std_logic_vector(1 to NUM_LiNKS);
+  signal gbt_txencoding_s                : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxencoding_s                : std_logic_vector(1 to NUM_LINKS);
+  signal gbt_rxready_s                   : std_logic_vector(1 to NUM_LINKS);
   --===== GBT Rx Phase Aligner =====--
   signal rx_syncShiftReg                 : gbt_devspec_reg3_A(1 to NUM_LINKS);
 
@@ -138,7 +128,6 @@ architecture mgt_gbt_inst of mgt_gbt is
 
   -- Debug --
   signal ila_data_mgt                    : std_logic_vector(83 downto 0);
-  -- signal ila_data0                       : std_logic_vector(83 downto 0);
 
   component ila_gbt_exde is
     port (
@@ -296,11 +285,12 @@ begin                 --========####   Architecture Body   ####========--
   --============--
   gbt_inst: entity work.gbt_bank
     generic map(
-      NUM_LINKS                 => NUM_LINKS,
-      TX_OPTIMIZATION           => TX_OPTIMIZATION,
-      RX_OPTIMIZATION           => RX_OPTIMIZATION,
-      TX_ENCODING               => TX_ENCODING,
-      RX_ENCODING               => RX_ENCODING
+      NUM_LINKS                => NUM_LINKS,
+      LINK_TYPE                => LINK_TYPE,
+      TX_OPTIMIZATION          => TX_OPTIMIZATION,
+      RX_OPTIMIZATION          => RX_OPTIMIZATION,
+      TX_ENCODING              => GBT_ENCODING,
+      RX_ENCODING              => GBT_ENCODING
       )
     port map(
 
@@ -378,14 +368,14 @@ begin                 --========####   Architecture Body   ####========--
 
       );
 
-  ila_mgt_gbt : ila_gbt_exde
-    port map (
-      clk => MGT_DRP_CLK,        -- original 300 MHz
-      probe0 => ila_data_mgt,
-      probe1 => (others => '0'),
-      probe2(0) => gbt_txclken_s(1),
-      probe3(0) => gbt_rxclkenLogic_s(1)
-      );
+  -- ila_mgt_gbt : ila_gbt_exde
+  --   port map (
+  --     clk => MGT_DRP_CLK,        -- original 300 MHz
+  --     probe0 => ila_data_mgt,
+  --     probe1 => (others => '0'),
+  --     probe2(0) => gbt_rxclken_s(1),
+  --     probe3(0) => gbt_rxclkenLogic_s(1)
+  --     );
 
 --=====================================================================================--
 end mgt_gbt_inst;

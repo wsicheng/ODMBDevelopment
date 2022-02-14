@@ -146,6 +146,7 @@ begin                 --========####   Architecture Body   ####========--
     variable scEcWordCounter                       : unsigned( 1 downto 0);
     variable commonWordCounter                     : unsigned(19 downto 0);
     variable widebusWordCounter                    : unsigned(15 downto 0);
+    variable hugeWordCounter                       : unsigned(79 downto 0);
   begin
     if RESET_I = '1' then
       scEcWordCounter                             := (others => '0');
@@ -223,6 +224,29 @@ begin                 --========####   Architecture Body   ####========--
             else
               TX_EXTRA_DATA_WIDEBUS_O            <= (others => '0');
             end if;
+
+          --==============--
+          -- Long counter --
+          --==============--
+
+          when "11" =>
+            -- External Control (SC-EC) counter pattern generation:
+            -------------------------------------------------------
+            TX_DATA_O(81 downto 80)               <= std_logic_vector(scEcWordCounter);
+            if commonWordCounter = SCECCOUNTER_OVERFLOW-1 then
+              scEcWordCounter                    := (others => '0');
+            else
+              scEcWordCounter                    := scEcWordCounter + 1;
+            end if;
+            -- Common data counter pattern generation:
+            ------------------------------------------
+            for i in 0 to 3 loop
+              TX_DATA_O(79 downto 0)             <= std_logic_vector(hugeWordCounter);
+            end loop;
+            hugeWordCounter                      := hugeWordCounter + 1;
+
+            -- Wide-Bus extra data counter pattern generation:
+            --------------------------------------------------
 
           --==========--
           -- Disabled --

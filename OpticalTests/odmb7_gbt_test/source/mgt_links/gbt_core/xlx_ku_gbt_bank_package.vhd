@@ -27,17 +27,17 @@ package vendor_specific_gbt_bank_package is
    constant WORD_WIDTH                          : integer := 40;           --! MGT word size (20 [240MHz] / 40 [120MHz])
    constant GBT_WORD_RATIO                      : integer := 3;            --! Size ratio between GBT-Frame word (120bit) and MGT word size (120/WORD_WIDTH = 6 [240MHz] / 3 [120MHz])
    constant GBTRX_BITSLIP_NBR_MAX               : integer := 39;           --! Maximum number of bitslip before going back to the first position (WORD_WIDTH-1)
-   constant GBT_GEARBOXWORDADDR_SIZE            : integer :=  5;           --! Size in bit of the ram address used for the gearbox [Std] : Log2((120 * 8)/WORD_WIDTH)    
+   constant GBT_GEARBOXWORDADDR_SIZE            : integer := 5;            --! Size in bit of the ram address used for the gearbox [Std] : Log2((120 * 8)/WORD_WIDTH)    
    
    constant RX_GEARBOXSYNCSHIFT_COUNT           : integer := 1;            --! Number of clock cycle between the Rx gearbox and the Descrambler (multicyle to allow word decoding in more than one clock cycle). This constant shall be used to fix the multicycle constraint
    --=====================================================================================--
       
    --================================= Array Declarations ================================--
-   type gbt_devspec_reg16_A                                     is array (natural range <>) of std_logic_vector(15 downto 0);
-   type gbt_devspec_reg9_A                                      is array (natural range <>) of std_logic_vector(8 downto 0);
-   type gbt_devspec_reg5_A                                      is array (natural range <>) of std_logic_vector(4 downto 0);
-   type gbt_devspec_reg4_A                                      is array (natural range <>) of std_logic_vector(3 downto 0);
-   type gbt_devspec_reg3_A                                      is array (natural range <>) of std_logic_vector(2 downto 0);
+   type gbt_devspec_reg16_A                     is array (natural range <>) of std_logic_vector(15 downto 0);
+   type gbt_devspec_reg9_A                      is array (natural range <>) of std_logic_vector(8 downto 0);
+   type gbt_devspec_reg5_A                      is array (natural range <>) of std_logic_vector(4 downto 0);
+   type gbt_devspec_reg4_A                      is array (natural range <>) of std_logic_vector(3 downto 0);
+   type gbt_devspec_reg3_A                      is array (natural range <>) of std_logic_vector(2 downto 0);
    
    --================================ Record Declarations ================================--   
    

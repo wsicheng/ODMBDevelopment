@@ -21,6 +21,7 @@ use work.vendor_specific_gbt_bank_package.all;
 entity gbt_bank is 
   generic (   
     NUM_LINKS                 : integer := 1;                            --! NUM_LINKS: number of links instantiated by the core (Altera: up to 6, Xilinx: up to 4)
+    LINK_TYPE                 : integer := 0;                            --! LINK_TYPE: select the proper gtwizard IP, with 0: ALCT, 1: BCK_PRS
     TX_OPTIMIZATION           : integer range 0 to 1 := STANDARD;        --! TX_OPTIMIZATION: Latency mode for the Tx path (STANDARD or LATENCY_OPTIMIZED)
     RX_OPTIMIZATION           : integer range 0 to 1 := STANDARD;        --! RX_OPTIMIZATION: Latency mode for the Rx path (STANDARD or LATENCY_OPTIMIZED)
     TX_ENCODING               : integer range 0 to 2 := GBT_FRAME;       --! TX_ENCODING: Encoding scheme for the Tx datapath (GBT_FRAME or WIDE_BUS)
@@ -185,7 +186,8 @@ begin                 --========####   Architecture Body   ####========--
   --! Instantiation of the transceiver module (MGT and FrameAligner)
   mgt_inst: entity work.mgt
     generic map (
-      NUM_LINKS                    => NUM_LINKS
+      NUM_LINKS                    => NUM_LINKS,
+      LINK_TYPE                    => LINK_TYPE
       )
     port map (            
       MGT_REFCLK_i                 => MGT_CLK_i,

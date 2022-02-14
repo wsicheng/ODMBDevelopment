@@ -18,10 +18,12 @@ package ucsb_types is
   type done_state_array_type is array (NCFEB downto 1) of done_state_type;
 
   -- For various counter
-  type t_twobyte_arr is array (integer range <>) of std_logic_vector(15 downto 0);
-  type t_devdata_arr is array (integer range <>) of std_logic_vector(17 downto 0);
-  type t_fourbyte_arr is array (integer range <>) of std_logic_vector(31 downto 0);
-  type t_eightbyte_arr is array (integer range <>) of std_logic_vector(63 downto 0);
+  type t_std14_array is array (integer range <>) of std_logic_vector(13 downto 0);
+  type t_std16_array is array (integer range <>) of std_logic_vector(15 downto 0);
+  type t_std18_array is array (integer range <>) of std_logic_vector(17 downto 0);
+  type t_std19_array is array (integer range <>) of std_logic_vector(18 downto 0);
+  type t_std32_array is array (integer range <>) of std_logic_vector(31 downto 0);
+  type t_std64_array is array (integer range <>) of std_logic_vector(63 downto 0);
 
   type t_mgt_16b_rxdata is record
     rxdata          : std_logic_vector(15 downto 0);
@@ -38,4 +40,22 @@ package ucsb_types is
 
   type t_mgt_16b_rxdata_arr is array(integer range <>) of t_mgt_16b_rxdata;
 
+  function extract_alct_word_from_frame (data  : std_logic_vector(111 downto 0);
+                                         index : integer)
+    return std_logic_vector;
+
 end ucsb_types;
+
+package body ucsb_types is
+
+  function extract_alct_word_from_frame (data  : std_logic_vector(111 downto 0);
+                                         index : integer)
+    return std_logic_vector is
+  begin
+    return (data(104 + index) & data(96 + index) & data(88 + index) & data(80 + index) &
+            data( 72 + index) & data(64 + index) & data(56 + index) & data(48 + index) &
+            data( 40 + index) & data(32 + index) & data(24 + index) & data(16 + index) &
+            data(  8 + index) & data( 0 + index));
+  end;
+
+end package body ucsb_types;

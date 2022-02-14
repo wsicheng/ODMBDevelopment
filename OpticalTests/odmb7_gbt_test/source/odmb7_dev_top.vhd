@@ -117,8 +117,8 @@ entity odmb7_dev_top is
     SPY_TX_N        : out std_logic;        -- output to PC
     -- DAQ_TX_P     : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
     -- DAQ_TX_N     : out std_logic_vector(4 downto 1); -- B04 TX, output to FED
-    DAQ_TX_P        : out std_logic_vector(4 downto 4); -- B04 TX, output to FED
-    DAQ_TX_N        : out std_logic_vector(4 downto 4); -- B04 TX, output to FED
+    DAQ_TX_P        : out std_logic_vector(1 downto 1); -- B04 TX, output to FED
+    DAQ_TX_N        : out std_logic_vector(1 downto 1); -- B04 TX, output to FED
 
     --------------------------------
     -- Optical control signals
@@ -198,6 +198,26 @@ architecture odmb_inst of odmb7_dev_top is
       probe1: in std_logic_vector(31 downto 0);
       probe2: in std_logic_vector(0 downto 0);
       probe3: in std_logic_vector(0 downto 0)
+      );
+  end component;
+
+  component ila_gbt_latency is
+    port (
+      clk: in std_logic;
+      probe0: in std_logic_vector(83 downto 0);
+      probe1: in std_logic_vector(83 downto 0);
+      probe2: in std_logic_vector(83 downto 0);
+      probe3: in std_logic_vector(0 downto 0);
+      probe4: in std_logic_vector(0 downto 0);
+      probe5: in std_logic_vector(0 downto 0)
+      );
+  end component;
+
+  component ila_gbt_decode is
+    port (
+      clk: in std_logic;
+      probe0: in std_logic_vector(127 downto 0);
+      probe1: in std_logic_vector(0 downto 0)
       );
   end component;
 
@@ -354,7 +374,7 @@ architecture odmb_inst of odmb7_dev_top is
   -- MGT signals for DCFEB RX channels
   --------------------------------------
   signal usrclk_mgtc : std_logic;
-  signal dcfeb_rxdata : t_twobyte_arr(NCFEB downto 1);  -- Data received
+  signal dcfeb_rxdata : t_std16_array(NCFEB downto 1);  -- Data received
   signal dcfeb_rxd_valid : std_logic_vector(NCFEB downto 1);   -- Flag for valid data;
   signal dcfeb_crc_valid : std_logic_vector(NCFEB downto 1);   -- Flag for valid data;
   signal dcfeb_bad_rx : std_logic_vector(NCFEB downto 1);   -- Flag for fiber errors;
@@ -380,8 +400,7 @@ architecture odmb_inst of odmb7_dev_top is
   constant NUM_LINKS             : integer := 1;
   constant TX_OPTIMIZATION       : integer := 0;   -- 0: STANDARD, 1: LATENCY_OPTIMZED
   constant RX_OPTIMIZATION       : integer := 0;   -- 0: STANDARD, 1: LATENCY_OPTIMZED
-  constant TX_ENCODING           : integer := 0;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
-  constant RX_ENCODING           : integer := 0;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
+  constant GBT_ENCODING          : integer := 1;   -- 0: GBT_FRAME, 1: WIDE_BUS, 2: GBT_DYNAMIC
   constant CLOCKING_SCHEME       : integer := 1;   -- 0: BC_CLOCK, 1: FULL_MGTFREQ
 
   signal txFrameClk_from_txPll                      : std_logic;
@@ -448,7 +467,6 @@ architecture odmb_inst of odmb7_dev_top is
   signal txEncoding_from_vio              : std_logic;
   signal rxEncoding_from_vio              : std_logic;
 
-
   --======================= Signal Declarations =========================--
   --==========--
   -- GBT Tx   --
@@ -483,7 +501,7 @@ architecture odmb_inst of odmb7_dev_top is
   signal gbt_rxready_s                   : std_logic_vector(1 to NUM_LINKS);
   signal gbt_rxdata_s                    : gbt_reg84_A(1 to NUM_LINKS);
   signal wb_rxdata_s                     : gbt_reg32_A(1 to NUM_LINKS);
-  signal gbt_rxclkenLogic_s              : std_logic_vector(1 to NUM_LiNKS);
+  signal gbt_rxclkenLogic_s              : std_logic_vector(1 to NUM_LINKS);
 
   --================================--
   -- Data pattern generator/checker --
@@ -493,6 +511,23 @@ architecture odmb_inst of odmb7_dev_top is
   signal txData_from_gbtBank_pattGen     : gbt_reg84_A(1 to NUM_LINKS);
   signal txwBData_from_gbtBank_pattGen   : gbt_reg32_A(1 to NUM_LINKS);
 
+  --=================== ALCT Signal Declarations ======================--
+  signal usrclk_gbta                     : std_logic;
+  signal alct_rxclken                    : std_logic;
+  signal alct_rxdata_gbt                 : std_logic_vector(83 downto 0);
+  signal alct_rxdata_wb                  : std_logic_vector(31 downto 0);
+  signal alct_rxdata_raw                 : std_logic_vector(111 downto 0);
+  signal alct_rxdata_alt                 : std_logic_vector(111 downto 0);
+  signal alct_rxd_valid                  : std_logic;
+  signal alct_mgt_rxready                : std_logic;
+  signal alct_gbt_rxready                : std_logic;
+  signal alct_rxready                    : std_logic;
+  signal alct_bad_rx                     : std_logic;
+  signal alct_rxdata_pkt                 : t_std14_array(7 downto 0);
+  signal alct_rxdata_apt                 : t_std14_array(7 downto 0);
+
+  signal ila_alct_pkt                    : std_logic_vector(127 downto 0);
+  signal ila_alct_apt                    : std_logic_vector(127 downto 0);
 
 begin
 
@@ -611,7 +646,7 @@ begin
   -- Data pattern generator --
   --========================--
 
-  gbtBank_txEncodingSel <= "00"; -- when TX_ENCODING = GBT_FRAME else '0' & not(TX_ENCODING_SEL_i);
+  gbtBank_txEncodingSel <= "01" when GBT_ENCODING = WIDE_BUS else "00";
 
   dataGenEn_output_gen: for i in 1 to NUM_LINKS generate
     gbtBank2_pattGen: entity work.gbt_pattern_generator
@@ -629,8 +664,8 @@ begin
         TX_ENCODING_SEL_I                              => gbtBank_txEncodingSel,
         TEST_PATTERN_SEL_I                             => testPatterSel_from_user,
         STATIC_PATTERN_SCEC_I                          => "00",
-        STATIC_PATTERN_DATA_I                          => x"000BABEAC1DACDCFFFFF",
-        STATIC_PATTERN_EXTRADATA_WIDEBUS_I             => x"BEEFCAFE",
+        STATIC_PATTERN_DATA_I                          => x"F00BABEAC1DACDCFFFFF",
+        STATIC_PATTERN_EXTRADATA_WIDEBUS_I             => x"F000CAFE",
         -----------------------------------------------
         TX_DATA_O                                      => txData_from_gbtBank_pattGen(i),
         TX_EXTRA_DATA_WIDEBUS_O                        => txwBData_from_gbtBank_pattGen(i)
@@ -645,7 +680,8 @@ begin
   --==========================--
   -- Data pattern checker         --
   --==========================--
-  gbtBank_rxEncodingSel <= "00"; -- when RX_ENCODING = GBT_FRAME else '0' & not(RX_ENCODING_SEL_i);
+
+  gbtBank_rxEncodingSel <= "01" when GBT_ENCODING = WIDE_BUS else "00";
 
   gbtBank_patCheck_gen: for i in 1 to NUM_LINKS generate
     gbtBank_pattCheck: entity work.gbt_pattern_checker
@@ -661,8 +697,8 @@ begin
         RX_ENCODING_SEL_I                              => gbtBank_rxEncodingSel,
         TEST_PATTERN_SEL_I                             => testPatterSel_from_user,
         STATIC_PATTERN_SCEC_I                          => "00",
-        STATIC_PATTERN_DATA_I                          => x"000BABEAC1DACDCFFFFF",
-        STATIC_PATTERN_EXTRADATA_WIDEBUS_I             => x"BEEFCAFE",
+        STATIC_PATTERN_DATA_I                          => x"F00BABEAC1DACDCFFFFF",
+        STATIC_PATTERN_EXTRADATA_WIDEBUS_I             => x"F000CAFE",
         RESET_GBTRXREADY_LOST_FLAG_I                   => resetGbtRxReadyLostFlag_from_user,
         RESET_DATA_ERRORSEEN_FLAG_I                    => resetDataErrorSeenFlag_from_user,
         -----------------------------------------------
@@ -696,11 +732,11 @@ begin
   -- end generate;
 
 
-  gbtExmplDsgn_inst : entity work.mgt_gbt
+  GBT_FED : entity work.mgt_gbt
     generic map(
       NUM_LINKS                => 1,
-      TX_ENCODING              => TX_ENCODING,
-      RX_ENCODING              => RX_ENCODING
+      LINK_TYPE                => 1,
+      GBT_ENCODING             => 0
       )
     port map (
 
@@ -719,10 +755,10 @@ begin
       --==============--
       -- Serial lanes --
       --==============--
-      MGT_RX_P(1)               => B04_RX_P(4),
-      MGT_RX_N(1)               => B04_RX_N(4),
-      MGT_TX_P(1)               => DAQ_TX_P(4),
-      MGT_TX_N(1)               => DAQ_TX_N(4),
+      MGT_RX_P(1)               => BCK_PRS_P,
+      MGT_RX_N(1)               => BCK_PRS_N,
+      MGT_TX_P(1)               => DAQ_TX_P(1),
+      MGT_TX_N(1)               => DAQ_TX_N(1),
 
       --==============--
       -- Data         --
@@ -860,24 +896,167 @@ begin
       probe0 => gbt_rxdata_s(1),
       probe1 => wb_rxdata_s(1),
       probe2(0) => rxIsData_from_gbtExmplDsgn,
-      probe3(0) => gbtErrorDetected
+      probe3(0) => gbt_rxclkenLogic_s(1)
       );
 
-  -- alignmenetLatchProc: process(cmsclk)
-  -- begin
+  GBT_ALCT : entity work.mgt_gbt
+    generic map(
+      NUM_LINKS                => 1,
+      LINK_TYPE                => 0,
+      GBT_ENCODING             => GBT_ENCODING
+      )
+    port map (
 
-  --   if reset_from_genRst = '1' then
-  --     txAligned_from_gbtbank_latched <= '0';
+      --==============--
+      -- Clocks       --
+      --==============--
+      MGT_REFCLK                => mgtrefclk0_225,
+      GBT_FRAMECLK              => cmsclk,  -- 40.079 MHz
+      MGT_DRP_CLK               => mgtclk4, -- 120.24 MHz from mgtrefclk0_225
 
-  --   elsif rising_edge(cmsclk) then
+      GBT_TXUSRCLK_o(1)         => open,
+      GBT_RXUSRCLK_o(1)         => usrclk_gbta,
+      GBT_TXCLKEN_o(1)          => open,              -- from pattern generator, to be evaluated
+      GBT_RXCLKEN_o(1)          => alct_rxclken,      -- to pattern checker, to be evaluated
 
-  --     if txAlignComputed_from_gbtbank = '1' then
-  --       txAligned_from_gbtbank_latched <= txAligned_from_gbtbank;
-  --     end if;
+      --==============--
+      -- Serial lanes --
+      --==============--
+      MGT_RX_P(1)               => DAQ_RX_P(7),
+      MGT_RX_N(1)               => DAQ_RX_N(7),
+      MGT_TX_P(1)               => open,
+      MGT_TX_N(1)               => open,
 
-  --   end if;
-  -- end process;
+      --==============--
+      -- Data         --
+      --==============--
+      GBT_TXDATA_i(1)           => (others => '0'),
+      GBT_RXDATA_o(1)           => alct_rxdata_gbt,
+      WB_TXDATA_i(1)            => (others => '0'),
+      WB_RXDATA_o(1)            => alct_rxdata_wb,
 
+      TXD_VALID_i(1)            => '0',
+      RXD_VALID_o(1)            => alct_rxd_valid,
+
+      --==============--
+      -- TX/RX Status --
+      --==============--
+      MGT_TXREADY_o(1)          => open,
+      MGT_RXREADY_o(1)          => alct_mgt_rxready,
+      GBT_TXREADY_o(1)          => open,
+      GBT_RXREADY_o(1)          => alct_gbt_rxready,
+      GBT_BAD_RX_o(1)           => alct_bad_rx,
+
+      --==============--
+      -- Keep for now --
+      --==============--
+      GBTBANK_RX_BITMODIFIED_FLAG_O(1)  => open,               -- to count BER
+      GBTBANK_LOOPBACK_I                => loopBack_from_user, -- from VIO
+      RESET_TX_i                        => '0',
+      RESET_RX_i                        => '0',
+
+      --==============--
+      -- Reset        --
+      --==============--
+      RESET_i                   => reset_from_genRst
+      );
+
+  alct_rxready <= alct_mgt_rxready and alct_gbt_rxready;
+
+  ila_alct_rx_inst : ila_gbt_exde
+    port map (
+      clk => usrclk_gbta,
+      probe0 => alct_rxdata_gbt,
+      probe1 => alct_rxdata_wb,
+      probe2(0) => alct_rxready,
+      probe3(0) => alct_rxclken
+      );
+
+  ila_latency_inst : ila_gbt_latency
+    port map (
+      clk => mgtclk4,
+      probe0 => gbt_txdata_s(1),
+      probe1 => gbt_rxdata_s(1),
+      probe2 => alct_rxdata_gbt,
+      probe3(0) => gbt_txclken_s(1),
+      probe4(0) => gbt_rxclkenLogic_s(1),
+      probe5(0) => alct_rxclken
+      );
+
+  alct_rxdata_raw <= alct_rxdata_wb & alct_rxdata_gbt(79 downto 0);
+  alct_rxdata_alt <= wb_rxdata_s(1) & gbt_rxdata_s(1)(79 downto 0);
+
+  alct_rxdata_gen: for i in 0 to 7 generate
+    alct_rxdata_pkt(i) <= (alct_rxdata_raw(104 + i) & alct_rxdata_raw(96 + i) & alct_rxdata_raw(88 + i) & alct_rxdata_raw(80 + i) &
+                           alct_rxdata_raw( 72 + i) & alct_rxdata_raw(64 + i) & alct_rxdata_raw(56 + i) & alct_rxdata_raw(48 + i) &
+                           alct_rxdata_raw( 40 + i) & alct_rxdata_raw(32 + i) & alct_rxdata_raw(24 + i) & alct_rxdata_raw(16 + i) &
+                           alct_rxdata_raw(  8 + i) & alct_rxdata_raw( 0 + i));
+    -- alct_rxdata_apt(i) <= extract_alct_word_from_frame(alct_rxdata_alt, i);
+  end generate;
+
+  alct_rxdata_apt(0) <= (alct_rxdata_alt(104) & alct_rxdata_alt(96) & alct_rxdata_alt(88) & alct_rxdata_alt(80) &
+                         alct_rxdata_alt( 72) & alct_rxdata_alt(64) & alct_rxdata_alt(56) & alct_rxdata_alt(48) &
+                         alct_rxdata_alt( 40) & alct_rxdata_alt(32) & alct_rxdata_alt(24) & alct_rxdata_alt(16) &
+                         alct_rxdata_alt(  8) & alct_rxdata_alt( 0));
+
+  alct_rxdata_apt(1) <= (alct_rxdata_alt(105) & alct_rxdata_alt(97) & alct_rxdata_alt(89) & alct_rxdata_alt(81) &
+                         alct_rxdata_alt( 73) & alct_rxdata_alt(65) & alct_rxdata_alt(57) & alct_rxdata_alt(49) &
+                         alct_rxdata_alt( 41) & alct_rxdata_alt(33) & alct_rxdata_alt(25) & alct_rxdata_alt(17) &
+                         alct_rxdata_alt(  9) & alct_rxdata_alt( 1));
+
+  alct_rxdata_apt(2) <= (alct_rxdata_alt(106) & alct_rxdata_alt(98) & alct_rxdata_alt(90) & alct_rxdata_alt(82) &
+                         alct_rxdata_alt( 74) & alct_rxdata_alt(66) & alct_rxdata_alt(58) & alct_rxdata_alt(50) &
+                         alct_rxdata_alt( 42) & alct_rxdata_alt(34) & alct_rxdata_alt(26) & alct_rxdata_alt(18) &
+                         alct_rxdata_alt( 10) & alct_rxdata_alt( 2));
+
+  alct_rxdata_apt(3) <= (alct_rxdata_alt(107) & alct_rxdata_alt(99) & alct_rxdata_alt(91) & alct_rxdata_alt(83) &
+                         alct_rxdata_alt( 75) & alct_rxdata_alt(67) & alct_rxdata_alt(59) & alct_rxdata_alt(51) &
+                         alct_rxdata_alt( 43) & alct_rxdata_alt(35) & alct_rxdata_alt(27) & alct_rxdata_alt(19) &
+                         alct_rxdata_alt( 11) & alct_rxdata_alt(3));
+
+  alct_rxdata_apt(4) <= (alct_rxdata_alt(108) & alct_rxdata_alt(100) & alct_rxdata_alt(92) & alct_rxdata_alt(84) &
+                         alct_rxdata_alt( 76) & alct_rxdata_alt(68) & alct_rxdata_alt(60) & alct_rxdata_alt(52) &
+                         alct_rxdata_alt( 44) & alct_rxdata_alt(36) & alct_rxdata_alt(28) & alct_rxdata_alt(20) &
+                         alct_rxdata_alt( 12) & alct_rxdata_alt(4));
+
+  alct_rxdata_apt(5) <= (alct_rxdata_alt(109) & alct_rxdata_alt(101) & alct_rxdata_alt(93) & alct_rxdata_alt(85) &
+                         alct_rxdata_alt( 77) & alct_rxdata_alt(69) & alct_rxdata_alt(61) & alct_rxdata_alt(53) &
+                         alct_rxdata_alt( 45) & alct_rxdata_alt(37) & alct_rxdata_alt(29) & alct_rxdata_alt(21) &
+                         alct_rxdata_alt( 13) & alct_rxdata_alt(5));
+
+  alct_rxdata_apt(6) <= (alct_rxdata_alt(110) & alct_rxdata_alt(102) & alct_rxdata_alt(94) & alct_rxdata_alt(86) &
+                         alct_rxdata_alt( 78) & alct_rxdata_alt(70) & alct_rxdata_alt(62) & alct_rxdata_alt(54) &
+                         alct_rxdata_alt( 46) & alct_rxdata_alt(38) & alct_rxdata_alt(30) & alct_rxdata_alt(22) &
+                         alct_rxdata_alt( 14) & alct_rxdata_alt(6));
+
+  alct_rxdata_apt(7) <= (alct_rxdata_alt(111) & alct_rxdata_alt(103) & alct_rxdata_alt(95) & alct_rxdata_alt(87) &
+                         alct_rxdata_alt( 79) & alct_rxdata_alt(71) & alct_rxdata_alt(63) & alct_rxdata_alt(55) &
+                         alct_rxdata_alt( 47) & alct_rxdata_alt(39) & alct_rxdata_alt(31) & alct_rxdata_alt(23) &
+                         alct_rxdata_alt( 15) & alct_rxdata_alt(7));
+
+  ila_alct_pkt <= "00" & alct_rxdata_pkt(7) & "00" & alct_rxdata_pkt(6) &
+                  "00" & alct_rxdata_pkt(5) & "00" & alct_rxdata_pkt(4) &
+                  "00" & alct_rxdata_pkt(3) & "00" & alct_rxdata_pkt(2) &
+                  "00" & alct_rxdata_pkt(1) & "00" & alct_rxdata_pkt(0);
+
+  ila_alct_apt <= "00" & alct_rxdata_apt(7) & "00" & alct_rxdata_apt(6) &
+                  "00" & alct_rxdata_apt(5) & "00" & alct_rxdata_apt(4) &
+                  "00" & alct_rxdata_apt(3) & "00" & alct_rxdata_apt(2) &
+                  "00" & alct_rxdata_apt(1) & "00" & alct_rxdata_apt(0);
+
+  ila_pkt_decode : ila_gbt_decode
+    port map (
+      clk => usrclk_gbta,
+      probe0 => ila_alct_pkt,
+      probe1(0) => alct_rxclken
+      );
+
+  ila_alt_decode : ila_gbt_decode
+    port map (
+      clk => usrclk_gbta,
+      probe0 => ila_alct_apt,
+      probe1(0) => alct_rxclken
+      );
 
   GTH_spy : entity work.mgt_spy
     generic map (
@@ -909,6 +1088,69 @@ begin
       diagout         => spy_diagout,
       reset           => resetgbtfpga_from_vio
       );
+
+  -- -- Temporary for sending test pattern
+  -- GBT_ALCT : entity work.mgt_gbt
+  --   generic map(
+  --     NUM_LINKS                => 1,
+  --     LINK_TYPE                => 2,
+  --     GBT_ENCODING             => GBT_ENCODING
+  --     )
+  --   port map (
+
+  --     --==============--
+  --     -- Clocks       --
+  --     --==============--
+  --     MGT_REFCLK                => mgtrefclk0_225,
+  --     GBT_FRAMECLK              => cmsclk,  -- 40.079 MHz
+  --     MGT_DRP_CLK               => mgtclk4, -- 120.24 MHz from mgtrefclk0_225
+
+  --     GBT_TXUSRCLK_o(1)         => usrclk_spy_tx,
+  --     GBT_RXUSRCLK_o(1)         => usrclk_spy_rx,
+  --     GBT_TXCLKEN_o(1)          => spy_txclken,      -- from pattern generator, to be evaluated
+  --     GBT_RXCLKEN_o(1)          => spy_rxclken,      -- to pattern checker, to be evaluated
+
+  --     --==============--
+  --     -- Serial lanes --
+  --     --==============--
+  --     MGT_RX_P(1)               => spy_rx_p,
+  --     MGT_RX_N(1)               => spy_rx_n,
+  --     MGT_TX_P(1)               => SPY_TX_P,
+  --     MGT_TX_N(1)               => SPY_TX_N,
+
+  --     --==============--
+  --     -- Data         --
+  --     --==============--
+  --     GBT_TXDATA_i(1)           => spy_txdata_gbt,
+  --     GBT_RXDATA_o(1)           => spy_rxdata_gbt,
+  --     WB_TXDATA_i(1)            => spy_rxdata_ext,
+  --     WB_RXDATA_o(1)            => spy_rxdata_ext,
+
+  --     TXD_VALID_i(1)            => spy_txd_valid,
+  --     RXD_VALID_o(1)            => spy_rxd_valid,
+
+  --     --==============--
+  --     -- TX/RX Status --
+  --     --==============--
+  --     MGT_TXREADY_o(1)          => open,
+  --     MGT_RXREADY_o(1)          => open,
+  --     GBT_TXREADY_o(1)          => open,
+  --     GBT_RXREADY_o(1)          => spy_rxready,
+  --     GBT_BAD_RX_o(1)           => spy_bad_rx,
+
+  --     --==============--
+  --     -- Keep for now --
+  --     --==============--
+  --     GBTBANK_RX_BITMODIFIED_FLAG_O(1)  => open,               -- to count BER
+  --     GBTBANK_LOOPBACK_I                => loopBack_from_user, -- from VIO
+  --     RESET_TX_i                        => '0',
+  --     RESET_RX_i                        => '0',
+
+  --     --==============--
+  --     -- Reset        --
+  --     --==============--
+  --     RESET_i                   => reset_from_genRst
+  --     );
 
   -------------------------------------------------------------------------------------------
   -- SYSMON module instantiation
@@ -944,3 +1186,4 @@ begin
       );
 
 end odmb_inst;
+
